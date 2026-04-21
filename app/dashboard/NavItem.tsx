@@ -10,8 +10,6 @@ import {
   BarChart3,
   Bell,
   Settings2,
-  Users,
-  ClipboardList,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -31,8 +29,6 @@ const NAV_ITEMS: NavEntry[] = [
   { href: '/dashboard/analytics',    label: '매출 분석',  mobileLabel: '매출분석', icon: BarChart3 },
   { href: '/dashboard/alerts',       label: '이상 알림',  mobileLabel: '알림',     icon: Bell, alertKey: true },
   { href: '/dashboard/settings',     label: '설정',       mobileLabel: '설정',     icon: Settings2 },
-  { href: '/dashboard/employees',    label: '사원 관리',   mobileLabel: '사원',     icon: Users },
-  { href: '/dashboard/settlements',  label: '식수 정산',   mobileLabel: '식수정산', icon: ClipboardList },
 ]
 
 function checkActive(href: string, pathname: string) {
