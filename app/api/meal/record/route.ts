@@ -51,6 +51,13 @@ export async function POST(req: NextRequest) {
 
   const mealType = detectMealType(periods)
 
+  // 활성 메뉴에서 현재 mealType에 해당하는 금액 조회
+  const menus: Array<{ mealType: string; paymentAmount: number; isActive: boolean }> =
+    (configRow?.config as { menus?: Array<{ mealType: string; paymentAmount: number; isActive: boolean }> } | null)?.menus ?? []
+
+  const matchedMenu = menus.find(m => m.isActive && m.mealType === mealType)
+  const amount = matchedMenu?.paymentAmount ?? 0
+
   // 당일 동일 끼니 중복 체크
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
@@ -68,6 +75,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'DUPLICATE_BLOCKED' }, { status: 409 })
     }
     if (dupPolicy === 'warn') {
+      // warn도 기록함 (관리자 추적 가능)
+      await supabase.from('meal_usages').insert({
+        merchant_id: merchantId,
+        terminal_id: terminalId,
+        employee_id: employee.id,
+        meal_type: mealType,
+        amount,
+        synced: true,
+      })
       return NextResponse.json({
         ok: true,
         warn: 'DUPLICATE_WARN',
@@ -75,7 +91,7 @@ export async function POST(req: NextRequest) {
         meal_type: mealType,
       })
     }
-    // 'allow': 통과
+    // 'allow': 아래 INSERT로 진행
   }
 
   // meal_usages INSERT
@@ -86,7 +102,7 @@ export async function POST(req: NextRequest) {
       terminal_id: terminalId,
       employee_id: employee.id,
       meal_type: mealType,
-      amount: 0,
+      amount,
       synced: true,
     })
 

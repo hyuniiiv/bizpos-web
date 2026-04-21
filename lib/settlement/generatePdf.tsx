@@ -1,10 +1,16 @@
 // lib/settlement/generatePdf.tsx
 import React from 'react'
-import { renderToBuffer, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import { renderToBuffer, Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer'
 import type { Settlement, SettlementItem } from '@/types/menu'
 
+// URL 기반 폰트 등록 (서버사이드 렌더링용)
+Font.register({
+  family: 'NotoSansKR',
+  src: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE.woff2',
+})
+
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: 'Helvetica' },
+  page: { padding: 40, fontSize: 10, fontFamily: 'NotoSansKR' },
   title: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
   subtitle: { fontSize: 11, color: '#666666', marginBottom: 20 },
   table: { display: 'flex', flexDirection: 'column', borderWidth: 1, borderColor: '#dddddd' },

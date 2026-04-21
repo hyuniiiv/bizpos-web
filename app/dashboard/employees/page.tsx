@@ -40,17 +40,18 @@ export default function EmployeesPage() {
       return { employee_no, name, department: department || undefined, card_number: card_number || undefined, barcode: barcode || undefined }
     }).filter(r => r.employee_no && r.name)
 
-    const res = await fetch('/api/merchant/employees/sync', {
+    const res = await fetch('/api/merchant/employees', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employees: rows }),
+      body: JSON.stringify(rows),
     })
     if (res.ok) {
       const json = await res.json()
-      alert(`${json.synced}명 업로드 완료`)
+      alert(`${json.count}명 업로드 완료`)
       fetchEmployees()
     } else {
-      alert('업로드 실패')
+      const err = await res.json()
+      alert(`업로드 실패: ${err.message ?? '알 수 없는 오류'}`)
     }
     e.target.value = ''
   }

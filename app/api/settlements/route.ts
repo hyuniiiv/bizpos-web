@@ -33,6 +33,19 @@ export async function POST(req: NextRequest) {
     return apiError('MISSING_FIELDS', 'period_start, period_end 필수', 400)
   }
 
+  // 겹치는 기간의 정산 중복 방어
+  const { data: overlap } = await supabase
+    .from('settlements')
+    .select('id')
+    .eq('merchant_id', mu.merchant_id)
+    .lte('period_start', period_end)
+    .gte('period_end', period_start)
+    .limit(1)
+
+  if (overlap && overlap.length > 0) {
+    return apiError('DUPLICATE_PERIOD', '해당 기간과 겹치는 정산이 이미 존재합니다', 409)
+  }
+
   // 기간 내 식사 사용 내역 집계
   const { data: usages, error: usageError } = await supabase
     .from('meal_usages')
@@ -95,7 +108,12 @@ export async function POST(req: NextRequest) {
   })
 
   if (items.length > 0) {
-    await supabase.from('settlement_items').insert(items)
+    const { error: itemsError } = await supabase.from('settlement_items').insert(items)
+    if (itemsError) {
+      // rollback: settlement 삭제
+      await supabase.from('settlements').delete().eq('id', settlement.id)
+      return apiError('DB_ERROR', itemsError.message, 500)
+    }
   }
 
   return NextResponse.json({ data: settlement }, { status: 201 })

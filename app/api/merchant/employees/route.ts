@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const page = parseInt(searchParams.get('page') ?? '1')
   const limit = parseInt(searchParams.get('limit') ?? '50')
-  const q = searchParams.get('q') ?? ''
+  const raw = searchParams.get('q') ?? ''
+  const q = raw.replace(/[%_\\]/g, c => `\\${c}`).substring(0, 100)
   const offset = (page - 1) * limit
 
   let query = supabase
@@ -50,22 +51,27 @@ export async function POST(req: NextRequest) {
   if (!mu) return apiError('MERCHANT_NOT_FOUND', '가맹점을 찾을 수 없습니다', 403)
 
   const body = await req.json()
-  const { employee_no, name, department, card_number, barcode } = body
 
-  if (!employee_no || !name) {
+  // 단건 또는 배열 모두 허용
+  const rows = Array.isArray(body) ? body : [body]
+  const validRows = rows.filter((r: Record<string, unknown>) => r.employee_no && r.name)
+
+  if (validRows.length === 0) {
     return apiError('MISSING_FIELDS', 'employee_no, name은 필수입니다', 400)
   }
 
   const { data, error } = await supabase
     .from('employees')
-    .insert({ merchant_id: mu.merchant_id, employee_no, name, department, card_number, barcode })
+    .upsert(
+      validRows.map((r: Record<string, unknown>) => ({ ...r, merchant_id: mu.merchant_id })),
+      { onConflict: 'merchant_id,employee_no', ignoreDuplicates: false }
+    )
     .select()
-    .single()
 
   if (error) {
-    if (error.code === '23505') return apiError('DUPLICATE_EMPLOYEE_NO', '이미 존재하는 사원번호입니다', 409)
+    if (error.code === '23505') return apiError('DUPLICATE', '중복 데이터가 있습니다', 409)
     return apiError('DB_ERROR', error.message, 500)
   }
 
-  return NextResponse.json({ data }, { status: 201 })
+  return NextResponse.json({ data, count: (data ?? []).length }, { status: 201 })
 }

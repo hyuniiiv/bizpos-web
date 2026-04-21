@@ -13,12 +13,14 @@ export async function lookupEmployee(
   rawInput: string,
 ): Promise<LookupResult> {
   const supabase = createAdminClient()
+  const safe = rawInput.replace(/[,().'"\s]/g, '')
+  if (!safe) return { found: false }
   const { data, error } = await supabase
     .from('employees')
     .select('*')
     .eq('merchant_id', merchantId)
     .eq('is_active', true)
-    .or(`card_number.eq.${rawInput},barcode.eq.${rawInput}`)
+    .or(`card_number.eq.${safe},barcode.eq.${safe}`)
     .maybeSingle()
 
   if (error || !data) return { found: false }

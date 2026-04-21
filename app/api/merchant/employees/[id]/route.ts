@@ -19,9 +19,21 @@ export async function PATCH(
   if (!mu) return apiError('MERCHANT_NOT_FOUND', '가맹점을 찾을 수 없습니다', 403)
 
   const body = await req.json()
+  const { name, department, card_number, barcode, is_active } = body
+  const allowed: Record<string, unknown> = {}
+  if (name !== undefined) allowed.name = name
+  if (department !== undefined) allowed.department = department
+  if (card_number !== undefined) allowed.card_number = card_number
+  if (barcode !== undefined) allowed.barcode = barcode
+  if (is_active !== undefined) allowed.is_active = is_active
+
+  if (Object.keys(allowed).length === 0) {
+    return apiError('NO_FIELDS', '수정할 필드가 없습니다', 400)
+  }
+
   const { data, error } = await supabase
     .from('employees')
-    .update(body)
+    .update(allowed)
     .eq('id', id)
     .eq('merchant_id', mu.merchant_id)
     .select()
