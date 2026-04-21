@@ -243,7 +243,8 @@ CREATE TABLE IF NOT EXISTS settlements (
   total_amount  integer NOT NULL DEFAULT 0,
   status        text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','confirmed')),
   created_at    timestamptz NOT NULL DEFAULT now(),
-  confirmed_at  timestamptz
+  confirmed_at  timestamptz,
+  CONSTRAINT valid_period CHECK (period_start <= period_end)
 );
 
 -- settlement_items: 사원별 집계
@@ -261,12 +262,15 @@ CREATE TABLE IF NOT EXISTS settlement_items (
   dinner_count    integer NOT NULL DEFAULT 0
 );
 
+CREATE INDEX IF NOT EXISTS settlement_items_settlement_id ON settlement_items (settlement_id);
+
 ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meal_usages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settlements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settlement_items ENABLE ROW LEVEL SECURITY;
 
 -- employees: 가맹점 관리자만 접근
+DROP POLICY IF EXISTS "merchants manage own employees" ON employees;
 CREATE POLICY "merchants manage own employees"
   ON employees FOR ALL
   USING (
@@ -276,6 +280,7 @@ CREATE POLICY "merchants manage own employees"
   );
 
 -- meal_usages: 가맹점 관리자만 접근
+DROP POLICY IF EXISTS "merchants manage own meal_usages" ON meal_usages;
 CREATE POLICY "merchants manage own meal_usages"
   ON meal_usages FOR ALL
   USING (
@@ -285,6 +290,7 @@ CREATE POLICY "merchants manage own meal_usages"
   );
 
 -- settlements: 가맹점 관리자만 접근
+DROP POLICY IF EXISTS "merchants manage own settlements" ON settlements;
 CREATE POLICY "merchants manage own settlements"
   ON settlements FOR ALL
   USING (
@@ -294,6 +300,7 @@ CREATE POLICY "merchants manage own settlements"
   );
 
 -- settlement_items: 정산 헤더를 통해 가맹점 관리자만 접근
+DROP POLICY IF EXISTS "merchants manage own settlement_items" ON settlement_items;
 CREATE POLICY "merchants manage own settlement_items"
   ON settlement_items FOR ALL
   USING (
