@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient()
 
-  // 사원 조회 (card_number 또는 barcode)
-  const lookup = await lookupEmployee(merchantId, rawInput)
+  // 사원 조회 (card_number 또는 barcode) — employees는 client_id 소속
+  const lookup = await lookupEmployee(rawInput)
   if (!lookup.found) {
     return NextResponse.json({ error: 'EMPLOYEE_NOT_FOUND' }, { status: 404 })
   }
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     if (dupPolicy === 'warn') {
       // warn도 기록함 (관리자 추적 가능)
       await supabase.from('meal_usages').insert({
-        merchant_id: merchantId,
+        client_id: employee.client_id,
         terminal_id: terminalId,
         employee_id: employee.id,
         meal_type: mealType,
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
   const { error: insertError } = await supabase
     .from('meal_usages')
     .insert({
-      merchant_id: merchantId,
+      client_id: employee.client_id,
       terminal_id: terminalId,
       employee_id: employee.id,
       meal_type: mealType,
