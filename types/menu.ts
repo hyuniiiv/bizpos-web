@@ -85,7 +85,7 @@ export interface DeviceConfig {
 
 export interface Employee {
   id: string
-  merchant_id: string
+  client_id: string
   employee_no: string
   name: string
   department?: string
@@ -97,7 +97,7 @@ export interface Employee {
 
 export interface MealUsage {
   id: string
-  merchant_id: string
+  client_id: string
   terminal_id: string
   employee_id: string
   meal_type: MealType
@@ -109,7 +109,7 @@ export interface MealUsage {
 
 export interface Settlement {
   id: string
-  merchant_id: string
+  client_id: string
   period_start: string
   period_end: string
   total_count: number
@@ -131,4 +131,29 @@ export interface SettlementItem {
   breakfast_count: number
   lunch_count: number
   dinner_count: number
+}
+
+export interface Store {
+  id: string
+  merchant_id: string
+  store_name: string
+  biz_no?: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface Client {
+  id: string
+  biz_no: string
+  client_name: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface ClientUser {
+  id: string
+  user_id: string
+  client_id: string
+  role: 'platform_client_admin' | 'client_admin'
+  created_at: string
 }
