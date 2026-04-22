@@ -3,17 +3,25 @@ import fs from 'fs'
 import path from 'path'
 
 // 거래내역 파일 경로 (서버 데이터 디렉토리)
-const DATA_DIR = path.join(process.cwd(), 'data')
+const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), 'data')
 const TX_FILE = path.join(DATA_DIR, 'transactions.json')
 
+interface StoredTransaction {
+  approvedAt?: string
+  createdAt?: string
+  status: string
+  amount?: number
+  [key: string]: unknown
+}
+
 // 인메모리 캐시 (성능 최적화)
-let cache: object[] | null = null
+let cache: StoredTransaction[] | null = null
 
 function ensureDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
 }
 
-function loadFromFile(): object[] {
+function loadFromFile(): StoredTransaction[] {
   if (cache !== null) return cache
   ensureDir()
   try {
@@ -28,7 +36,7 @@ function loadFromFile(): object[] {
   return cache!
 }
 
-function saveToFile(txs: object[]) {
+function saveToFile(txs: StoredTransaction[]) {
   ensureDir()
   // 최대 5000건 유지
   const trimmed = txs.slice(0, 5000)
@@ -36,7 +44,7 @@ function saveToFile(txs: object[]) {
   cache = trimmed
 }
 
-export function addTransaction(tx: object) {
+export function addTransaction(tx: StoredTransaction) {
   const txs = loadFromFile()
   txs.unshift(tx)
   saveToFile(txs)
@@ -115,13 +123,13 @@ export async function GET(req: NextRequest) {
   const transactions = loadFromFile()
   let filtered = [...transactions]
   if (date) {
-    filtered = filtered.filter((tx: any) => {
+    filtered = filtered.filter((tx: StoredTransaction) => {
       const at: string = tx.approvedAt ?? tx.createdAt ?? ''
       return at.startsWith(date)
     })
   }
 
-  const validFiltered = filtered.filter((tx: any) => (tx.status === 'success' || tx.status === 'offline'))
+  const validFiltered = filtered.filter((tx: StoredTransaction) => (tx.status === 'success' || tx.status === 'offline'))
   const total = validFiltered.length
   const totalAmount = validFiltered.reduce((sum: number, tx: any) => sum + (tx.amount ?? 0), 0)
 
