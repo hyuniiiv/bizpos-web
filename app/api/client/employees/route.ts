@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-
-async function getClientId(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data } = await supabase
-    .from('client_users')
-    .select('client_id')
-    .eq('user_id', user.id)
-    .single()
-  return data?.client_id ?? null
-}
+import { getClientId } from '@/lib/client/getClientId'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()

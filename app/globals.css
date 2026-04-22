@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-barlow), 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -116,6 +116,17 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@keyframes scan-line {
+  0%   { top: 0; }
+  50%  { top: calc(100% - 2px); }
+  100% { top: 0; }
+}
+
+.animate-scan-line {
+  position: absolute;
+  animation: scan-line 1.8s ease-in-out infinite;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -126,4 +137,210 @@
   html {
     @apply font-sans;
   }
+}
+
+/* ── BIZPOS Design System ──────────────────────────────────────────────── */
+:root {
+  --pos-bg-gradient: linear-gradient(150deg, oklch(0.11 0.030 258) 0%, oklch(0.135 0.022 252) 100%);
+
+  /* Surface layers */
+  --bp-bg:           oklch(0.120 0.025 255);
+  --bp-surface:      oklch(0.165 0.020 255);
+  --bp-surface-2:    oklch(0.210 0.018 255);
+
+  /* Borders */
+  --bp-border:       oklch(0.300 0.015 255 / 0.55);
+  --bp-border-2:     oklch(0.400 0.010 255 / 0.30);
+
+  /* Text */
+  --bp-text:         oklch(0.930 0.005 255);
+  --bp-text-2:       oklch(0.680 0.012 255);
+  --bp-text-3:       oklch(0.560 0.008 255);
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.11);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+  }
+  /* Dashboard solid surfaces — no blur */
+  .bp-card {
+    background: var(--bp-surface);
+    border: 1px solid var(--bp-border);
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.30);
+  }
+  .bp-panel {
+    background: var(--bp-bg);
+    border: 1px solid oklch(0.25 0.015 255 / 0.45);
+  }
+  .bp-surface-2 {
+    background: var(--bp-surface-2);
+    border: 1px solid var(--bp-border-2);
+  }
+  .glow-green {
+    box-shadow: 0 0 40px rgba(74, 222, 128, 0.45), 0 0 12px rgba(74, 222, 128, 0.30);
+  }
+  .glow-red {
+    box-shadow: 0 0 40px rgba(248, 113, 113, 0.45), 0 0 12px rgba(248, 113, 113, 0.30);
+  }
+  .glow-blue {
+    box-shadow: 0 0 28px rgba(125, 211, 252, 0.40), 0 0 8px rgba(125, 211, 252, 0.20);
+  }
+  .glow-orange {
+    box-shadow: 0 0 28px rgba(251, 146, 60, 0.40), 0 0 8px rgba(251, 146, 60, 0.25);
+  }
+  .hover-glass:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 0 24px rgba(125, 211, 252, 0.30);
+  }
+}
+
+/* ================================================================
+   POS Touch UI — Animation & Utility System (Touch-First)
+   ================================================================ */
+
+:root {
+  --pos-accent:       #06D6A0;
+  --pos-accent-dim:   rgba(6, 214, 160, 0.10);
+  --pos-accent-glow:  rgba(6, 214, 160, 0.45);
+  --pos-success:      #10B981;
+  --pos-success-dim:  rgba(16, 185, 129, 0.12);
+  --pos-error:        #EF4444;
+  --pos-error-dim:    rgba(239, 68, 68, 0.12);
+  --pos-warn:         #F59E0B;
+  --pos-warn-dim:     rgba(245, 158, 11, 0.10);
+  --touch-min:        48px;
+  --touch-ok:         64px;
+}
+
+/* Scan beam sweeps down */
+@keyframes pos-scan-beam {
+  0%   { top: -2px;  opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { top: 100%;  opacity: 0; }
+}
+
+/* Pulse ring expands and fades */
+@keyframes pos-ring-expand {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  100% { transform: scale(2.6); opacity: 0;    }
+}
+
+/* Orbital rotation */
+@keyframes pos-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Fade + rise from below */
+@keyframes pos-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Pop in with spring */
+@keyframes pos-pop {
+  0%   { opacity: 0; transform: scale(0.45); }
+  65%  { transform: scale(1.10); }
+  100% { opacity: 1; transform: scale(1);    }
+}
+
+/* SVG stroke draw */
+@keyframes pos-draw {
+  from { stroke-dashoffset: 100; opacity: 0; }
+  10%  { opacity: 1; }
+  to   { stroke-dashoffset: 0;   opacity: 1; }
+}
+
+/* Shake for error */
+@keyframes pos-shake {
+  0%, 100% { transform: translateX(0); }
+  15%       { transform: translateX(-10px); }
+  30%       { transform: translateX(10px);  }
+  45%       { transform: translateX(-7px);  }
+  60%       { transform: translateX(7px);   }
+  75%       { transform: translateX(-3px);  }
+}
+
+/* Countdown bar shrinks left-to-right */
+@keyframes pos-countdown {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* Gentle glow breathe */
+@keyframes pos-breathe {
+  0%, 100% { box-shadow: 0 0 20px var(--pos-accent-glow); }
+  50%       { box-shadow: 0 0 45px var(--pos-accent-glow), 0 0 80px rgba(6,214,160,0.18); }
+}
+
+/* Warning blink */
+@keyframes pos-warn-blink {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.6; }
+}
+
+@layer utilities {
+  /* Scan */
+  .pos-scan-beam  { animation: pos-scan-beam  2.8s ease-in-out infinite; }
+
+  /* Pulse rings (staggered) */
+  .pos-ring-1     { animation: pos-ring-expand 2.2s ease-out infinite;        }
+  .pos-ring-2     { animation: pos-ring-expand 2.2s ease-out infinite 0.73s;  }
+  .pos-ring-3     { animation: pos-ring-expand 2.2s ease-out infinite 1.46s;  }
+
+  /* Orbital spinners */
+  .pos-orbit-cw   { animation: pos-orbit 3.0s linear infinite;         }
+  .pos-orbit-ccw  { animation: pos-orbit 4.5s linear infinite reverse; }
+  .pos-orbit-med  { animation: pos-orbit 2.2s linear infinite;         }
+
+  /* Staggered rise-in */
+  .pos-rise   { animation: pos-rise 0.36s ease-out forwards;              }
+  .pos-rise-2 { animation: pos-rise 0.36s ease-out 0.08s forwards; opacity:0; }
+  .pos-rise-3 { animation: pos-rise 0.36s ease-out 0.16s forwards; opacity:0; }
+  .pos-rise-4 { animation: pos-rise 0.36s ease-out 0.24s forwards; opacity:0; }
+
+  /* Misc */
+  .pos-pop         { animation: pos-pop       0.44s cubic-bezier(.34,1.56,.64,1) forwards; }
+  .pos-shake       { animation: pos-shake     0.55s ease-in-out; }
+  .pos-breathe     { animation: pos-breathe   2.6s  ease-in-out infinite; }
+  .pos-warn-blink  { animation: pos-warn-blink 2.0s ease-in-out infinite; }
+
+  /* Touch target enforcement */
+  .pos-touch    { min-height: var(--touch-ok);  display:flex; align-items:center; justify-content:center; }
+  .pos-touch-sm { min-height: var(--touch-min); display:flex; align-items:center; justify-content:center; }
+
+  /* Button press feedback (replaces hover on touch) */
+  .pos-btn {
+    transition: transform 0.1s ease, opacity 0.1s ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    cursor: pointer;
+  }
+  .pos-btn:active { transform: scale(0.955); opacity: 0.82; }
+
+  /* Semantic card variants */
+  .pos-card-accent  { background: var(--pos-accent-dim);  border: 1px solid rgba(6,214,160,0.22); }
+  .pos-card-success { background: var(--pos-success-dim); border: 1px solid rgba(16,185,129,0.28); }
+  .pos-card-error   { background: var(--pos-error-dim);   border: 1px solid rgba(239,68,68,0.28); }
+  .pos-card-warn    { background: var(--pos-warn-dim);    border: 1px solid rgba(245,158,11,0.25); }
+
+  /* Glow teal */
+  .glow-teal { box-shadow: 0 0 40px var(--pos-accent-glow), 0 0 12px rgba(6,214,160,0.18); }
 }

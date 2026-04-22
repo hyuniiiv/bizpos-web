@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/data/
+
+# electron
+/dist-electron/
+/resources/*.ico
+/resources/*.icns
+/resources/*.png
+
+# internal tools
+.bkit-memory.json
+.impeccable.md
+.omc/
+.claude/

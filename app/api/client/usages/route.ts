@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getClientId } from '@/lib/client/getClientId'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { data: cu } = await supabase
-    .from('client_users')
-    .select('client_id')
-    .eq('user_id', user.id)
-    .single()
-  if (!cu) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const clientId = await getClientId(supabase)
+  if (!clientId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const from = searchParams.get('from') ??
@@ -21,7 +15,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from('meal_usages')
     .select('id, meal_type, used_at, amount, employees(employee_no, name, department)')
-    .eq('client_id', cu.client_id)
+    .eq('client_id', clientId)
     .gte('used_at', from)
     .lte('used_at', to + 'T23:59:59')
     .order('used_at', { ascending: false })

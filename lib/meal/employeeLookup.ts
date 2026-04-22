@@ -6,10 +6,9 @@ export type LookupResult =
   | { found: false }
 
 /**
- * merchantId 범위 내에서 card_number 또는 barcode로 사원을 조회한다.
+ * card_number 또는 barcode로 사원을 조회한다. (employees는 client_id 소속)
  */
 export async function lookupEmployee(
-  merchantId: string,
   rawInput: string,
 ): Promise<LookupResult> {
   const supabase = createAdminClient()
@@ -17,8 +16,7 @@ export async function lookupEmployee(
   if (!safe) return { found: false }
   const { data, error } = await supabase
     .from('employees')
-    .select('*')
-    .eq('merchant_id', merchantId)
+    .select('id, client_id, name, department, is_active')
     .eq('is_active', true)
     .or(`card_number.eq.${safe},barcode.eq.${safe}`)
     .maybeSingle()

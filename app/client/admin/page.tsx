@@ -1,17 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getClientId } from '@/lib/client/getClientId'
 
 export default async function ClientAdminDashboard() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: cu } = await supabase
-    .from('client_users')
-    .select('client_id')
-    .eq('user_id', user.id)
-    .single()
-  if (!cu) redirect('/login')
+  const clientId = await getClientId(supabase)
+  if (!clientId) redirect('/login')
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -19,12 +13,12 @@ export default async function ClientAdminDashboard() {
     supabase
       .from('meal_usages')
       .select('*', { count: 'exact', head: true })
-      .eq('client_id', cu.client_id)
+      .eq('client_id', clientId)
       .gte('used_at', today),
     supabase
       .from('employees')
       .select('*', { count: 'exact', head: true })
-      .eq('client_id', cu.client_id)
+      .eq('client_id', clientId)
       .eq('is_active', true),
   ])
 
