@@ -82,7 +82,7 @@ export default function TransactionsPage() {
     const res = await fetch(getServerUrl() + '/api/payment/cancel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` },
-      body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName }),
+      body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName, termId: tx.termId }),
     }).then(r => r.json())
     if (res.code === '0000') { alert('취소 완료'); load() }
     else alert(`취소 실패: ${res.msg}`)
@@ -97,7 +97,7 @@ export default function TransactionsPage() {
       const res = await fetch(getServerUrl() + '/api/payment/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName }),
+        body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName, termId: tx.termId }),
       }).then(r => r.json())
       if (res.code !== '0000') failed++
     }

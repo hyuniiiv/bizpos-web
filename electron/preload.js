@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
   platform: process.platform, // 'win32' | 'darwin' | 'linux'
 
+  // 앱 종료
+  quitApp: () => ipcRenderer.invoke('app:quit'),
+
   // ------------------------------------------------------------------
   // 시리얼포트 API
   // 사용 예)

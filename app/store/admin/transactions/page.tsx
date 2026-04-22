@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { DateFilter } from './DateFilter'
+import { CancelButton } from './CancelButton'
 import { redirect } from 'next/navigation'
 
 export const revalidate = 0
@@ -27,7 +28,7 @@ export default async function TransactionsPage({
   let query = supabase
     .from('transactions')
     .select(`
-      id, menu_name, amount, barcode_info, payment_type, status, approved_at, synced,
+      id, tid, merchant_order_id, menu_name, amount, barcode_info, payment_type, status, approved_at, synced,
       terminals(name, term_id)
     `)
     .eq('merchant_id', merchantId)
@@ -76,6 +77,7 @@ export default async function TransactionsPage({
               <th className="text-center px-4 py-3 text-white/50">결제방식</th>
               <th className="text-left px-4 py-3 text-white/50">바코드/QR</th>
               <th className="text-center px-4 py-3 text-white/50">상태</th>
+              <th className="text-center px-4 py-3 text-white/50">관리</th>
             </tr>
           </thead>
           <tbody>
@@ -102,11 +104,22 @@ export default async function TransactionsPage({
                     {tx.status === 'success' ? '승인' : '취소'}
                   </span>
                 </td>
+                <td className="px-4 py-2 text-center">
+                  {tx.status === 'success' && tx.merchant_order_id && tx.tid && (
+                    <CancelButton
+                      merchantOrderID={tx.merchant_order_id}
+                      tid={tx.tid}
+                      amount={tx.amount}
+                      menuName={tx.menu_name}
+                      termId={(tx.terminals as unknown as { term_id: string } | null)?.term_id ?? ''}
+                    />
+                  )}
+                </td>
               </tr>
             ))}
             {!transactions?.length && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-white/40">
+                <td colSpan={8} className="px-4 py-8 text-center text-white/40">
                   {selectedDate} 거래내역이 없습니다.
                 </td>
               </tr>

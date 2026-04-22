@@ -188,7 +188,7 @@ export default function PosAdminPage() {
 
   const handleCancel = async (tx: Transaction) => {
     if (!confirm(`거래번호 ${tx.merchantOrderID} 를 취소하시겠습니까?`)) return
-    const res = await fetch(getServerUrl() + '/api/payment/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` }, body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName }) }).then(r => r.json())
+    const res = await fetch(getServerUrl() + '/api/payment/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` }, body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName, termId: tx.termId }) }).then(r => r.json())
     if (res.code === '0000') { alert('취소 완료'); loadHistTxs() } else alert(`취소 실패: ${res.msg}`)
   }
 
@@ -196,7 +196,7 @@ export default function PosAdminPage() {
     const targets = filteredTxs.filter(tx => selectedIds.has(tx.id))
     if (!targets.length || !confirm(`선택한 ${targets.length}건을 일괄 취소하시겠습니까?`)) return
     let failed = 0
-    for (const tx of targets) { const res = await fetch(getServerUrl() + '/api/payment/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName }) }).then(r => r.json()); if (res.code !== '0000') failed++ }
+    for (const tx of targets) { const res = await fetch(getServerUrl() + '/api/payment/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName, termId: tx.termId }) }).then(r => r.json()); if (res.code !== '0000') failed++ }
     alert(failed === 0 ? `${targets.length}건 취소 완료` : `${targets.length - failed}건 성공, ${failed}건 실패`)
     loadHistTxs()
   }
@@ -638,6 +638,20 @@ export default function PosAdminPage() {
                 단말기 초기화
               </button>
             </div>
+
+            {/* 프로그램 종료 (Electron 전용) */}
+            {typeof window !== 'undefined' && (window as Window & { electronAPI?: { quitApp?: () => void } }).electronAPI && (
+              <div className="glass-card rounded-xl p-4 space-y-2" style={{ border: '1px solid rgba(239,68,68,0.40)' }}>
+                <p className="text-sm font-semibold text-red-300">프로그램 종료</p>
+                <p className="text-xs text-white/40">BIZPOS 애플리케이션을 완전히 종료합니다.</p>
+                <button
+                  onClick={() => { if (!confirm('프로그램을 종료하시겠습니까?')) return; (window as Window & { electronAPI?: { quitApp?: () => void } }).electronAPI?.quitApp?.() }}
+                  className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all"
+                  style={{ background: 'rgba(239,68,68,0.35)', border: '1px solid rgba(239,68,68,0.55)' }}>
+                  프로그램 종료
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

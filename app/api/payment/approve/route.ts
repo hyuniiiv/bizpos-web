@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
         status: 'success',
         approvedAt: result.data.approvedAt,
         barcodeInfo: body.barcodeInfo,
+        termId: body.termId,
         synced: true,
         createdAt: new Date().toISOString(),
       }

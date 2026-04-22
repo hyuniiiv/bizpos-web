@@ -20,7 +20,7 @@ export async function getBizplayClientForTerminal(termId: string) {
 
   const { data: key } = await supabase
     .from('merchant_keys')
-    .select('mid, enc_key, online_ak')
+    .select('mid, enc_key, online_ak, env')
     .eq('id', terminal.merchant_key_id)
     .eq('is_active', true)
     .single()
@@ -33,6 +33,6 @@ export async function getBizplayClientForTerminal(termId: string) {
     mid: key.mid,
     encKey: key.enc_key,
     onlineAK: key.online_ak,
-    env: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+    env: key.env as 'production' | 'development',
   })
 }

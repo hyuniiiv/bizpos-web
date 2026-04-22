@@ -189,6 +189,7 @@ function createWindow() {
     height: 1024,
     minWidth: 600,
     minHeight: 1024,
+    fullscreen: true,
     fullscreenable: true,
     kiosk: isKiosk,
     title: 'BIZPOS',
@@ -262,6 +263,13 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (mainWindow === null) createWindow()
+})
+
+// ============================================================
+// App Control IPC Handlers
+// ============================================================
+ipcMain.handle('app:quit', () => {
+  app.quit()
 })
 
 // ============================================================

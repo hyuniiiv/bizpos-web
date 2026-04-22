@@ -38,6 +38,7 @@ jobs:
           INTERNAL_POS_KEY: ${{ secrets.INTERNAL_POS_KEY }}
           BIZPLAY_BASE_URL: ${{ secrets.BIZPLAY_BASE_URL }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_SERVER_URL: ${{ secrets.NEXT_PUBLIC_SERVER_URL }}
         run: pnpm run electron:build:win --publish always
 
       - name: Upload artifacts
