@@ -74,16 +74,14 @@ async function startSync(token: string, onConfigChanged: (config: Record<string,
 
   // 오프라인 큐 플러시
   const result = await flushOfflineQueue()
-  if (result.synced > 0) {
-    console.log(`[onlineSync] 오프라인 거래 ${result.synced}건 동기화 완료`)
-  }
 
   // Heartbeat 시작 (30초)
   startHeartbeat()
 }
 
 async function handleOnlineEvent(onConfigChanged: (config: Record<string, unknown>) => void) {
-  const token = localStorage.getItem(ACCESS_TOKEN_KEY) ?? ''
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY)
+  if (!token) return
   await startSync(token, onConfigChanged)
   // 이후 오프라인 시 재등록
   window.addEventListener('offline', () => {

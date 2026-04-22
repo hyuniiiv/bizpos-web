@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
 import { requireTerminalAuth } from '@/lib/terminal/auth'
 import { createTerminalJWT } from '@/lib/terminal/jwt'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -22,7 +23,11 @@ export async function POST(req: NextRequest) {
   }
 
   const accessToken = await createTerminalJWT({ terminalId, merchantId, termId, merchantKeyId })
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
+  // Decode exp from the actual issued token to prevent drift
+  const secret = new TextEncoder().encode(process.env.TERMINAL_JWT_SECRET!)
+  const { payload: issued } = await jwtVerify(accessToken, secret)
+  const expiresAt = issued.exp ? new Date(issued.exp * 1000).toISOString() : null
 
   return NextResponse.json({ accessToken, expiresAt })
 }
