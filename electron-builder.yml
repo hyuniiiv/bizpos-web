@@ -1,0 +1,66 @@
+appId: com.bizpos.pos
+productName: BIZPOS
+copyright: Copyright © 2025 BIZPOS
+
+directories:
+  buildResources: resources
+  output: dist-electron
+
+# 패키징에 포함할 파일 (Next.js 런타임 제외 - extraResources로 별도 포함)
+files:
+  - electron/**
+  - package.json
+  - "!node_modules/**"
+  - "!src/**"
+  - "!app/**"
+  - "!components/**"
+  - "!lib/**"
+  - "!public/**"
+  - "!.next/**"
+
+# Next.js standalone 빌드 결과물을 별도 리소스로 포함
+extraResources:
+  - from: .next/standalone
+    to: nextjs
+    filter:
+      - "**/*"
+  - from: .next/static
+    to: nextjs/.next/static
+    filter:
+      - "**/*"
+  - from: public
+    to: nextjs/public
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: bizpos-setup-${version}.exe
+  icon: resources/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerLanguages:
+    - ko
+  language: "1042"
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: BIZPOS
+
+mac:
+  target: dmg
+  artifactName: bizpos-${version}.dmg
+  icon: resources/icon.icns
+
+linux:
+  target: AppImage
+  artifactName: bizpos-${version}.AppImage
+
+# GitHub Releases 자동 배포 (GH_TOKEN 환경변수 필요)
+publish:
+  provider: github
+  releaseType: release

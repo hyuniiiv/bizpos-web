@@ -11,7 +11,8 @@
     "electron:dev": "cross-env NODE_ENV=development concurrently \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build": "next build && electron-builder",
     "electron:build:win": "next build && electron-builder --win",
-    "electron:pack": "electron-builder --dir"
+    "electron:pack": "electron-builder --dir",
+    "electron:release": "next build && electron-builder --win --publish always"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
