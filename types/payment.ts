@@ -103,6 +103,7 @@ export interface Transaction {
   barcodeInfo: string
   synced: boolean
   createdAt: string
+  termId?: string
 }
 
 export interface OfflineRecord {
