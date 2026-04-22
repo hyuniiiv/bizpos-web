@@ -38,8 +38,7 @@ export function checkRateLimit(
   return { allowed: true }
 }
 
-export function getRateLimitKey(req: RequestLike, suffix: string): string {
-  const forwarded = req.headers.get('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1'
-  return `${ip}:${suffix}`
+export function getRateLimitKey(_req: RequestLike, suffix: string): string {
+  // Electron: all connections are local, no trusted proxy — use fixed local key
+  return `127.0.0.1:${suffix}`
 }

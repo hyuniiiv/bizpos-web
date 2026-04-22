@@ -3,6 +3,11 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { requireTerminalAuth } from '@/lib/terminal/auth'
 
+const ALLOWED_SETTINGS_KEYS = new Set([
+  'theme', 'language', 'autoResetTime', 'barcodeReaderType',
+  'barcodePort', 'serialPort', 'externalDisplay', 'apiEnv',
+])
+
 const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), 'data')
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json')
 
@@ -30,9 +35,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireTerminalAuth(req)
   if ('error' in auth) return auth.error
-  const body = await req.json()
+  const body = await req.json() as Record<string, unknown>
   const current = await readSettings()
-  const updated = { ...current, ...body }
+  const filtered = Object.fromEntries(
+    Object.entries(body).filter(([k]) => ALLOWED_SETTINGS_KEYS.has(k))
+  ) as Record<string, string>
+  const updated = { ...current, ...filtered }
   await writeSettings(updated)
   return NextResponse.json({ ok: true })
 }

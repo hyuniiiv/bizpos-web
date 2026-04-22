@@ -2,14 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createTerminalJWT } from '@/lib/terminal/jwt'
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit'
+import { apiError } from '@/lib/api/error'
 
 export async function POST(request: NextRequest) {
   const rl = checkRateLimit(getRateLimitKey(request, 'device-activate'), 5, 15 * 60 * 1000)
   if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'RATE_LIMITED', retryAfter: rl.retryAfter },
-      { status: 429 }
-    )
+    return apiError('RATE_LIMITED', `너무 많은 시도입니다. ${rl.retryAfter}초 후 다시 시도하세요`, 429)
   }
 
   let activationCode: string | undefined
