@@ -8,7 +8,7 @@
 import { startConfigPolling, stopConfigPolling } from './configSync'
 import { flushOfflineQueue } from './txSync'
 
-export { saveTransaction } from './txSync'
+export { addToOfflineQueue, getOfflineQueueCount } from './txSync'
 
 const ACCESS_TOKEN_KEY = 'terminal_access_token'
 const TERMINAL_ID_KEY = 'terminal_id'
