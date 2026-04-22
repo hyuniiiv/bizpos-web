@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Transaction } from '@/types/payment'
 import { SummaryBar } from '@/components/admin/SummaryBar'
 import { RealtimeTable } from '@/components/admin/RealtimeTable'
+import { useSettingsStore } from '@/lib/store/settingsStore'
 
 type ConnectionStatus = '연결됨' | '연결 끊김' | '재연결 중'
 
@@ -10,6 +11,7 @@ const SSE_MAX_BACKOFF_MS = 30_000
 const SSE_BASE_DELAY_MS = 1_000
 
 export default function AdminRealtimePage() {
+  const deviceToken = useSettingsStore(state => state.deviceToken)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [totalAmount, setTotalAmount] = useState(0)
@@ -95,7 +97,7 @@ export default function AdminRealtimePage() {
     try {
       const offset = (page - 1) * PAGE_SIZE
       const res = await fetch(`/api/transactions?date=${date}&limit=${PAGE_SIZE}&offset=${offset}`, {
-        headers: { 'X-Internal-Key': process.env.NEXT_PUBLIC_INTERNAL_POS_KEY ?? '' },
+        headers: { 'Authorization': `Bearer ${deviceToken ?? ''}` },
       })
       const data = await res.json()
       setTransactions(data.items ?? [])

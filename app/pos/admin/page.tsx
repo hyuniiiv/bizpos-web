@@ -155,7 +155,7 @@ export default function PosAdminPage() {
 
   const loadRtTxs = async (date: string, page = 1) => {
     try {
-      const res = await fetch(`/api/transactions?date=${date}&limit=20&offset=${(page - 1) * 20}`, { headers: { 'X-Internal-Key': process.env.NEXT_PUBLIC_INTERNAL_POS_KEY ?? '' } })
+      const res = await fetch(`/api/transactions?date=${date}&limit=20&offset=${(page - 1) * 20}`, { headers: { 'Authorization': `Bearer ${deviceToken ?? ''}` } })
       const d = await res.json()
       setRtTxs(d.items ?? []); setRtTotalCount(d.total ?? 0); setRtTotalAmount(d.totalAmount ?? 0)
     } catch {}
@@ -164,7 +164,7 @@ export default function PosAdminPage() {
   const loadHistTxs = useCallback(async () => {
     setHistLoading(true); setSelectedIds(new Set())
     try {
-      const res = await fetch(`/api/transactions?date=${histDates.start}&limit=200`, { headers: { 'X-Internal-Key': process.env.NEXT_PUBLIC_INTERNAL_POS_KEY ?? '' } })
+      const res = await fetch(`/api/transactions?date=${histDates.start}&limit=200`, { headers: { 'Authorization': `Bearer ${deviceToken ?? ''}` } })
       const d = await res.json()
       setHistTxs(d.items ?? []); setHistTotal(d.total ?? 0); setHistTotalAmount(d.totalAmount ?? 0)
     } finally { setHistLoading(false) }
@@ -187,7 +187,7 @@ export default function PosAdminPage() {
 
   const handleCancel = async (tx: Transaction) => {
     if (!confirm(`거래번호 ${tx.merchantOrderID} 를 취소하시겠습니까?`)) return
-    const res = await fetch('/api/payment/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Internal-Key': process.env.NEXT_PUBLIC_INTERNAL_POS_KEY ?? '' }, body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName }) }).then(r => r.json())
+    const res = await fetch('/api/payment/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` }, body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName }) }).then(r => r.json())
     if (res.code === '0000') { alert('취소 완료'); loadHistTxs() } else alert(`취소 실패: ${res.msg}`)
   }
 

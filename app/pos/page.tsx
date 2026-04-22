@@ -323,7 +323,7 @@ export default function PosPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Internal-Key': process.env.NEXT_PUBLIC_INTERNAL_POS_KEY ?? '',
+          'Authorization': `Bearer ${deviceToken ?? ''}`,
         },
         body: JSON.stringify({
           merchantOrderDt,
