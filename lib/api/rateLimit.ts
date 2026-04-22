@@ -3,10 +3,6 @@ interface RateLimitEntry {
   resetAt: number
 }
 
-interface RequestLike {
-  headers: { get: (k: string) => string | null }
-}
-
 const store = new Map<string, RateLimitEntry>()
 
 export function checkRateLimit(
@@ -38,7 +34,7 @@ export function checkRateLimit(
   return { allowed: true }
 }
 
-export function getRateLimitKey(_req: RequestLike, suffix: string): string {
+export function getRateLimitKey(_req: unknown, suffix: string): string {
   // Electron: all connections are local, no trusted proxy — use fixed local key
   return `127.0.0.1:${suffix}`
 }
