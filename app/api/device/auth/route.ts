@@ -56,17 +56,6 @@ export async function POST(req: NextRequest) {
     return apiError('INVALID_CREDENTIALS', '아이디 또는 비밀번호가 올바르지 않습니다', 401)
   }
 
-  // merchant_key 별도 조회 (PostgREST FK 캐시 의존 제거)
-  let merchantKey: { mid: string; enc_key: string; online_ak: string } | null = null
-  if (terminal.merchant_key_id) {
-    const { data: mk } = await supabase
-      .from('merchant_keys')
-      .select('mid, enc_key, online_ak')
-      .eq('id', terminal.merchant_key_id)
-      .single()
-    merchantKey = mk ?? null
-  }
-
   const accessToken = await createTerminalJWT({
     terminalId: terminal.id,
     merchantId: terminal.merchant_id,
@@ -96,14 +85,5 @@ export async function POST(req: NextRequest) {
     merchantId: terminal.merchant_id,
     config: configRow?.config ?? null,
     configVersion: configRow?.version ?? 0,
-    merchantKey: merchantKey
-      ? {
-          id: terminal.merchant_key_id,
-          mid: merchantKey.mid,
-          encKey: merchantKey.enc_key,
-          onlineAK: merchantKey.online_ak,
-        }
-      : null,
-
   })
 }

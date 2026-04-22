@@ -68,23 +68,6 @@ export async function POST(request: NextRequest) {
     .limit(1)
     .single()
 
-  let merchantKey = null
-  if (terminal.merchant_key_id) {
-    const { data: mk } = await supabase
-      .from('merchant_keys')
-      .select('mid, enc_key, online_ak')
-      .eq('id', terminal.merchant_key_id)
-      .single()
-    if (mk) {
-      merchantKey = {
-        id: terminal.merchant_key_id,
-        mid: mk.mid,
-        encKey: mk.enc_key,
-        onlineAK: mk.online_ak,
-      }
-    }
-  }
-
   return NextResponse.json({
     terminalId: terminal.id,
     termId: terminal.term_id,
@@ -94,6 +77,5 @@ export async function POST(request: NextRequest) {
     terminalType: terminal.terminal_type ?? 'ticket_checker',
     config: configRow?.config ?? null,
     configVersion: configRow?.version ?? 0,
-    merchantKey,
   })
 }
