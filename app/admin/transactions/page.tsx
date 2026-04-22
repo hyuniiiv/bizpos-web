@@ -4,6 +4,7 @@ import type { Transaction } from '@/types/payment'
 import { TransactionRow } from '@/components/admin/TransactionRow'
 import { formatDateTime } from '@/lib/utils'
 import { useSettingsStore } from '@/lib/store/settingsStore'
+import { getServerUrl } from '@/lib/serverUrl'
 
 type PaymentMethodFilter = '전체' | 'QR' | '바코드' | 'RF카드'
 type StatusFilter = '전체' | '정상' | '취소' | '오프라인'
@@ -78,7 +79,7 @@ export default function TransactionsPage() {
 
   const handleCancel = async (tx: Transaction) => {
     if (!confirm(`거래번호 ${tx.merchantOrderID} 를 취소하시겠습니까?`)) return
-    const res = await fetch('/api/payment/cancel', {
+    const res = await fetch(getServerUrl() + '/api/payment/cancel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` },
       body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName }),
@@ -93,7 +94,7 @@ export default function TransactionsPage() {
     if (!confirm(`선택한 ${targets.length}건을 일괄 취소하시겠습니까?`)) return
     let failed = 0
     for (const tx of targets) {
-      const res = await fetch('/api/payment/cancel', {
+      const res = await fetch(getServerUrl() + '/api/payment/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName }),

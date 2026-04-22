@@ -5,6 +5,7 @@
  */
 
 import { markPaymentSynced } from '@/lib/db/indexeddb'
+import { getServerUrl } from '@/lib/serverUrl'
 
 const ACCESS_TOKEN_KEY = 'terminal_access_token'
 const OFFLINE_QUEUE_KEY = 'tx_offline_queue'
@@ -58,7 +59,7 @@ export async function flushOfflineQueue(): Promise<{ synced: number; failed: num
   if (!token || queue.length === 0) return { synced: 0, failed: 0 }
 
   try {
-    const res = await fetch('/api/payment/offline', {
+    const res = await fetch(getServerUrl() + '/api/payment/offline', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

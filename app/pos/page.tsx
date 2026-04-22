@@ -9,6 +9,7 @@ import { identifyInput } from '@/lib/payment/barcode'
 import { generateOrderId } from '@/lib/payment/order'
 import { savePendingPayment, checkAndMarkBarcode, getPendingPayments, markPaymentSynced } from '@/lib/db/indexeddb'
 import { createDeviceBridge, type DeviceBridge } from '@/lib/device/bridge'
+import { getServerUrl } from '@/lib/serverUrl'
 
 import ActivationScreen from '@/components/pos/ActivationScreen'
 import PosScreen from '@/components/pos/screens/PosScreen'
@@ -146,7 +147,7 @@ export default function PosPage() {
       if (retryDelays[attempt] > 0) await new Promise(r => setTimeout(r, retryDelays[attempt]))
       if (!navigator.onLine) return
       try {
-        const res = await fetch('/api/payment/offline', {
+        const res = await fetch(getServerUrl() + '/api/payment/offline', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ records: pending }),
@@ -291,7 +292,7 @@ export default function PosPage() {
         return
       }
 
-      const reserveRes = await fetch('/api/payment/reserve', {
+      const reserveRes = await fetch(getServerUrl() + '/api/payment/reserve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -319,7 +320,7 @@ export default function PosPage() {
         return
       }
 
-      const approveRes = await fetch('/api/payment/approve', {
+      const approveRes = await fetch(getServerUrl() + '/api/payment/approve', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

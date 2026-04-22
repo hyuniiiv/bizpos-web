@@ -9,6 +9,7 @@ import BarcodeReader from '@/components/pos/BarcodeReader'
 import StatusBar from '@/components/pos/StatusBar'
 import { identifyInput } from '@/lib/payment/barcode'
 import { generateOrderId } from '@/lib/payment/order'
+import { getServerUrl } from '@/lib/serverUrl'
 
 type CartItem = { menuId: string; name: string; price: number; qty: number }
 type PosPhase = 'order' | 'processing' | 'success' | 'fail'
@@ -50,7 +51,7 @@ export default function PosScreen() {
       const productName = cart.map(c => c.name).join(', ')
       const identity = identifyInput(barcodeInfo)
 
-      const reserveRes = await fetch('/api/payment/reserve', {
+      const reserveRes = await fetch(getServerUrl() + '/api/payment/reserve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,7 +72,7 @@ export default function PosScreen() {
 
       if (reserveRes.code !== '0000') { setErrorMsg(reserveRes.msg); setPhase('fail'); return }
 
-      const approveRes = await fetch('/api/payment/approve', {
+      const approveRes = await fetch(getServerUrl() + '/api/payment/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` },
         body: JSON.stringify({

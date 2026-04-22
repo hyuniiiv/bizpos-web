@@ -9,8 +9,8 @@ const http = require('http')
 const isDev = !app.isPackaged
 const PORT = process.env.PORT || 3000
 
-// 운영 환경 외부 URL (환경변수 BIZPOS_PROD_URL 로 주입, 미설정 시 로컬 standalone 서버 사용)
-const PROD_URL = process.env.BIZPOS_PROD_URL || null
+// Electron은 항상 로컬 standalone 서버를 실행 (오프라인 시작 보장)
+// 온라인 API 호출(Supabase, BizplayPay)은 앱 레이어에서 네트워크 상태에 따라 처리
 
 // --kiosk 플래그로 키오스크 모드 토글
 const isKiosk = process.argv.includes('--kiosk')
@@ -43,7 +43,6 @@ function waitForServer(url, maxRetries = 60) {
 // ---------------------------------------------------------------------------
 async function startNextServer() {
   if (isDev) return // 개발 모드는 next dev가 별도 실행됨
-  if (PROD_URL) return // 외부 운영 URL이 지정된 경우 로컬 서버 불필요
 
   // electron-builder extraResources 로 복사된 경로
   const serverScript = path.join(
@@ -72,6 +71,23 @@ async function startNextServer() {
 // 권한 핸들러 등록 (카메라, 시리얼 포트, USB, HID)
 // ---------------------------------------------------------------------------
 function setupPermissions() {
+  // Vercel 서버(NEXT_PUBLIC_SERVER_URL)로의 cross-origin 결제 API 호출 허용
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const origin = details.responseHeaders?.['access-control-allow-origin']
+    if (!origin) {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Access-Control-Allow-Origin': ['*'],
+          'Access-Control-Allow-Headers': ['Content-Type, Authorization'],
+          'Access-Control-Allow-Methods': ['GET, POST, OPTIONS'],
+        },
+      })
+    } else {
+      callback({ responseHeaders: details.responseHeaders })
+    }
+  })
+
   session.defaultSession.setPermissionRequestHandler(
     (_webContents, permission, callback) => {
       const allowed = ['media', 'serial', 'usb', 'hid']
@@ -203,10 +219,10 @@ function createWindow() {
     }
   })
 
-  // 개발: next dev URL / 프로덕션: 외부 URL(BIZPOS_PROD_URL) 또는 standalone 서버
+  // 개발: next dev URL / 프로덕션: 항상 로컬 standalone 서버
   const appURL = isDev
     ? `http://localhost:${PORT}`
-    : (PROD_URL || `http://127.0.0.1:${PORT}`)
+    : `http://127.0.0.1:${PORT}`
 
   mainWindow.loadURL(appURL)
 
