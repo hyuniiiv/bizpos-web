@@ -1,0 +1,101 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { createTerminalJWT } from '@/lib/terminal/jwt'
+import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit'
+
+export async function POST(request: NextRequest) {
+  const rl = checkRateLimit(getRateLimitKey(request, 'device-activate'), 5, 15 * 60 * 1000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'RATE_LIMITED', retryAfter: rl.retryAfter },
+      { status: 429 }
+    )
+  }
+
+  let activationCode: string | undefined
+  let terminalName: string | undefined
+  try {
+    const body = await request.json()
+    activationCode = body.activationCode
+    terminalName = body.terminalName
+  } catch {
+    return NextResponse.json({ error: 'MISSING_CODE' }, { status: 400 })
+  }
+
+  if (!activationCode) {
+    return NextResponse.json({ error: 'MISSING_CODE' }, { status: 400 })
+  }
+
+  const supabase = createAdminClient()
+
+  const { data: terminal, error } = await supabase
+    .from('terminals')
+    .select('*, merchants(id, name, merchant_id)')
+    .eq('activation_code', activationCode)
+    .single()
+
+  if (error || !terminal) {
+    return NextResponse.json({ error: 'INVALID_CODE' }, { status: 404 })
+  }
+
+  if (terminal.access_token) {
+    return NextResponse.json({ error: 'ALREADY_ACTIVATED' }, { status: 409 })
+  }
+
+  const accessToken = await createTerminalJWT({
+    terminalId: terminal.id,
+    merchantId: terminal.merchant_id,
+    termId: terminal.term_id,
+  })
+
+  const { error: updateError } = await supabase
+    .from('terminals')
+    .update({
+      access_token: accessToken,
+      name: terminalName || terminal.name,
+      status: 'online',
+      last_seen_at: new Date().toISOString(),
+    })
+    .eq('id', terminal.id)
+
+  if (updateError) {
+    return NextResponse.json({ error: 'ACTIVATION_FAILED' }, { status: 500 })
+  }
+
+  const { data: configRow } = await supabase
+    .from('terminal_configs')
+    .select('config, version')
+    .eq('terminal_id', terminal.id)
+    .order('version', { ascending: false })
+    .limit(1)
+    .single()
+
+  let merchantKey = null
+  if (terminal.merchant_key_id) {
+    const { data: mk } = await supabase
+      .from('merchant_keys')
+      .select('mid, enc_key, online_ak')
+      .eq('id', terminal.merchant_key_id)
+      .single()
+    if (mk) {
+      merchantKey = {
+        id: terminal.merchant_key_id,
+        mid: mk.mid,
+        encKey: mk.enc_key,
+        onlineAK: mk.online_ak,
+      }
+    }
+  }
+
+  return NextResponse.json({
+    terminalId: terminal.id,
+    termId: terminal.term_id,
+    accessToken,
+    merchantId: terminal.merchant_id,
+    corner: terminal.corner,
+    terminalType: terminal.terminal_type ?? 'ticket_checker',
+    config: configRow?.config ?? null,
+    configVersion: configRow?.version ?? 0,
+    merchantKey,
+  })
+}
