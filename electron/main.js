@@ -51,12 +51,15 @@ async function startNextServer() {
     'server.js'
   )
 
-  nextServerProcess = spawn('node', [serverScript], {
+  // ELECTRON_RUN_AS_NODE=1 로 Electron 내장 Node.js 런타임을 사용
+  // 시스템에 Node.js가 설치되지 않아도 서버 기동 가능
+  nextServerProcess = spawn(process.execPath, [serverScript], {
     env: {
       ...process.env,
       PORT: String(PORT),
       NODE_ENV: 'production',
       HOSTNAME: '127.0.0.1',
+      ELECTRON_RUN_AS_NODE: '1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
