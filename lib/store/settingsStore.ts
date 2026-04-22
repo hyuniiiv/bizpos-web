@@ -29,7 +29,6 @@ export const useSettingsStore = create<SettingsStore>()(
       config: {
         termId: '01',
         merchantId: '',
-        onlineAK: '',
         bizNo: '',
         corner: '구내식당',
         adminPin: '1234',
@@ -40,8 +39,6 @@ export const useSettingsStore = create<SettingsStore>()(
         barcodeReaderType: 'keyboard' as const,
         barcodePort: 'COM4',
         externalDisplay: true,
-        mid: '',
-        encKey: '',
         cafeteriaMode: false,
         inputPolicy: {
           barcode: 'bizplay_payment',

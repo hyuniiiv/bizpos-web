@@ -534,14 +534,6 @@ export default function PosAdminPage() {
                 <input readOnly className={readOnlyCls} style={readOnlyStyle} value={config.merchantId || '—'} onChange={() => {}} />
               </div>
               <div>
-                <label className="text-sm font-semibold text-white/60 mb-1.5 block">HEADER 인증키 (OnlineAK)</label>
-                <input readOnly type="password" className={readOnlyCls} style={readOnlyStyle} value={config.onlineAK || ''} onChange={() => {}} />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-white/60 mb-1.5 block">암복호화 KEY (encKey)</label>
-                <input readOnly type="password" className={readOnlyCls} style={readOnlyStyle} value={config.encKey || ''} onChange={() => {}} />
-              </div>
-              <div>
                 <label className="text-sm font-semibold text-white/60 mb-2 block">API 환경</label>
                 <div className="flex gap-4">
                   {(['production', 'development'] as const).map(env => (

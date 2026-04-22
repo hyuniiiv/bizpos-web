@@ -64,7 +64,6 @@ export interface DeviceConfig {
   termId: string
   termName?: string                            // 단말기 이름 (활성화 시 서버에서 수신)
   merchantId: string
-  onlineAK: string
   bizNo: string
   corner: string
   adminPin: string
@@ -75,8 +74,6 @@ export interface DeviceConfig {
   barcodeReaderType: 'keyboard' | 'serial' | 'camera'  // 바코드 리더 입력 방식
   barcodePort: string                         // 시리얼 바코드 리더 COM 포트
   externalDisplay: boolean                    // 외부 디스플레이 사용 여부
-  mid: string                                 // 비플페이 가맹점코드 MID
-  encKey: string                              // AES256-CBC 암복호화 키
   cafeteriaMode: boolean                      // 학생식당 모드 (판매현황 동시 표시)
   tableCount?: number                         // 테이블오더 테이블 수
   receiptPrint?: boolean                      // 영수증 출력 여부
