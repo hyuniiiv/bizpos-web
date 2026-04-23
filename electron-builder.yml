@@ -23,6 +23,7 @@ files:
   - node_modules/electron-updater/**
   - node_modules/builder-util-runtime/**
   - node_modules/debug/**
+  - node_modules/sax/**
   - node_modules/ms/**
   - node_modules/fs-extra/**
   - node_modules/graceful-fs/**
