@@ -30,7 +30,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getMenus: () => ipcRenderer.invoke('db:getMenus'),
     saveMenu: (menu) => ipcRenderer.invoke('db:saveMenu', menu),
     deleteMenu: (id) => ipcRenderer.invoke('db:deleteMenu', id),
+    queueMenuChange: (change) => ipcRenderer.invoke('db:queueMenuChange', change),
+    getPendingMenuChanges: () => ipcRenderer.invoke('db:getPendingMenuChanges'),
+    clearPendingMenuChange: (id) => ipcRenderer.invoke('db:clearPendingMenuChange', id),
+    incrementMenuChangeAttempts: (id) => ipcRenderer.invoke('db:incrementMenuChangeAttempts', id),
+    getPendingMenuCount: () => ipcRenderer.invoke('db:getPendingMenuCount'),
   },
+
+  // 메뉴 동기화 큐 (flat 노출: menu.repository.ts 계약용)
+  queueMenuChange: (change) => ipcRenderer.invoke('db:queueMenuChange', change),
+  getPendingMenuChanges: () => ipcRenderer.invoke('db:getPendingMenuChanges'),
+  clearPendingMenuChange: (id) => ipcRenderer.invoke('db:clearPendingMenuChange', id),
+  incrementMenuChangeAttempts: (id) => ipcRenderer.invoke('db:incrementMenuChangeAttempts', id),
+  getPendingMenuCount: () => ipcRenderer.invoke('db:getPendingMenuCount'),
 
   // 앱 종료
   quitApp: () => ipcRenderer.invoke('app:quit'),

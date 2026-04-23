@@ -57,14 +57,27 @@ export class BizplayClient {
       EV,
       VV,
     }
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': `OnlineAK ${this.onlineAK}`,
-      },
-      body: JSON.stringify(requestBody),
-    })
+    // Keep-alive + connection 재사용 (Vercel ↔ Bizplay).
+    // Node 18+ undici 는 기본 pooling 하지만 명시적으로 유지 신호 전달.
+    // AbortController 15초 timeout — Bizplay hang 시 빠른 실패로 단말기 lock 방지.
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15_000)
+    let res: Response
+    try {
+      res = await fetch(`${this.baseUrl}${path}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': `OnlineAK ${this.onlineAK}`,
+          'Connection': 'keep-alive',
+        },
+        body: JSON.stringify(requestBody),
+        keepalive: true,
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${await res.text()}`)
     }

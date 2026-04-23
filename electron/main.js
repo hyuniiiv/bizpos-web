@@ -27,6 +27,27 @@ db.exec(`
     approvedAt TEXT,
     createdAt TEXT
   );
+  CREATE TABLE IF NOT EXISTS menus (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    mealType TEXT,
+    displayAmount INTEGER,
+    paymentAmount INTEGER,
+    startTime TEXT,
+    endTime TEXT,
+    soundFile TEXT,
+    isActive INTEGER,
+    count INTEGER,
+    updated_at INTEGER DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS pending_menu_changes (
+    id TEXT PRIMARY KEY,
+    operation TEXT NOT NULL,
+    payload TEXT,
+    updated_at INTEGER NOT NULL,
+    queued_at INTEGER NOT NULL,
+    attempts INTEGER DEFAULT 0
+  );
 `)
 
 // IPC 핸들러 (DB CRUD)
@@ -64,6 +85,53 @@ ipcMain.handle('db:saveMenu', (event, menu) => {
 ipcMain.handle('db:deleteMenu', (event, id) => {
   db.prepare('DELETE FROM menus WHERE id = ?').run(id)
   return { success: true }
+})
+
+// ============================================================
+// 메뉴 동기화 큐 (오프라인/서버 push 실패 시 재시도 대기열)
+// ============================================================
+ipcMain.handle('db:queueMenuChange', (event, change) => {
+  const stmt = db.prepare(`
+    INSERT OR REPLACE INTO pending_menu_changes
+    (id, operation, payload, updated_at, queued_at, attempts)
+    VALUES (?, ?, ?, ?, ?, COALESCE((SELECT attempts FROM pending_menu_changes WHERE id = ?), 0))
+  `)
+  stmt.run(
+    change.id,
+    change.operation,
+    change.payload ? JSON.stringify(change.payload) : null,
+    change.updated_at,
+    Date.now(),
+    change.id
+  )
+  return { success: true }
+})
+
+ipcMain.handle('db:getPendingMenuChanges', () => {
+  const rows = db.prepare('SELECT * FROM pending_menu_changes ORDER BY queued_at ASC').all()
+  return rows.map(r => ({
+    id: r.id,
+    operation: r.operation,
+    payload: r.payload ? JSON.parse(r.payload) : null,
+    updated_at: r.updated_at,
+    queued_at: r.queued_at,
+    attempts: r.attempts,
+  }))
+})
+
+ipcMain.handle('db:clearPendingMenuChange', (event, id) => {
+  db.prepare('DELETE FROM pending_menu_changes WHERE id = ?').run(id)
+  return { success: true }
+})
+
+ipcMain.handle('db:incrementMenuChangeAttempts', (event, id) => {
+  db.prepare('UPDATE pending_menu_changes SET attempts = attempts + 1 WHERE id = ?').run(id)
+  return { success: true }
+})
+
+ipcMain.handle('db:getPendingMenuCount', () => {
+  const row = db.prepare('SELECT COUNT(*) as count FROM pending_menu_changes').get()
+  return row.count
 })
 
 // Electron은 정적 HTML(Next.js static export)을 file:// 프로토콜로 로드
