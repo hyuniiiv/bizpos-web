@@ -7,10 +7,19 @@ directories:
   output: dist-electron
 
 # 패키징에 포함할 파일 (Next.js 런타임 제외 - extraResources로 별도 포함)
+# electron-builder files 패턴은 뒤에 오는 패턴이 앞을 덮어씀.
+# 따라서 먼저 전체 node_modules/** 를 제외한 뒤, 필요한 패키지만 명시적으로 포함.
 # electron-updater 는 electron/main.js 에서 직접 require 하므로 asar 에 포함해야 함.
 files:
   - electron/**
   - package.json
+  - "!node_modules/**"
+  - "!src/**"
+  - "!app/**"
+  - "!components/**"
+  - "!lib/**"
+  - "!public/**"
+  - "!.next/**"
   - node_modules/electron-updater/**
   - node_modules/builder-util-runtime/**
   - node_modules/fs-extra/**
@@ -19,13 +28,6 @@ files:
   - node_modules/universalify/**
   - node_modules/semver/**
   - node_modules/lazy-val/**
-  - "!node_modules/**"
-  - "!src/**"
-  - "!app/**"
-  - "!components/**"
-  - "!lib/**"
-  - "!public/**"
-  - "!.next/**"
 
 # Next.js standalone + 루트 node_modules를 조합해 resources/nextjs/ 에 self-contained 배치.
 # standalone만으로는 pnpm 환경에서 node_modules/next 해석이 실패하는 사례가 발생해,
