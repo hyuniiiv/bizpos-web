@@ -24,19 +24,25 @@ jobs:
         with:
           version: 9
 
-      - name: Install dependencies
+      - name: Install dependencies (hoisted)
         # node-linker=hoisted: pnpm을 npm/yarn처럼 flat 설치로 강제
-        # Next.js standalone은 pnpm의 심볼릭 링크 구조에서 node_modules를 제대로 패키징하지 못함
-        # (standalone/node_modules/next 가 외부 .pnpm store를 가리키는 댕글링 링크가 됨)
-        # hoisted 모드에서는 실제 파일이 복사되어 standalone이 진짜 self-contained 해진다.
+        # Next.js standalone이 pnpm의 symlink 구조에서 node_modules 패키징 실패하는 문제 회피.
         env:
           NPM_CONFIG_NODE_LINKER: hoisted
         run: pnpm install --frozen-lockfile
 
-      - name: Build Next.js + Electron (Windows)
+      - name: Verify install is hoisted (diagnostic)
+        shell: pwsh
+        run: |
+          Write-Host "=== node_modules/next 타입 (symlink 아니어야 함) ==="
+          $item = Get-Item node_modules/next
+          Write-Host "Type: $($item.Attributes)"
+          Write-Host "LinkType: $($item.LinkType)"
+          Test-Path node_modules/next/package.json
+
+      - name: Next.js build (standalone)
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          # 운영 환경 변수 — GitHub Secrets에 등록 필요
+          BUILD_TARGET: electron
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -45,7 +51,67 @@ jobs:
           BIZPLAY_BASE_URL: ${{ secrets.BIZPLAY_BASE_URL }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
           NEXT_PUBLIC_SERVER_URL: ${{ secrets.NEXT_PUBLIC_SERVER_URL }}
-        run: pnpm run electron:build:win --publish always
+        run: pnpm exec next build
+
+      - name: Diagnose standalone output
+        shell: pwsh
+        run: |
+          Write-Host "=== .next/standalone 1-depth ==="
+          Get-ChildItem .next/standalone | Select-Object Name, Attributes | Format-Table -AutoSize
+          Write-Host "=== .next/standalone/bizpos-web 존재 여부 ==="
+          Test-Path .next/standalone/bizpos-web
+          if (Test-Path .next/standalone/bizpos-web) {
+            Write-Host "=== standalone/bizpos-web/ 1-depth ==="
+            Get-ChildItem .next/standalone/bizpos-web | Select-Object Name, Attributes | Format-Table -AutoSize
+          }
+          Write-Host "=== server.js 위치 검색 ==="
+          Get-ChildItem -Recurse -Filter server.js -Path .next/standalone -Depth 3 | Select-Object FullName
+          Write-Host "=== node_modules/next 위치 검색 (standalone 내부) ==="
+          Get-ChildItem -Recurse -Directory -Filter next -Path .next/standalone -Depth 4 | Where-Object { $_.Parent.Name -eq 'node_modules' } | Select-Object FullName
+
+      - name: Ensure standalone has prod node_modules (fallback)
+        # Next.js standalone이 일부 모듈을 누락시키면 require('next') 실패한다.
+        # standalone 내부 node_modules 폴더에 루트 node_modules의 실제 내용을 병합 복사.
+        # (hoisted 모드라 이미 flat 구조이므로 dereference 문제 없음)
+        shell: pwsh
+        run: |
+          $targetBase = if (Test-Path .next/standalone/bizpos-web) { ".next/standalone/bizpos-web" } else { ".next/standalone" }
+          $targetNM = Join-Path $targetBase "node_modules"
+          New-Item -ItemType Directory -Force -Path $targetNM | Out-Null
+          Write-Host "Merging root node_modules into $targetNM"
+          # 개발 전용 대형 패키지는 제외
+          $exclude = @('electron','electron-builder','electron-updater','app-builder-lib','@electron','@types','typescript','eslint','eslint-config-next','@eslint','concurrently','cross-env','wait-on','@babel','babel-plugin-react-compiler')
+          Get-ChildItem node_modules -Force | Where-Object {
+            $_.Name -notin $exclude -and $_.Name -notlike '.*'
+          } | ForEach-Object {
+            $dest = Join-Path $targetNM $_.Name
+            if (-not (Test-Path $dest)) {
+              Copy-Item -Recurse -Force -Path $_.FullName -Destination $dest
+            }
+          }
+          Write-Host "=== 최종 $targetNM 1-depth count ==="
+          (Get-ChildItem $targetNM -Force).Count
+
+      - name: Package Electron (windows)
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: pnpm exec electron-builder --win --publish always
+
+      - name: Diagnose packaged output
+        if: always()
+        shell: pwsh
+        run: |
+          $base = "dist-electron/win-unpacked/resources/nextjs"
+          if (Test-Path $base) {
+            Write-Host "=== $base 1-depth ==="
+            Get-ChildItem $base | Select-Object Name | Format-Table -AutoSize
+            Write-Host "=== server.js 존재 ==="
+            Test-Path "$base/server.js"
+            Write-Host "=== node_modules/next 존재 ==="
+            Test-Path "$base/node_modules/next/package.json"
+          } else {
+            Write-Host "$base 없음"
+          }
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
