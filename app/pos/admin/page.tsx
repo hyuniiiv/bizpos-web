@@ -12,6 +12,7 @@ import { RealtimeTable } from '@/components/admin/RealtimeTable'
 import { TransactionRow } from '@/components/admin/TransactionRow'
 import { formatDateTime } from '@/lib/utils'
 import { getServerUrl } from '@/lib/serverUrl'
+import { createClient } from '@/lib/supabase/client'
 
 type MainTab = 'status' | 'menus' | 'transactions' | 'settings'
 type TxView = 'realtime' | 'history'
@@ -29,7 +30,7 @@ const readOnlyStyle = { background: 'rgba(255,255,255,0.03)', border: '1px solid
 
 export default function PosAdminPage() {
   const router = useRouter()
-  const { config, updateConfig, verifyPin, clearDeviceToken, terminalType, deviceToken } = useSettingsStore()
+  const { config, updateConfig, verifyPin, clearDeviceToken, terminalType, deviceToken, deviceTerminalId } = useSettingsStore()
   const { menus, periods, resetCount, clearAll, addMenu, updateMenu, deleteMenu, setPeriods, serviceCodes, addServiceCode, deleteServiceCode } = useMenuStore()
 
   // PIN
@@ -146,6 +147,42 @@ export default function PosAdminPage() {
         retryTimerRef.current = setTimeout(connectSSE, delay)
       })
   }, [])
+
+  // 버전 보고 (Electron 전용)
+  useEffect(() => {
+    if (!deviceToken || !deviceTerminalId) return
+    const api = (window as Window & { electronAPI?: { getVersion?: () => Promise<string> } }).electronAPI
+    if (!api?.getVersion) return
+    api.getVersion().then((version) => {
+      fetch('/api/terminal/report-version', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken}` },
+        body: JSON.stringify({ version }),
+      }).catch(() => {})
+    })
+  }, [deviceToken, deviceTerminalId])
+
+  // Supabase Realtime: 업데이트 지시 수신
+  useEffect(() => {
+    if (!deviceTerminalId) return
+    const supabase = createClient()
+    const channel = supabase
+      .channel('terminal-update-cmd')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'terminals',
+        filter: `id=eq.${deviceTerminalId}`,
+      }, (payload) => {
+        const newVal = (payload.new as { update_requested_at?: string }).update_requested_at
+        const oldVal = (payload.old as { update_requested_at?: string }).update_requested_at
+        if (newVal && newVal !== oldVal) {
+          ;(window as Window & { electronAPI?: { checkUpdate?: () => void } }).electronAPI?.checkUpdate?.()
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [deviceTerminalId])
 
   useEffect(() => {
     if (!unlocked || tab !== 'transactions' || txView !== 'realtime') return

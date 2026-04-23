@@ -24,6 +24,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 앱 종료
   quitApp: () => ipcRenderer.invoke('app:quit'),
 
+  // 앱 버전 조회
+  getVersion: () => ipcRenderer.invoke('app:getVersion'),
+
   // 수동 업데이트 확인
   checkUpdate: () => ipcRenderer.invoke('app:checkUpdate'),
 

@@ -286,6 +286,8 @@ ipcMain.handle('app:checkUpdate', () => {
   }
 })
 
+ipcMain.handle('app:getVersion', () => app.getVersion())
+
 // ============================================================
 // Serial Port IPC Handlers (경광봉 / 외부 디스플레이 제어)
 // ============================================================
