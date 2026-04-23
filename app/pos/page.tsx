@@ -51,8 +51,13 @@ export default function PosPage() {
 
   useEffect(() => {
     if (!deviceToken || deviceToken === 'manual') return
-    const stop = startRemoteCommandListener()
-    return () => stop()
+    let stop = () => {}
+    try {
+      stop = startRemoteCommandListener()
+    } catch (err) {
+      console.warn('[pos] remote command listener failed to start:', err)
+    }
+    return () => { try { stop() } catch { /* ignore */ } }
   }, [deviceToken])
 
   useEffect(() => {

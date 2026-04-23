@@ -7,6 +7,8 @@
 import { getBrowserClient } from '@/lib/supabase/browser'
 import { flushOfflineQueue } from '@/lib/txSync'
 import { getServerUrl } from '@/lib/serverUrl'
+import { useSettingsStore } from '@/lib/store/settingsStore'
+import { PaymentRepository } from '@/lib/repository/payment.repository'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 const ACCESS_TOKEN_KEY = 'terminal_access_token'
@@ -62,6 +64,11 @@ async function executeCommand(cmd: CommandRow): Promise<{ result?: unknown; erro
     case 'flush_queue': {
       try {
         const r = await flushOfflineQueue()
+        // UI 갱신: 동기화 후 잔여 건수 업데이트
+        try {
+          const remaining = await PaymentRepository.getPendingPayments()
+          useSettingsStore.getState().setPendingCount(remaining.length)
+        } catch { /* UI 갱신 실패는 무시 */ }
         return { result: r }
       } catch (e) {
         return { error: e instanceof Error ? e.message : 'FLUSH_FAILED' }
@@ -114,34 +121,41 @@ async function handleCommand(cmd: CommandRow): Promise<void> {
 }
 
 export function startRemoteCommandListener(): () => void {
-  if (channel) return () => {}
-  const terminalId = typeof window !== 'undefined' ? localStorage.getItem(TERMINAL_ID_KEY) : null
-  if (!terminalId) return () => {}
+  try {
+    if (channel) return () => {}
+    const terminalId = typeof window !== 'undefined' ? localStorage.getItem(TERMINAL_ID_KEY) : null
+    if (!terminalId) return () => {}
 
-  const supabase = getBrowserClient()
+    const supabase = getBrowserClient()
 
-  channel = supabase
-    .channel(`terminal-commands-${terminalId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'terminal_commands',
-        filter: `terminal_id=eq.${terminalId}`,
-      },
-      (payload) => {
-        const row = payload.new as CommandRow
-        if (row.executed_at) return
-        void handleCommand(row)
-      },
-    )
-    .subscribe()
+    channel = supabase
+      .channel(`terminal-commands-${terminalId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'terminal_commands',
+          filter: `terminal_id=eq.${terminalId}`,
+        },
+        (payload) => {
+          const row = payload.new as CommandRow
+          if (row.executed_at) return
+          void handleCommand(row)
+        },
+      )
+      .subscribe()
 
-  return () => {
-    if (channel) {
-      void supabase.removeChannel(channel)
-      channel = null
+    return () => {
+      try {
+        if (channel) {
+          void getBrowserClient().removeChannel(channel)
+          channel = null
+        }
+      } catch { /* ignore cleanup errors */ }
     }
+  } catch (err) {
+    console.warn('[remoteCommand] listener init failed:', err)
+    return () => {}
   }
 }
