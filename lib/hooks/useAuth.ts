@@ -1,10 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { User } from '@supabase/supabase-js'
+import type { Session, User } from '@supabase/supabase-js'
 import { getBrowserClient } from '@/lib/supabase/browser'
 
 type Role = 'platform_admin' | 'merchant' | 'client' | null
+
+function extractRole(session: Session | null): Role {
+  const raw = session?.user?.app_metadata?.role
+  if (raw === 'platform_admin' || raw === 'merchant' || raw === 'client') {
+    return raw
+  }
+  return null
+}
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
@@ -13,23 +21,27 @@ export function useAuth() {
 
   useEffect(() => {
     const supabase = getBrowserClient()
+    let cancelled = false
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    ;(async () => {
+      const { data } = await supabase.auth.getSession()
+      if (cancelled) return
+      const session: Session | null = data.session
       setUser(session?.user ?? null)
-      if (session?.user) {
-        const metaRole = (session.user.app_metadata?.role as Role) ?? null
-        setRole(metaRole)
-      }
+      setRole(extractRole(session))
       setLoading(false)
-    })
+    })()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      setRole((session?.user?.app_metadata?.role as Role) ?? null)
-    })
+    const { data: subData } = supabase.auth.onAuthStateChange(
+      (_event, session: Session | null) => {
+        setUser(session?.user ?? null)
+        setRole(extractRole(session))
+      }
+    )
 
     return () => {
-      subscription?.unsubscribe()
+      cancelled = true
+      subData.subscription?.unsubscribe()
     }
   }, [])
 
