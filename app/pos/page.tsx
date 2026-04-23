@@ -51,7 +51,7 @@ export default function PosPage() {
     if (!deviceToken || deviceToken === 'manual') return
     const sendHeartbeat = async () => {
       try {
-        await fetch('/api/device/heartbeat', {
+        await fetch(getServerUrl() + '/api/device/heartbeat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -10,7 +10,7 @@ interface DeviceHealth {
 
 async function fetchDeviceHealth(): Promise<DeviceHealth[]> {
   try {
-    const res = await fetch('/api/device/health', { cache: 'no-store' })
+    const res = await fetch(getServerUrl() + '/api/device/health', { cache: 'no-store' })
     if (!res.ok) throw new Error()
     return res.json()
   } catch {

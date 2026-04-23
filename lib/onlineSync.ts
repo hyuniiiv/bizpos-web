@@ -26,7 +26,7 @@ export async function activateTerminal(activationCode: string): Promise<{
   error?: string
 }> {
   try {
-    const res = await fetch('/api/device/activate', {
+    const res = await fetch(getServerUrl() + '/api/device/activate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ activationCode }),
@@ -98,7 +98,7 @@ function startHeartbeat() {
     if (!token || !navigator.onLine) return
 
     try {
-      const res = await fetch('/api/device/heartbeat', {
+      const res = await fetch(getServerUrl() + '/api/device/heartbeat', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -129,7 +129,7 @@ function startHeartbeat() {
 
 async function refreshToken(currentToken: string): Promise<void> {
   try {
-    const res = await fetch('/api/device/token/refresh', {
+    const res = await fetch(getServerUrl() + '/api/device/token/refresh', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${currentToken}` },
     })
@@ -175,7 +175,7 @@ export function shutdownOnlineSync() {
   stopHeartbeat()
 
   // 비동기 종료 신호 (best-effort, keepalive로 Authorization 헤더 유지)
-  fetch('/api/device/heartbeat', {
+  fetch(getServerUrl() + '/api/device/heartbeat', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,

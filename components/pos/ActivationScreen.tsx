@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useSettingsStore } from '@/lib/store/settingsStore'
 import { useMenuStore } from '@/lib/store/menuStore'
+import { getServerUrl } from '@/lib/serverUrl'
 
 export default function ActivationScreen() {
   const [code, setCode] = useState('')
@@ -15,7 +16,9 @@ export default function ActivationScreen() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/device/activate', {
+      // 활성화는 서버 전용 시크릿(SUPABASE_SERVICE_ROLE_KEY, TERMINAL_JWT_SECRET)이
+      // 필요하므로 로컬 Electron server가 아닌 운영(Vercel) 서버로 호출.
+      const res = await fetch(getServerUrl() + '/api/device/activate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activationCode: code.toUpperCase() }),

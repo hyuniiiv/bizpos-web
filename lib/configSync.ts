@@ -1,3 +1,5 @@
+import { getServerUrl } from '@/lib/serverUrl'
+
 const CONFIG_VERSION_KEY = 'terminal_config_version'
 
 let pollInterval: ReturnType<typeof setInterval> | null = null
@@ -22,7 +24,7 @@ export async function fetchLatestConfig(token: string): Promise<ConfigSyncResult
   if (!token || !navigator.onLine) return null
 
   try {
-    const res = await fetch('/api/device/config', {
+    const res = await fetch(getServerUrl() + '/api/device/config', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'X-Config-Version': String(getConfigVersion()),

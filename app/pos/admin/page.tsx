@@ -254,7 +254,7 @@ export default function PosAdminPage() {
     // Supabase 동기화 (토큰 있을 경우)
     if (deviceToken && deviceToken !== 'manual') {
       const menuState = useMenuStore.getState()
-      await fetch('/api/device/config', {
+      await fetch(getServerUrl() + '/api/device/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken}` },
         body: JSON.stringify({
