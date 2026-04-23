@@ -20,6 +20,7 @@ files:
   - "!lib/**"
   - "!public/**"
   - "!.next/**"
+  # electron-updater 및 모든 transitive 의존성
   - node_modules/electron-updater/**
   - node_modules/builder-util-runtime/**
   - node_modules/debug/**
@@ -31,6 +32,10 @@ files:
   - node_modules/universalify/**
   - node_modules/semver/**
   - node_modules/lazy-val/**
+  - node_modules/js-yaml/**
+  - node_modules/lodash.escaperegexp/**
+  - node_modules/lodash.isequal/**
+  - node_modules/tiny-typed-emitter/**
 
 # Next.js standalone + 루트 node_modules를 조합해 resources/nextjs/ 에 self-contained 배치.
 # standalone만으로는 pnpm 환경에서 node_modules/next 해석이 실패하는 사례가 발생해,
@@ -80,79 +85,6 @@ extraResources:
     to: nextjs/public
     filter:
       - "**/*"
-  # 루트 node_modules를 직접 복사 (dev 전용 대형 패키지 + 런타임 불필요 텍스트 제외)
-  - from: node_modules
-    to: nextjs/node_modules
-    filter:
-      - "**/*"
-      # dev 의존성 제외
-      - "!electron/**"
-      - "!electron-builder/**"
-      - "!electron-builder-squirrel-windows/**"
-      - "!electron-publish/**"
-      - "!electron-publisher-*/**"
-      - "!@electron/**"
-      - "!app-builder-lib/**"
-      - "!app-builder-bin/**"
-      - "!dmg-builder/**"
-      - "!builder-util/**"
-      - "!builder-util-runtime/**"
-      - "!@types/**"
-      - "!typescript/**"
-      - "!eslint/**"
-      - "!@eslint/**"
-      - "!eslint-*/**"
-      - "!concurrently/**"
-      - "!cross-env/**"
-      - "!wait-on/**"
-      - "!@babel/**"
-      - "!babel-plugin-*/**"
-      - "!prettier/**"
-      - "!webpack/**"
-      - "!jest/**"
-      - "!ts-node/**"
-      - "!vitest/**"
-      - "!turborepo/**"
-      # 런타임 불필요 파일
-      - "!**/*.md"
-      - "!**/*.markdown"
-      - "!**/*.d.ts"
-      - "!**/*.d.ts.map"
-      - "!**/*.map"
-      - "!**/*.ts.map"
-      - "!**/*.js.map"
-      - "!**/*.ts"
-      - "!**/LICENSE*"
-      - "!**/CHANGELOG*"
-      - "!**/HISTORY*"
-      - "!**/AUTHORS*"
-      - "!**/CONTRIBUTORS*"
-      - "!**/COPYING*"
-      - "!**/.github/**"
-      - "!**/.vscode/**"
-      - "!**/.gitignore"
-      - "!**/.npmignore"
-      - "!**/.eslintignore"
-      - "!**/test/**"
-      - "!**/tests/**"
-      - "!**/__tests__/**"
-      - "!**/example/**"
-      - "!**/examples/**"
-      - "!**/docs/**"
-      - "!**/doc/**"
-      - "!**/demo/**"
-      - "!**/samples/**"
-      - "!**/src/**"
-      - "!**/*.test.js"
-      - "!**/*.spec.js"
-      - "!**/*.test.ts"
-      - "!**/*.spec.ts"
-      - "!**/*.min.js.map"
-      - "!**/.bin/**"
-      - "!**/.pnpm/**"
-      - "!**/Dockerfile*"
-      - "!**/docker-compose*"
-      - "!**/.git/**"
 
 win:
   target:
