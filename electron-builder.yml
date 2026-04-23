@@ -6,11 +6,8 @@ directories:
   buildResources: resources
   output: dist-electron
 
-# electron-builder 기본 동작:
-#   - package.json의 dependencies 전체 및 transitive deps를 자동 포함
-#   - devDependencies는 자동 제외
-# 수동으로 node_modules를 필터링하면 transitive dep 누락 사고가 반복됨(v0.1.11~25).
-# 소스 파일만 제외하고 node_modules는 electron-builder에게 맡긴다.
+# electron-builder 기본 동작으로 dependencies 자동 포함.
+# 수동 allowlist는 transitive deps 누락 사고 반복 (v0.1.11~25).
 files:
   - electron/**
   - package.json
@@ -39,59 +36,26 @@ files:
   - "!middleware.ts"
 
 # 네이티브 C++ 모듈은 asar 압축 해제 필수.
-# require()가 .node 파일을 직접 로드해야 하는데 asar 내부에서는 불가능.
 asarUnpack:
   - node_modules/better-sqlite3/**
   - node_modules/bindings/**
   - node_modules/file-uri-to-path/**
 
-# Next.js standalone 런타임은 별도 경로(resources/nextjs/)로 복사.
-# standalone 번들은 자체 node_modules를 포함하므로 Next.js 런타임 deps는 여기서 완결.
+# Next.js standalone 구조는 workspace 감지 여부에 따라 달라짐:
+#   - CI (단일 lockfile): .next/standalone/server.js, .next/standalone/node_modules/...
+#   - 로컬 (상위 lockfile 존재): .next/standalone/bizpos-web/server.js, ...
+# CI 구조 기준으로 flat 복사. 로컬에서는 CI로만 배포하므로 문제없음.
 extraResources:
-  - from: .next/standalone/bizpos-web
-    to: nextjs
-    filter:
-      - "**/*"
-      - "!node_modules/**"
-      - "!app/**"
-      - "!components/**"
-      - "!lib/**"
-      - "!types/**"
-      - "!data/**"
-      - "!docs/**"
-      - "!supabase/**"
-      - "!scripts/**"
-      - "!electron/**"
-      - "!public/**"
-      - "!CC-Session-Logs/**"
-      - "!*.md"
-      - "!*.mjs"
-      - "!*.ts"
-      - "!tsconfig*.json"
-      - "!package-lock.json"
-      - "!pnpm-lock.yaml"
-      - "!vercel.json"
-      - "!.env*"
-      - "!.gitignore"
-      - "!.impeccable.md"
-      - "!components.json"
-      - "!electron-builder.yml"
-      - "!next.config.ts"
   - from: .next/standalone
     to: nextjs
     filter:
       - "**/*"
-      - "!bizpos-web/**"
   - from: .next/static
     to: nextjs/.next/static
     filter:
       - "**/*"
   - from: public
     to: nextjs/public
-    filter:
-      - "**/*"
-  - from: .next/standalone/bizpos-web/node_modules
-    to: nextjs/node_modules
     filter:
       - "**/*"
 

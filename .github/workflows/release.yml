@@ -49,6 +49,25 @@ jobs:
           NEXT_PUBLIC_SERVER_URL: ${{ secrets.NEXT_PUBLIC_SERVER_URL }}
         run: pnpm run electron:build:win --publish always
 
+      - name: Diagnose standalone structure
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "=== .next/standalone 1-depth ==="
+          if (Test-Path .next/standalone) {
+            Get-ChildItem .next/standalone | Select-Object Name | Format-Table -AutoSize
+          } else {
+            Write-Host ".next/standalone 없음"
+          }
+          Write-Host "=== standalone/server.js 존재 ==="
+          Test-Path .next/standalone/server.js
+          Write-Host "=== standalone/node_modules/next/package.json 존재 ==="
+          Test-Path .next/standalone/node_modules/next/package.json
+          Write-Host "=== standalone/node_modules 상위 목록 ==="
+          if (Test-Path .next/standalone/node_modules) {
+            Get-ChildItem .next/standalone/node_modules | Select-Object Name | Format-Table -AutoSize
+          }
+
       - name: Diagnose packaged output
         if: always()
         shell: pwsh
