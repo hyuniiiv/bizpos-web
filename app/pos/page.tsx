@@ -5,9 +5,10 @@ import { useSettingsStore } from '@/lib/store/settingsStore'
 import { usePosStore } from '@/lib/store/posStore'
 import { startConfigPolling, stopConfigPolling } from '@/lib/configSync'
 import type { DeviceConfig, MenuConfig, PeriodConfig, ServiceCodeConfig } from '@/types/menu'
+import { PaymentRepository } from '@/lib/repository/payment.repository'
 import { identifyInput } from '@/lib/payment/barcode'
 import { generateOrderId } from '@/lib/payment/order'
-import { savePendingPayment, checkAndMarkBarcode, getPendingPayments, markPaymentSynced } from '@/lib/db/indexeddb'
+import { checkAndMarkBarcode } from '@/lib/db/indexeddb' // Keep IndexedDB for barcode check if needed
 import { createDeviceBridge, type DeviceBridge } from '@/lib/device/bridge'
 import { getServerUrl } from '@/lib/serverUrl'
 
@@ -134,12 +135,12 @@ export default function PosPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      getPendingPayments().then(p => setPendingCount(p.length))
+      PaymentRepository.getPendingPayments().then(p => setPendingCount(p.length))
     }
   }, [screen])
 
   async function syncOffline() {
-    const pending = await getPendingPayments()
+    const pending = await PaymentRepository.getPendingPayments()
     if (pending.length === 0) return
 
     const retryDelays = [0, 5_000, 30_000]
@@ -155,8 +156,8 @@ export default function PosPage() {
         if (res.ok) {
           const result = await res.json()
           const syncedIds: string[] = result.syncedIds ?? pending.map(r => r.merchantOrderID)
-          await Promise.all(syncedIds.map(id => markPaymentSynced(id)))
-          const remaining = await getPendingPayments()
+          await Promise.all(syncedIds.map(id => PaymentRepository.markPaymentSynced(id)))
+          const remaining = await PaymentRepository.getPendingPayments()
           setPendingCount(remaining.length)
           return
         }
@@ -256,18 +257,20 @@ export default function PosPage() {
 
       const { merchantOrderDt, merchantOrderID } = generateOrderId(config.termId)
 
+      // 1. [트랜잭션 시작] Local DB에 pending 기록 생성
+      await PaymentRepository.savePendingPayment({
+        merchantOrderDt,
+        merchantOrderID,
+        barcodeType: identity.barcodeType,
+        barcodeInfo: identity.raw,
+        totalAmount: amount,
+        productName: menu.name,
+        termId: config.termId,
+        savedAt: new Date().toISOString(),
+        synced: false,
+      })
+
       if (!isOnline) {
-        await savePendingPayment({
-          merchantOrderDt,
-          merchantOrderID,
-          barcodeType: identity.barcodeType,
-          barcodeInfo: identity.raw,
-          totalAmount: amount,
-          productName: menu.name,
-          termId: config.termId,
-          savedAt: new Date().toISOString(),
-          synced: false,
-        })
         incrementCount(menu.id)
         lastMsgRef.current = '오프라인 결제 저장'
         const fakeTx = {
@@ -292,6 +295,7 @@ export default function PosPage() {
         return
       }
 
+      // 2. [Remote API] 결제 처리
       const reserveRes = await fetch(getServerUrl() + '/api/payment/reserve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -345,6 +349,9 @@ export default function PosPage() {
         return
       }
 
+      // 3. [트랜잭션 종료] 결제 성공 시 Local DB 동기화 완료 처리
+      await PaymentRepository.markPaymentSynced(merchantOrderID)
+      
       incrementCount(menu.id)
       setLastTransaction(approveRes.transaction)
       lastMsgRef.current = '정상결제 됨.'

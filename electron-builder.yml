@@ -48,6 +48,7 @@ extraResources:
     to: nextjs
     filter:
       - "**/*"
+      - "!node_modules/**"
       - "!app/**"
       - "!components/**"
       - "!lib/**"
@@ -85,10 +86,9 @@ extraResources:
     to: nextjs/public
     filter:
       - "**/*"
-  # pnpm의 실제 패키지 저장소 복사 (symlink 해결)
-  # .next/standalone의 symlink들이 가리키는 실제 파일들
-  - from: node_modules/.pnpm
-    to: nextjs/node_modules/.pnpm
+  # .next/standalone/bizpos-web의 node_modules 복사 (런타임에 필요함)
+  - from: .next/standalone/bizpos-web/node_modules
+    to: nextjs/node_modules
     filter:
       - "**/*"
 

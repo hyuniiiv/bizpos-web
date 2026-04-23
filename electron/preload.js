@@ -19,7 +19,18 @@ const SERIAL_CHANNELS = [
 contextBridge.exposeInMainWorld('electronAPI', {
   // 환경 감지
   isElectron: true,
-  platform: process.platform, // 'win32' | 'darwin' | 'linux'
+  platform: process.platform,
+
+  // DB API
+  db: {
+    savePendingPayment: (record) => ipcRenderer.invoke('db:savePendingPayment', record),
+    getPendingPayments: () => ipcRenderer.invoke('db:getPendingPayments'),
+    markPaymentSynced: (orderId) => ipcRenderer.invoke('db:markPaymentSynced', orderId),
+    saveTransaction: (tx) => ipcRenderer.invoke('db:saveTransaction', tx),
+    getMenus: () => ipcRenderer.invoke('db:getMenus'),
+    saveMenu: (menu) => ipcRenderer.invoke('db:saveMenu', menu),
+    deleteMenu: (id) => ipcRenderer.invoke('db:deleteMenu', id),
+  },
 
   // 앱 종료
   quitApp: () => ipcRenderer.invoke('app:quit'),

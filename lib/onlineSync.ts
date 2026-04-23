@@ -9,8 +9,6 @@ import { startConfigPolling, stopConfigPolling } from './configSync'
 import { flushOfflineQueue } from './txSync'
 import { getServerUrl } from '@/lib/serverUrl'
 
-export { addToOfflineQueue, getOfflineQueueCount } from './txSync'
-
 const ACCESS_TOKEN_KEY = 'terminal_access_token'
 const TERMINAL_ID_KEY = 'terminal_id'
 const MERCHANT_ID_KEY = 'merchant_id'

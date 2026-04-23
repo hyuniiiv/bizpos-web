@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
 
   const sessionId = crypto.randomUUID()
   const encoder = new TextEncoder()
-  const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const port = process.env.PORT || '3000'
+  const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL ?? `http://127.0.0.1:${port}`
 
   const stream = new ReadableStream({
     start(controller) {

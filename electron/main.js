@@ -5,10 +5,83 @@ const path = require('path')
 const fs = require('fs')
 const { spawn } = require('child_process')
 const http = require('http')
+const net = require('net')
+const Database = require('better-sqlite3')
 
 // 패키징되지 않은 상태(개발/테스트) = true
 const isDev = !app.isPackaged
-const PORT = process.env.PORT || 3000
+let PORT = 3000
+
+// DB 초기화
+const dbPath = path.join(app.getPath('userData'), 'bizpos.db')
+const db = new Database(dbPath)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pending_payments (
+    merchantOrderID TEXT PRIMARY KEY,
+    totalAmount INTEGER,
+    productName TEXT,
+    savedAt TEXT,
+    synced INTEGER DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS transactions_local (
+    id TEXT PRIMARY KEY,
+    merchantOrderID TEXT,
+    amount INTEGER,
+    status TEXT,
+    approvedAt TEXT,
+    createdAt TEXT
+  );
+`)
+
+// IPC 핸들러 (DB CRUD)
+ipcMain.handle('db:savePendingPayment', (event, record) => {
+  const stmt = db.prepare('INSERT INTO pending_payments (merchantOrderID, totalAmount, productName, savedAt) VALUES (?, ?, ?, ?)')
+  stmt.run(record.merchantOrderID, record.totalAmount, record.productName, record.savedAt)
+  return { success: true }
+})
+
+ipcMain.handle('db:getPendingPayments', () => {
+  return db.prepare('SELECT * FROM pending_payments WHERE synced = 0').all()
+})
+
+ipcMain.handle('db:markPaymentSynced', (event, merchantOrderID) => {
+  db.prepare('UPDATE pending_payments SET synced = 1 WHERE merchantOrderID = ?').run(merchantOrderID)
+  return { success: true }
+})
+
+ipcMain.handle('db:saveTransaction', (event, tx) => {
+  const stmt = db.prepare('INSERT INTO transactions_local (id, merchantOrderID, amount, status, approvedAt, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
+  stmt.run(tx.id, tx.merchantOrderID, tx.amount, tx.status, tx.approvedAt, tx.createdAt)
+  return { success: true }
+})
+
+ipcMain.handle('db:getMenus', () => {
+  return db.prepare('SELECT * FROM menus').all()
+})
+
+ipcMain.handle('db:saveMenu', (event, menu) => {
+  const stmt = db.prepare('INSERT OR REPLACE INTO menus (id, name, mealType, displayAmount, paymentAmount, startTime, endTime, soundFile, isActive, count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+  stmt.run(menu.id, menu.name, menu.mealType, menu.displayAmount, menu.paymentAmount, menu.startTime, menu.endTime, menu.soundFile, menu.isActive ? 1 : 0, menu.count)
+  return { success: true }
+})
+
+ipcMain.handle('db:deleteMenu', (event, id) => {
+  db.prepare('DELETE FROM menus WHERE id = ?').run(id)
+  return { success: true }
+})
+
+// 동적 포트 할당
+async function getAvailablePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+    server.on('error', reject);
+    server.listen(0, () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
+    });
+  });
+}
 
 // Electron은 항상 로컬 standalone 서버를 실행 (오프라인 시작 보장)
 // 온라인 API 호출(Supabase, BizplayPay)은 앱 레이어에서 네트워크 상태에 따라 처리
@@ -283,6 +356,7 @@ app.whenReady().then(async () => {
   try {
     initLogging()
     setupPermissions()
+    PORT = isDev ? (process.env.PORT || 3000) : await getAvailablePort()
     await startNextServer()
     createWindow()
     setupAutoUpdater()
