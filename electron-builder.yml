@@ -19,13 +19,23 @@ files:
   - "!.next/**"
 
 # Next.js standalone 빌드 결과물을 별도 리소스로 포함
-# Next.js 16: standalone 출력이 프로젝트 이름(bizpos-web/) 하위에 생성되므로
-# 그 내부를 nextjs/로 평탄화해서 server.js가 resources/nextjs/server.js 에 위치하도록 함
+# Next.js standalone 출력 경로는 환경에 따라 두 가지로 나뉨:
+#   A) .next/standalone/bizpos-web/server.js  (pnpm workspace 등)
+#   B) .next/standalone/server.js             (단일 패키지)
+# 두 경우 모두 resources/nextjs/server.js 에 배치되도록 양쪽 모두 복사한다.
+# 존재하지 않는 from 경로는 electron-builder가 skip 하므로 양쪽 선언이 안전하다.
 extraResources:
+  # A 구조: bizpos-web 하위를 nextjs로 평탄화
   - from: .next/standalone/bizpos-web
     to: nextjs
     filter:
       - "**/*"
+  # B 구조: standalone 루트를 nextjs로 (bizpos-web 폴더는 A에서 이미 처리)
+  - from: .next/standalone
+    to: nextjs
+    filter:
+      - "**/*"
+      - "!bizpos-web/**"
   - from: .next/static
     to: nextjs/.next/static
     filter:
