@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { getServerUrl } from '@/lib/serverUrl'
 
 type HealthStatus = 'ok' | 'error' | 'unknown'
 

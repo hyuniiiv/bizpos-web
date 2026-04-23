@@ -7,6 +7,7 @@
 
 import { startConfigPolling, stopConfigPolling } from './configSync'
 import { flushOfflineQueue } from './txSync'
+import { getServerUrl } from '@/lib/serverUrl'
 
 export { addToOfflineQueue, getOfflineQueueCount } from './txSync'
 
