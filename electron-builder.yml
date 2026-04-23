@@ -7,9 +7,18 @@ directories:
   output: dist-electron
 
 # 패키징에 포함할 파일 (Next.js 런타임 제외 - extraResources로 별도 포함)
+# electron-updater 는 electron/main.js 에서 직접 require 하므로 asar 에 포함해야 함.
 files:
   - electron/**
   - package.json
+  - node_modules/electron-updater/**
+  - node_modules/builder-util-runtime/**
+  - node_modules/fs-extra/**
+  - node_modules/graceful-fs/**
+  - node_modules/jsonfile/**
+  - node_modules/universalify/**
+  - node_modules/semver/**
+  - node_modules/lazy-val/**
   - "!node_modules/**"
   - "!src/**"
   - "!app/**"
