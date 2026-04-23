@@ -24,6 +24,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 앱 종료
   quitApp: () => ipcRenderer.invoke('app:quit'),
 
+  // 수동 업데이트 확인
+  checkUpdate: () => ipcRenderer.invoke('app:checkUpdate'),
+
+  // 최신 버전 알림 구독
+  onNoUpdate: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on('app:noUpdate', handler)
+    return () => ipcRenderer.removeListener('app:noUpdate', handler)
+  },
+
   // ------------------------------------------------------------------
   // 시리얼포트 API
   // 사용 예)

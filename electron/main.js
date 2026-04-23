@@ -167,6 +167,8 @@ function setupAutoUpdater() {
 
     autoUpdater.on('update-not-available', () => {
       console.log('[updater] 최신 버전입니다.')
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win) win.webContents.send('app:noUpdate')
     })
 
     autoUpdater.on('error', (err) => {
@@ -273,6 +275,15 @@ app.on('activate', () => {
 // ============================================================
 ipcMain.handle('app:quit', () => {
   app.quit()
+})
+
+ipcMain.handle('app:checkUpdate', () => {
+  try {
+    const { autoUpdater } = require('electron-updater')
+    autoUpdater.checkForUpdates()
+  } catch (err) {
+    console.warn('[updater] checkForUpdates 실패:', err.message)
+  }
 })
 
 // ============================================================

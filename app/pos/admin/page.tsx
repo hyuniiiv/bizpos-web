@@ -639,22 +639,68 @@ export default function PosAdminPage() {
               </button>
             </div>
 
-            {/* 프로그램 종료 (Electron 전용) */}
-            {typeof window !== 'undefined' && (window as Window & { electronAPI?: { quitApp?: () => void } }).electronAPI && (
-              <div className="glass-card rounded-xl p-4 space-y-2" style={{ border: '1px solid rgba(239,68,68,0.40)' }}>
-                <p className="text-sm font-semibold text-red-300">프로그램 종료</p>
-                <p className="text-xs text-white/40">BIZPOS 애플리케이션을 완전히 종료합니다.</p>
-                <button
-                  onClick={() => { if (!confirm('프로그램을 종료하시겠습니까?')) return; (window as Window & { electronAPI?: { quitApp?: () => void } }).electronAPI?.quitApp?.() }}
-                  className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all"
-                  style={{ background: 'rgba(239,68,68,0.35)', border: '1px solid rgba(239,68,68,0.55)' }}>
-                  프로그램 종료
-                </button>
-              </div>
+            {/* 업데이트 / 종료 (Electron 전용) */}
+            {typeof window !== 'undefined' && (window as Window & { electronAPI?: { quitApp?: () => void; checkUpdate?: () => void } }).electronAPI && (
+              <>
+                <UpdateButton />
+                <div className="glass-card rounded-xl p-4 space-y-2" style={{ border: '1px solid rgba(239,68,68,0.40)' }}>
+                  <p className="text-sm font-semibold text-red-300">프로그램 종료</p>
+                  <p className="text-xs text-white/40">BIZPOS 애플리케이션을 완전히 종료합니다.</p>
+                  <button
+                    onClick={() => { if (!confirm('프로그램을 종료하시겠습니까?')) return; (window as Window & { electronAPI?: { quitApp?: () => void } }).electronAPI?.quitApp?.() }}
+                    className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all"
+                    style={{ background: 'rgba(239,68,68,0.35)', border: '1px solid rgba(239,68,68,0.55)' }}>
+                    프로그램 종료
+                  </button>
+                </div>
+              </>
             )}
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+type ElectronAPI = {
+  checkUpdate?: () => void
+  onNoUpdate?: (cb: () => void) => () => void
+}
+
+function UpdateButton() {
+  const [checking, setChecking] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'latest'>('idle')
+  const api = typeof window !== 'undefined' ? (window as Window & { electronAPI?: ElectronAPI }).electronAPI : undefined
+
+  useEffect(() => {
+    if (!api?.onNoUpdate) return
+    const unsub = api.onNoUpdate(() => {
+      setChecking(false)
+      setStatus('latest')
+      setTimeout(() => setStatus('idle'), 3000)
+    })
+    return unsub
+  }, [])
+
+  const handleCheck = () => {
+    setChecking(true)
+    setStatus('idle')
+    api?.checkUpdate?.()
+  }
+
+  return (
+    <div className="glass-card rounded-xl p-4 space-y-2" style={{ border: '1px solid rgba(96,165,250,0.35)' }}>
+      <p className="text-sm font-semibold text-blue-300">업데이트</p>
+      <p className="text-xs text-white/40">
+        {status === 'latest' ? '✓ 최신 버전입니다.' : '새 버전이 있으면 다운로드 안내가 표시됩니다.'}
+      </p>
+      <button
+        onClick={handleCheck}
+        disabled={checking}
+        className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-50"
+        style={{ background: 'rgba(96,165,250,0.25)', border: '1px solid rgba(96,165,250,0.45)' }}>
+        {checking ? '확인 중...' : '업데이트 확인'}
+      </button>
     </div>
   )
 }
