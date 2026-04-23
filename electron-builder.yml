@@ -19,8 +19,10 @@ files:
   - "!.next/**"
 
 # Next.js standalone 빌드 결과물을 별도 리소스로 포함
+# Next.js 16: standalone 출력이 프로젝트 이름(bizpos-web/) 하위에 생성되므로
+# 그 내부를 nextjs/로 평탄화해서 server.js가 resources/nextjs/server.js 에 위치하도록 함
 extraResources:
-  - from: .next/standalone
+  - from: .next/standalone/bizpos-web
     to: nextjs
     filter:
       - "**/*"

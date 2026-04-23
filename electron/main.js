@@ -2,6 +2,7 @@
 
 const { app, BrowserWindow, shell, dialog, session, ipcMain } = require('electron')
 const path = require('path')
+const fs = require('fs')
 const { spawn } = require('child_process')
 const http = require('http')
 
@@ -45,15 +46,23 @@ async function startNextServer() {
   if (isDev) return // 개발 모드는 next dev가 별도 실행됨
 
   // electron-builder extraResources 로 복사된 경로
-  const serverScript = path.join(
-    process.resourcesPath,
-    'nextjs',
-    'server.js'
-  )
+  // Next.js 16 standalone은 package 이름(bizpos-web) 하위에 server.js를 만듦
+  // electron-builder.yml에서 평탄화했지만 만일을 위해 양쪽 경로 모두 탐색
+  const candidates = [
+    path.join(process.resourcesPath, 'nextjs', 'server.js'),
+    path.join(process.resourcesPath, 'nextjs', 'bizpos-web', 'server.js'),
+  ]
+  const serverScript = candidates.find(p => fs.existsSync(p))
+  if (!serverScript) {
+    throw new Error(`server.js 없음. 탐색 경로:\n${candidates.join('\n')}`)
+  }
+  console.log('[next] serverScript:', serverScript)
 
   // ELECTRON_RUN_AS_NODE=1 로 Electron 내장 Node.js 런타임을 사용
   // 시스템에 Node.js가 설치되지 않아도 서버 기동 가능
+  // cwd는 server.js와 동일 위치로 — Next.js가 .next/를 상대 경로로 찾음
   nextServerProcess = spawn(process.execPath, [serverScript], {
+    cwd: path.dirname(serverScript),
     env: {
       ...process.env,
       PORT: String(PORT),
