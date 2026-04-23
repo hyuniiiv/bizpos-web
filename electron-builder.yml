@@ -85,6 +85,12 @@ extraResources:
     to: nextjs/public
     filter:
       - "**/*"
+  # pnpm의 실제 패키지 저장소 복사 (symlink 해결)
+  # .next/standalone의 symlink들이 가리키는 실제 파일들
+  - from: node_modules/.pnpm
+    to: nextjs/node_modules/.pnpm
+    filter:
+      - "**/*"
 
 win:
   target:
