@@ -2,6 +2,7 @@
 'use client'
 import { useEffect } from 'react'
 import type { MealType } from '@/types/menu'
+import { playGlobalSound } from '@/lib/audio/soundPlayer'
 
 const MEAL_LABEL: Record<MealType, string> = {
   breakfast: '조식',
@@ -19,6 +20,7 @@ interface Props {
 
 export default function BadgeScreen({ variant, employeeName, department, mealType, onDone }: Props) {
   useEffect(() => {
+    void playGlobalSound(variant === 'success' ? 'success' : 'error')
     const timer = setTimeout(onDone, variant === 'warn' ? 5000 : 3000)
     return () => clearTimeout(timer)
   }, [variant, onDone])

@@ -20,7 +20,7 @@ export default async function TerminalsPage() {
 
   const { data: terminals } = await supabase
     .from('terminals')
-    .select('id, name, term_id, corner, status, terminal_type, last_seen_at, activation_code, access_token')
+    .select('id, name, term_id, corner, status, terminal_type, last_seen_at, activation_code, access_token, went_offline_at')
     .eq('merchant_id', merchantId)
     .order('term_id')
 

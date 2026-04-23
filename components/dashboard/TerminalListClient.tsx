@@ -23,6 +23,18 @@ type Terminal = {
   last_seen_at: string | null
   activation_code: string | null
   access_token: string | null
+  went_offline_at: string | null
+}
+
+function formatDuration(sinceIso: string): string {
+  const ms = Date.now() - new Date(sinceIso).getTime()
+  const mins = Math.floor(ms / 60_000)
+  if (mins < 1) return '방금'
+  if (mins < 60) return `${mins}분 경과`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}시간 ${mins % 60}분 경과`
+  const days = Math.floor(hours / 24)
+  return `${days}일 ${hours % 24}시간 경과`
 }
 
 type Props = {
@@ -44,7 +56,7 @@ export default function TerminalListClient({ initialTerminals, merchantId }: Pro
         async () => {
           const { data } = await supabase
             .from('terminals')
-            .select('id, name, term_id, corner, status, terminal_type, last_seen_at, activation_code, access_token')
+            .select('id, name, term_id, corner, status, terminal_type, last_seen_at, activation_code, access_token, went_offline_at')
             .eq('merchant_id', merchantId)
             .order('term_id')
           if (data) setTerminals(data)
@@ -82,12 +94,19 @@ export default function TerminalListClient({ initialTerminals, merchantId }: Pro
               </td>
               <td className="px-4 py-3 text-white/50">{t.corner || '-'}</td>
               <td className="px-4 py-3 text-center">
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                  t.status === 'online' ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/40'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${t.status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />
-                  {t.status === 'online' ? '온라인' : '오프라인'}
-                </span>
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                    t.status === 'online' ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/40'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${t.status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />
+                    {t.status === 'online' ? '온라인' : '오프라인'}
+                  </span>
+                  {t.status === 'offline' && t.went_offline_at && (
+                    <span className="text-[10px] text-red-300/70" title={`오프라인 전환: ${new Date(t.went_offline_at).toLocaleString('ko-KR')}`}>
+                      {formatDuration(t.went_offline_at)}
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-4 py-3 text-right text-white/40 text-xs">
                 {t.last_seen_at ? new Date(t.last_seen_at).toLocaleString('ko-KR') : '미접속'}

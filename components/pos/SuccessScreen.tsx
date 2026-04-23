@@ -1,17 +1,24 @@
 'use client'
 import { useEffect } from 'react'
+import { playMenuSound } from '@/lib/audio/soundPlayer'
 
 interface Props {
   orderId?: string
   amount?: number
   userName?: string
+  menuSoundFile?: string
   onDone?: () => void
   autoReturnMs?: number
 }
 
 export default function SuccessScreen({
-  orderId, amount, userName, onDone, autoReturnMs = 3000
+  orderId, amount, userName, menuSoundFile, onDone, autoReturnMs = 3000
 }: Props) {
+  useEffect(() => {
+    // 메뉴별 사운드 재생, 없으면 전역 success 사운드 fallback
+    void playMenuSound(menuSoundFile, 'success')
+  }, [menuSoundFile])
+
   useEffect(() => {
     const t = setTimeout(() => onDone?.(), autoReturnMs)
     return () => clearTimeout(t)

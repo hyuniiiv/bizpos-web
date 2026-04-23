@@ -12,11 +12,14 @@ export async function POST(request: NextRequest) {
 
   const supabase = createAdminClient()
 
+  const finalStatus = status ?? 'online'
   await supabase
     .from('terminals')
     .update({
-      status: status ?? 'online',
+      status: finalStatus,
       last_seen_at: new Date().toISOString(),
+      // online 복귀 시 offline 전환 기록 초기화 (다운타임 종료 시점은 last_seen_at으로 추적)
+      ...(finalStatus === 'online' ? { went_offline_at: null } : {}),
     })
     .eq('id', terminalId)
 

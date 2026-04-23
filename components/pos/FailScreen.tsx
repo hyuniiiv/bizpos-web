@@ -1,5 +1,6 @@
 'use client'
 import { useEffect } from 'react'
+import { playGlobalSound } from '@/lib/audio/soundPlayer'
 
 interface Props {
   errorCode?: string
@@ -9,6 +10,11 @@ interface Props {
 }
 
 export default function FailScreen({ errorCode, errorMsg, onDone, autoReturnMs = 3000 }: Props) {
+  useEffect(() => {
+    // 전역 error 사운드 재생 (실패 시 메뉴별 사운드는 의미 없음)
+    void playGlobalSound('error')
+  }, [])
+
   useEffect(() => {
     const t = setTimeout(() => onDone?.(), autoReturnMs)
     return () => clearTimeout(t)

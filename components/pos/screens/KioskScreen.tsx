@@ -11,7 +11,7 @@ import { identifyInput } from '@/lib/payment/barcode'
 import { generateOrderId } from '@/lib/payment/order'
 import { getServerUrl } from '@/lib/serverUrl'
 
-type CartItem = { menuId: string; name: string; price: number; qty: number }
+type CartItem = { menuId: string; name: string; price: number; qty: number; soundFile?: string }
 type KioskStep = 'menu' | 'cart' | 'scan'
 type KioskPhase = KioskStep | 'processing' | 'success' | 'fail'
 
@@ -104,7 +104,7 @@ export default function KioskScreen() {
   const handleDone = () => { setErrorMsg(undefined); setPhase('menu') }
 
   if (phase === 'processing') return <ProcessingScreen />
-  if (phase === 'success') return <SuccessScreen orderId={lastOrderId} amount={lastAmount} onDone={handleDone} />
+  if (phase === 'success') return <SuccessScreen orderId={lastOrderId} amount={lastAmount} menuSoundFile={cart[0]?.soundFile} onDone={handleDone} />
   if (phase === 'fail') return <FailScreen errorMsg={errorMsg} onDone={handleDone} />
 
   const currentStep = phase as KioskStep

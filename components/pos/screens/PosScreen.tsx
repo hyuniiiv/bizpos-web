@@ -11,7 +11,7 @@ import { identifyInput } from '@/lib/payment/barcode'
 import { generateOrderId } from '@/lib/payment/order'
 import { getServerUrl } from '@/lib/serverUrl'
 
-type CartItem = { menuId: string; name: string; price: number; qty: number }
+type CartItem = { menuId: string; name: string; price: number; qty: number; soundFile?: string }
 type PosPhase = 'order' | 'processing' | 'success' | 'fail'
 
 export default function PosScreen() {
@@ -258,7 +258,7 @@ export default function PosScreen() {
       </div>
 
       {phase === 'processing' && <ProcessingScreen />}
-      {phase === 'success' && <SuccessScreen orderId={lastOrderId} amount={lastAmount} onDone={handleDone} />}
+      {phase === 'success' && <SuccessScreen orderId={lastOrderId} amount={lastAmount} menuSoundFile={cart[0]?.soundFile} onDone={handleDone} />}
       {phase === 'fail' && <FailScreen errorMsg={errorMsg} onDone={handleDone} />}
     </>
   )

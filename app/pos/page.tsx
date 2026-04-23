@@ -89,6 +89,7 @@ export default function PosPage() {
   const lastMsgRef = useRef<string>('')
   const bridgeRef = useRef<DeviceBridge | null>(null)
   const [scanLog, setScanLog] = useState<{value: string; time: Date} | null>(null)
+  const [lastSoundFile, setLastSoundFile] = useState<string | undefined>(undefined)
   const scanLogTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -354,16 +355,12 @@ export default function PosPage() {
       
       incrementCount(menu.id)
       setLastTransaction(approveRes.transaction)
+      setLastSoundFile(menu.soundFile || undefined)
       lastMsgRef.current = '정상결제 됨.'
       clearMenu()
       setTxRefreshTrigger(t => t + 1)
       setScreen('success')
-
-      try {
-        const audio = new Audio(`/sounds/${menu.soundFile}`)
-        audio.play().catch(() => {})
-      } catch {}
-
+      // 사운드는 SuccessScreen 마운트 시 playMenuSound(menuSoundFile, 'success')로 재생됨
     } catch (err) {
       console.error('[payment] Error:', err)
       setLastError('결제 처리 중 오류가 발생했습니다.')
@@ -459,6 +456,7 @@ export default function PosPage() {
           orderId={lastTransaction?.merchantOrderID}
           amount={lastTransaction?.amount}
           userName={lastTransaction?.userName}
+          menuSoundFile={lastSoundFile}
           onDone={handleDone}
         />
       )}
