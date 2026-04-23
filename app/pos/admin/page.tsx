@@ -676,10 +676,11 @@ export default function PosAdminPage() {
               </button>
             </div>
 
-            {/* 업데이트 / 종료 (Electron 전용) */}
+            {/* 업데이트 / 로그 / 종료 (Electron 전용) */}
             {typeof window !== 'undefined' && (window as Window & { electronAPI?: { quitApp?: () => void; checkUpdate?: () => void } }).electronAPI && (
               <>
                 <UpdateButton />
+                <LogButton />
                 <div className="glass-card rounded-xl p-4 space-y-2" style={{ border: '1px solid rgba(239,68,68,0.40)' }}>
                   <p className="text-sm font-semibold text-red-300">프로그램 종료</p>
                   <p className="text-xs text-white/40">BIZPOS 애플리케이션을 완전히 종료합니다.</p>
@@ -702,6 +703,25 @@ export default function PosAdminPage() {
 type ElectronAPI = {
   checkUpdate?: () => void
   onNoUpdate?: (cb: () => void) => () => void
+}
+
+function LogButton() {
+  const handleClick = () => {
+    const api = (window as Window & { electronAPI?: { openLogs?: () => void } }).electronAPI
+    api?.openLogs?.()
+  }
+  return (
+    <div className="glass-card rounded-xl p-4 space-y-2" style={{ border: '1px solid rgba(148,163,184,0.30)' }}>
+      <p className="text-sm font-semibold text-slate-300">로그</p>
+      <p className="text-xs text-white/40">BIZPOS 실행 로그 폴더를 엽니다.</p>
+      <button
+        onClick={handleClick}
+        className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all"
+        style={{ background: 'rgba(148,163,184,0.25)', border: '1px solid rgba(148,163,184,0.45)' }}>
+        로그 폴더 열기
+      </button>
+    </div>
+  )
 }
 
 function UpdateButton() {

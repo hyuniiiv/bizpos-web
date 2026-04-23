@@ -20,6 +20,32 @@ let mainWindow = null
 let nextServerProcess = null
 
 // ---------------------------------------------------------------------------
+// 파일 로깅 (패키징된 앱의 콘솔 출력을 파일로 보존)
+// 위치: Windows = %APPDATA%/BIZPOS/logs/main-YYYY-MM-DD.log
+// ---------------------------------------------------------------------------
+let logStream = null
+function initLogging() {
+  try {
+    const logDir = path.join(app.getPath('userData'), 'logs')
+    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true })
+    const today = new Date().toISOString().slice(0, 10)
+    const logFile = path.join(logDir, `main-${today}.log`)
+    logStream = fs.createWriteStream(logFile, { flags: 'a' })
+    const origLog = console.log.bind(console)
+    const origErr = console.error.bind(console)
+    const origWarn = console.warn.bind(console)
+    const fmt = (level, args) =>
+      `[${new Date().toISOString()}] [${level}] ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}\n`
+    console.log = (...a) => { try { logStream.write(fmt('INFO', a)) } catch {} ; origLog(...a) }
+    console.error = (...a) => { try { logStream.write(fmt('ERROR', a)) } catch {} ; origErr(...a) }
+    console.warn = (...a) => { try { logStream.write(fmt('WARN', a)) } catch {} ; origWarn(...a) }
+    console.log('--- BIZPOS 로그 시작 ---', { version: app.getVersion(), logFile })
+  } catch (err) {
+    // 로깅 초기화 실패는 앱 실행을 막지 않음
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Next.js 서버 대기 (최대 60초)
 // ---------------------------------------------------------------------------
 function waitForServer(url, maxRetries = 60) {
@@ -255,12 +281,18 @@ function createWindow() {
 // ---------------------------------------------------------------------------
 app.whenReady().then(async () => {
   try {
+    initLogging()
     setupPermissions()
     await startNextServer()
     createWindow()
     setupAutoUpdater()
   } catch (err) {
-    dialog.showErrorBox('BIZPOS 시작 오류', String(err))
+    console.error('앱 시작 실패:', err)
+    const logDir = path.join(app.getPath('userData'), 'logs')
+    dialog.showErrorBox(
+      'BIZPOS 시작 오류',
+      `${String(err)}\n\n로그 위치: ${logDir}`
+    )
     app.quit()
   }
 })
@@ -296,6 +328,11 @@ ipcMain.handle('app:checkUpdate', () => {
 })
 
 ipcMain.handle('app:getVersion', () => app.getVersion())
+
+ipcMain.handle('app:openLogs', () => {
+  const logDir = path.join(app.getPath('userData'), 'logs')
+  shell.openPath(logDir)
+})
 
 // ============================================================
 // Serial Port IPC Handlers (경광봉 / 외부 디스플레이 제어)

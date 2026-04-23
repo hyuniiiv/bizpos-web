@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 앱 버전 조회
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
 
+  // 로그 폴더 열기
+  openLogs: () => ipcRenderer.invoke('app:openLogs'),
+
   // 수동 업데이트 확인
   checkUpdate: () => ipcRenderer.invoke('app:checkUpdate'),
 
