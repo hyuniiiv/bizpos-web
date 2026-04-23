@@ -19,9 +19,18 @@ export default function StatusBar({ mode, lastMessage, lastOrderId }: Props) {
         <Link href="/pos/admin" className="font-mono hover:text-white transition-colors">
           {config.termId ? `[${config.termId}]` : '[--]'}
         </Link>
+        
+        {/* 오프라인 상태 경고 */}
         {!isOnline && (
           <span className="text-orange-400 font-semibold">
-            ⚠ 오프라인 {pendingOfflineCount > 0 ? `미동기화: ${pendingOfflineCount}건` : ''}
+            ⚠ 오프라인
+          </span>
+        )}
+
+        {/* 미동기화 데이터 상태 표시 (온/오프라인 무관) */}
+        {pendingOfflineCount > 0 && (
+          <span className={`${isOnline ? 'text-yellow-400' : 'text-orange-400'} font-semibold ml-2`}>
+            {isOnline ? '↻ 동기화 대기:' : '미동기화:'} {pendingOfflineCount}건
           </span>
         )}
       </div>

@@ -18,24 +18,44 @@ export async function flushOfflineQueue(): Promise<{ synced: number; failed: num
 
   if (!token || queue.length === 0) return { synced: 0, failed: 0 }
 
-  try {
-    const res = await fetch(getServerUrl() + '/api/payment/offline', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ records: queue }),
-    })
+  let totalSynced = 0;
+  let totalFailed = 0;
+  
+  // Batch processing (50 records per chunk)
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < queue.length; i += BATCH_SIZE) {
+    const chunk = queue.slice(i, i + BATCH_SIZE);
+    
+    try {
+      const res = await fetch(getServerUrl() + '/api/payment/offline', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ records: chunk }),
+      })
 
-    if (res.ok) {
-      const result = await res.json()
-      await Promise.all(queue.map(r => PaymentRepository.markPaymentSynced(r.merchantOrderID)))
-      return { synced: result.synced ?? queue.length, failed: 0 }
+      if (res.ok) {
+        const result = await res.json()
+        const syncedIds: string[] = result.syncedIds ?? chunk.map(r => r.merchantOrderID)
+        
+        // Only mark records confirmed by the server as synced
+        for (const id of syncedIds) {
+          await PaymentRepository.markPaymentSynced(id)
+        }
+        
+        totalSynced += syncedIds.length;
+        totalFailed += (chunk.length - syncedIds.length);
+      } else {
+        totalFailed += chunk.length;
+        console.error(`[txSync] Failed to sync chunk, status: ${res.status}`);
+      }
+    } catch (err) {
+      totalFailed += chunk.length;
+      console.error('[txSync] Network or sync error:', err);
     }
-  } catch {
-    // 실패 시 큐 유지, 다음 시도에서 재전송
   }
 
-  return { synced: 0, failed: queue.length }
+  return { synced: totalSynced, failed: totalFailed }
 }
