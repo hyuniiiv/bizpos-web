@@ -386,6 +386,38 @@ app.on('activate', () => {
 // ============================================================
 // App Control IPC Handlers
 // ============================================================
+ipcMain.handle('app:relaunch', () => {
+  app.relaunch();
+  app.exit(0);
+});
+
+// 오늘 로그 파일 내용 반환 (base64)
+ipcMain.handle('app:getLogContents', async () => {
+  try {
+    const logDir = path.join(app.getPath('userData'), 'logs')
+    const today = new Date().toISOString().slice(0, 10)
+    const logFile = path.join(logDir, `main-${today}.log`)
+    if (!fs.existsSync(logFile)) return { success: false, error: 'LOG_NOT_FOUND' }
+    const buf = fs.readFileSync(logFile)
+    return { success: true, base64: buf.toString('base64'), filename: `main-${today}.log`, size: buf.length }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+});
+
+// 현재 창 스크린샷 (base64 PNG)
+ipcMain.handle('app:captureScreenshot', async () => {
+  try {
+    const win = BrowserWindow.getAllWindows()[0]
+    if (!win) return { success: false, error: 'NO_WINDOW' }
+    const image = await win.capturePage()
+    const buf = image.toPNG()
+    return { success: true, base64: buf.toString('base64'), size: buf.length }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+});
+
 ipcMain.handle('app:quit', () => {
   app.quit()
 })

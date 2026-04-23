@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import TerminalCommandMenu from './TerminalCommandMenu'
 
 type TerminalType = 'ticket_checker' | 'pos' | 'kiosk' | 'table_order'
 
@@ -122,9 +123,12 @@ export default function TerminalListClient({ initialTerminals, merchantId }: Pro
                 )}
               </td>
               <td className="px-4 py-3 text-right">
-                <Link href={`/store/admin/terminals/${t.id}`} className="text-blue-400 hover:text-blue-300 text-xs transition-colors">
-                  설정 편집
-                </Link>
+                <div className="inline-flex items-center gap-2">
+                  <TerminalCommandMenu terminalId={t.id} online={t.status === 'online'} />
+                  <Link href={`/store/admin/terminals/${t.id}`} className="text-blue-400 hover:text-blue-300 text-xs transition-colors">
+                    설정 편집
+                  </Link>
+                </div>
               </td>
             </tr>
           ))}

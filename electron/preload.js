@@ -47,6 +47,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 앱 종료
   quitApp: () => ipcRenderer.invoke('app:quit'),
 
+  // 앱 재시작 (원격 명령용)
+  relaunchApp: () => ipcRenderer.invoke('app:relaunch'),
+
+  // 원격 로그/스크린샷 지원
+  getLogContents: () => ipcRenderer.invoke('app:getLogContents'),
+  captureScreenshot: () => ipcRenderer.invoke('app:captureScreenshot'),
+
   // 앱 버전 조회
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
 

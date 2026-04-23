@@ -36,8 +36,15 @@ echo [3/4] Windows 업데이트 재시작 알림 억제...
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" /v NoAutoRebootWithLoggedOnUsers /t REG_DWORD /d 1 /f >nul
 echo       완료
 
-:: 4. 시작프로그램 등록 (BIZPOS 설치 후 실행)
-echo [4/4] 시작프로그램 등록 확인...
+:: 4. Windows Defender 실시간 검사 제외 (자동 업데이트 차단 방지)
+echo [4/5] Windows Defender 제외 경로 추가...
+powershell -NoProfile -Command "Add-MpPreference -ExclusionPath '%ProgramFiles%\BIZPOS'" >nul 2>&1
+powershell -NoProfile -Command "Add-MpPreference -ExclusionPath '%LOCALAPPDATA%\bizpos-web-updater'" >nul 2>&1
+powershell -NoProfile -Command "Add-MpPreference -ExclusionProcess 'BIZPOS.exe'" >nul 2>&1
+echo       완료
+
+:: 5. 시작프로그램 등록 (BIZPOS 설치 후 실행)
+echo [5/5] 시작프로그램 등록 확인...
 if exist "%ProgramFiles%\BIZPOS\BIZPOS.exe" (
     reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v BIZPOS /t REG_SZ /d "\"%ProgramFiles%\BIZPOS\BIZPOS.exe\"" /f >nul
     echo       BIZPOS 시작프로그램 등록 완료

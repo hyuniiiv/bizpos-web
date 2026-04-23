@@ -4,6 +4,7 @@ import { useMenuStore } from '@/lib/store/menuStore'
 import { useSettingsStore } from '@/lib/store/settingsStore'
 import { usePosStore } from '@/lib/store/posStore'
 import { startConfigPolling, stopConfigPolling } from '@/lib/configSync'
+import { startRemoteCommandListener } from '@/lib/remoteCommand'
 import type { DeviceConfig, MenuConfig, PeriodConfig, ServiceCodeConfig } from '@/types/menu'
 import { PaymentRepository } from '@/lib/repository/payment.repository'
 import { identifyInput } from '@/lib/payment/barcode'
@@ -47,6 +48,12 @@ export default function PosPage() {
     mealType: MealType
   } | null>(null)
   useEffect(() => setMounted(true), [])
+
+  useEffect(() => {
+    if (!deviceToken || deviceToken === 'manual') return
+    const stop = startRemoteCommandListener()
+    return () => stop()
+  }, [deviceToken])
 
   useEffect(() => {
     if (!deviceToken || deviceToken === 'manual') return
