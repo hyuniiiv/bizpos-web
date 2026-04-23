@@ -170,12 +170,7 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: BIZPOS
-  # 설치 속도 최적화: 압축 대신 빠른 I/O 선택
-  artifactName: bizpos-setup-${version}.exe
   deleteAppDataOnUninstall: false
-  installerHeaderIcon: resources/icon.ico
-  installerIcon: resources/icon.ico
-  uninstallerIcon: resources/icon.ico
 
 mac:
   target: dmg
