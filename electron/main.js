@@ -3,14 +3,10 @@
 const { app, BrowserWindow, shell, dialog, session, ipcMain } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const { spawn } = require('child_process')
-const http = require('http')
-const net = require('net')
 const Database = require('better-sqlite3')
 
 // 패키징되지 않은 상태(개발/테스트) = true
 const isDev = !app.isPackaged
-let PORT = 3000
 
 // DB 초기화
 const dbPath = path.join(app.getPath('userData'), 'bizpos.db')
@@ -70,27 +66,30 @@ ipcMain.handle('db:deleteMenu', (event, id) => {
   return { success: true }
 })
 
-// 동적 포트 할당
-async function getAvailablePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.unref();
-    server.on('error', reject);
-    server.listen(0, () => {
-      const { port } = server.address();
-      server.close(() => resolve(port));
-    });
-  });
-}
-
-// Electron은 항상 로컬 standalone 서버를 실행 (오프라인 시작 보장)
+// Electron은 정적 HTML(Next.js static export)을 file:// 프로토콜로 로드
 // 온라인 API 호출(Supabase, BizplayPay)은 앱 레이어에서 네트워크 상태에 따라 처리
 
 // --kiosk 플래그로 키오스크 모드 토글
 const isKiosk = process.argv.includes('--kiosk')
 
 let mainWindow = null
-let nextServerProcess = null
+
+// ---------------------------------------------------------------------------
+// 앱 진입 URL 결정
+// - 개발: next dev (http://localhost:3000)
+// - 프로덕션: electron-builder가 out/ → resources/nextjs/ 로 복사한 정적 HTML
+// ---------------------------------------------------------------------------
+function getStartURL() {
+  if (isDev) {
+    return `http://localhost:3000`
+  }
+  const indexPath = path.join(process.resourcesPath, 'nextjs', 'index.html')
+  if (!fs.existsSync(indexPath)) {
+    throw new Error(`index.html 없음: ${indexPath}`)
+  }
+  // file:// URL 형식으로 변환 (Windows 경로 대응)
+  return `file://${indexPath.replace(/\\/g, '/')}`
+}
 
 // ---------------------------------------------------------------------------
 // 파일 로깅 (패키징된 앱의 콘솔 출력을 파일로 보존)
@@ -116,66 +115,6 @@ function initLogging() {
   } catch (err) {
     // 로깅 초기화 실패는 앱 실행을 막지 않음
   }
-}
-
-// ---------------------------------------------------------------------------
-// Next.js 서버 대기 (최대 60초)
-// ---------------------------------------------------------------------------
-function waitForServer(url, maxRetries = 60) {
-  return new Promise((resolve, reject) => {
-    let retries = 0
-    const check = () => {
-      http.get(url, () => resolve())
-        .on('error', () => {
-          if (++retries >= maxRetries) {
-            reject(new Error(`서버 시작 실패: ${url}`))
-          } else {
-            setTimeout(check, 1000)
-          }
-        })
-    }
-    check()
-  })
-}
-
-// ---------------------------------------------------------------------------
-// 프로덕션: Next.js standalone 서버 실행
-// ---------------------------------------------------------------------------
-async function startNextServer() {
-  if (isDev) return // 개발 모드는 next dev가 별도 실행됨
-
-  // electron-builder extraResources 로 복사된 경로
-  // Next.js 16 standalone은 package 이름(bizpos-web) 하위에 server.js를 만듦
-  // electron-builder.yml에서 평탄화했지만 만일을 위해 양쪽 경로 모두 탐색
-  const candidates = [
-    path.join(process.resourcesPath, 'nextjs', 'server.js'),
-    path.join(process.resourcesPath, 'nextjs', 'bizpos-web', 'server.js'),
-  ]
-  const serverScript = candidates.find(p => fs.existsSync(p))
-  if (!serverScript) {
-    throw new Error(`server.js 없음. 탐색 경로:\n${candidates.join('\n')}`)
-  }
-  console.log('[next] serverScript:', serverScript)
-
-  // ELECTRON_RUN_AS_NODE=1 로 Electron 내장 Node.js 런타임을 사용
-  // 시스템에 Node.js가 설치되지 않아도 서버 기동 가능
-  // cwd는 server.js와 동일 위치로 — Next.js가 .next/를 상대 경로로 찾음
-  nextServerProcess = spawn(process.execPath, [serverScript], {
-    cwd: path.dirname(serverScript),
-    env: {
-      ...process.env,
-      PORT: String(PORT),
-      NODE_ENV: 'production',
-      HOSTNAME: '127.0.0.1',
-      ELECTRON_RUN_AS_NODE: '1',
-    },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-
-  nextServerProcess.stdout?.on('data', (d) => console.log('[next]', d.toString().trim()))
-  nextServerProcess.stderr?.on('data', (d) => console.error('[next]', d.toString().trim()))
-
-  await waitForServer(`http://127.0.0.1:${PORT}`)
 }
 
 // ---------------------------------------------------------------------------
@@ -333,11 +272,8 @@ function createWindow() {
     }
   })
 
-  // 개발: next dev URL / 프로덕션: 항상 로컬 standalone 서버
-  const appURL = isDev
-    ? `http://localhost:${PORT}`
-    : `http://127.0.0.1:${PORT}`
-
+  // 개발: next dev URL / 프로덕션: 정적 HTML (file://)
+  const appURL = getStartURL()
   mainWindow.loadURL(appURL)
 
   if (isDev && !isKiosk) {
@@ -356,8 +292,6 @@ app.whenReady().then(async () => {
   try {
     initLogging()
     setupPermissions()
-    PORT = isDev ? (process.env.PORT || 3000) : await getAvailablePort()
-    await startNextServer()
     createWindow()
     setupAutoUpdater()
   } catch (err) {
@@ -372,10 +306,6 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
-  if (nextServerProcess) {
-    nextServerProcess.kill()
-    nextServerProcess = null
-  }
   if (process.platform !== 'darwin') {
     app.quit()
   }

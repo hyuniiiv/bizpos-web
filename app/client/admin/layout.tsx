@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { LogOut } from 'lucide-react'
 import { ClientSwitcher } from './ClientSwitcher'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 const NAV = [
   { href: '/client/admin',             label: '대시보드' },
@@ -47,6 +48,7 @@ export default async function ClientAdminLayout({ children }: { children: React.
   }
 
   return (
+    <ProtectedRoute requiredRole="client">
     <div className="min-h-screen flex" style={{ background: 'var(--pos-bg-gradient)', color: 'var(--bp-text)' }}>
       <aside
         className="hidden md:flex flex-col md:w-16 lg:w-56 flex-shrink-0"
@@ -90,5 +92,6 @@ export default async function ClientAdminLayout({ children }: { children: React.
       </aside>
       <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">{children}</main>
     </div>
+    </ProtectedRoute>
   )
 }

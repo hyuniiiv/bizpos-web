@@ -49,24 +49,20 @@ jobs:
           NEXT_PUBLIC_SERVER_URL: ${{ secrets.NEXT_PUBLIC_SERVER_URL }}
         run: pnpm run electron:build:win --publish always
 
-      - name: Diagnose standalone structure
+      - name: Diagnose static export output
         if: always()
         shell: pwsh
         run: |
-          Write-Host "=== .next/standalone 1-depth ==="
-          if (Test-Path .next/standalone) {
-            Get-ChildItem .next/standalone | Select-Object Name | Format-Table -AutoSize
+          Write-Host "=== out/ 1-depth ==="
+          if (Test-Path out) {
+            Get-ChildItem out | Select-Object Name | Format-Table -AutoSize
           } else {
-            Write-Host ".next/standalone 없음"
+            Write-Host "out/ 없음 — static export 실패"
           }
-          Write-Host "=== standalone/server.js 존재 ==="
-          Test-Path .next/standalone/server.js
-          Write-Host "=== standalone/node_modules/next/package.json 존재 ==="
-          Test-Path .next/standalone/node_modules/next/package.json
-          Write-Host "=== standalone/node_modules 상위 목록 ==="
-          if (Test-Path .next/standalone/node_modules) {
-            Get-ChildItem .next/standalone/node_modules | Select-Object Name | Format-Table -AutoSize
-          }
+          Write-Host "=== out/index.html 존재 ==="
+          Test-Path out/index.html
+          Write-Host "=== out/_next 존재 ==="
+          Test-Path out/_next
 
       - name: Diagnose packaged output
         if: always()
@@ -76,10 +72,10 @@ jobs:
           if (Test-Path $base) {
             Write-Host "=== $base 1-depth ==="
             Get-ChildItem $base | Select-Object Name | Format-Table -AutoSize
-            Write-Host "=== server.js 존재 ==="
-            Test-Path "$base/server.js"
-            Write-Host "=== node_modules/next/package.json 존재 ==="
-            Test-Path "$base/node_modules/next/package.json"
+            Write-Host "=== index.html 존재 ==="
+            Test-Path "$base/index.html"
+            Write-Host "=== _next/static 존재 ==="
+            Test-Path "$base/_next/static"
           } else {
             Write-Host "$base 없음"
           }

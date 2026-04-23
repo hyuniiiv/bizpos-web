@@ -6,8 +6,10 @@ directories:
   buildResources: resources
   output: dist-electron
 
-# electron-builder 기본 동작으로 dependencies 자동 포함.
-# 수동 allowlist는 transitive deps 누락 사고 반복 (v0.1.11~25).
+# electron-builder 기본 동작: package.json dependencies 자동 포함.
+# Electron main process가 require하는 런타임 의존성만 필요:
+#   - better-sqlite3 (네이티브)
+#   - electron-updater
 files:
   - electron/**
   - package.json
@@ -17,6 +19,7 @@ files:
   - "!lib/**"
   - "!public/**"
   - "!.next/**"
+  - "!out/**"
   - "!CC-Session-Logs/**"
   - "!docs/**"
   - "!supabase/**"
@@ -33,29 +36,18 @@ files:
   - "!.env*"
   - "!eslint.config.*"
   - "!postcss.config.*"
-  - "!middleware.ts"
 
-# 네이티브 C++ 모듈은 asar 압축 해제 필수.
+# 네이티브 C++ 모듈은 asar 해제 필수
 asarUnpack:
   - node_modules/better-sqlite3/**
   - node_modules/bindings/**
   - node_modules/file-uri-to-path/**
 
-# Next.js standalone 구조는 workspace 감지 여부에 따라 달라짐:
-#   - CI (단일 lockfile): .next/standalone/server.js, .next/standalone/node_modules/...
-#   - 로컬 (상위 lockfile 존재): .next/standalone/bizpos-web/server.js, ...
-# CI 구조 기준으로 flat 복사. 로컬에서는 CI로만 배포하므로 문제없음.
+# Next.js static export 결과(out/ 폴더)를 resources/nextjs/로 복사
+# 서버 없음 → Electron이 file:// 로 index.html 로드
 extraResources:
-  - from: .next/standalone
+  - from: out
     to: nextjs
-    filter:
-      - "**/*"
-  - from: .next/static
-    to: nextjs/.next/static
-    filter:
-      - "**/*"
-  - from: public
-    to: nextjs/public
     filter:
       - "**/*"
 

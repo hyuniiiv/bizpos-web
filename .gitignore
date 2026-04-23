@@ -46,6 +46,7 @@ next-env.d.ts
 /resources/*.ico
 /resources/*.icns
 /resources/*.png
+/.electron-excluded/
 
 # internal tools
 .bkit-memory.json

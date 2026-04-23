@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { SideNav, MobileNav } from './NavItem'
 import LogoutButton from './LogoutButton'
 import { MerchantSwitcher } from './MerchantSwitcher'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -37,6 +38,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
+    <ProtectedRoute requiredRole="merchant">
     <div className="min-h-screen flex" style={{ background: 'var(--pos-bg-gradient)' }}>
 
       {/* 사이드바: md 이상 */}
@@ -93,5 +95,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">{children}</main>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }

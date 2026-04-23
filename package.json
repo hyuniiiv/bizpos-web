@@ -1,6 +1,6 @@
 {
   "name": "bizpos-web",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "description": "BIZPOS - POS Terminal Application",
   "author": "BIZPLAY",
   "license": "UNLICENSED",
@@ -13,10 +13,11 @@
     "start": "next start",
     "lint": "eslint",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:build": "cross-env BUILD_TARGET=electron next build && electron-builder",
-    "electron:build:win": "cross-env BUILD_TARGET=electron next build && electron-builder --win",
+    "build:electron": "node scripts/electron-build-wrapper.js",
+    "electron:build": "node scripts/electron-build-wrapper.js && electron-builder",
+    "electron:build:win": "node scripts/electron-build-wrapper.js && electron-builder --win",
     "electron:pack": "electron-builder --dir",
-    "electron:release": "cross-env BUILD_TARGET=electron next build && electron-builder --win --publish always"
+    "electron:release": "node scripts/electron-build-wrapper.js && electron-builder --win --publish always"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
