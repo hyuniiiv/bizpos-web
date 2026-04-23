@@ -25,6 +25,12 @@ jobs:
           version: 9
 
       - name: Install dependencies
+        # node-linker=hoisted: pnpm을 npm/yarn처럼 flat 설치로 강제
+        # Next.js standalone은 pnpm의 심볼릭 링크 구조에서 node_modules를 제대로 패키징하지 못함
+        # (standalone/node_modules/next 가 외부 .pnpm store를 가리키는 댕글링 링크가 됨)
+        # hoisted 모드에서는 실제 파일이 복사되어 standalone이 진짜 self-contained 해진다.
+        env:
+          NPM_CONFIG_NODE_LINKER: hoisted
         run: pnpm install --frozen-lockfile
 
       - name: Build Next.js + Electron (Windows)
