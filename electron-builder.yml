@@ -22,6 +22,8 @@ files:
   - "!.next/**"
   - node_modules/electron-updater/**
   - node_modules/builder-util-runtime/**
+  - node_modules/debug/**
+  - node_modules/ms/**
   - node_modules/fs-extra/**
   - node_modules/graceful-fs/**
   - node_modules/jsonfile/**
@@ -82,6 +84,7 @@ extraResources:
     to: nextjs/node_modules
     filter:
       - "**/*"
+      # dev 의존성 제외
       - "!electron/**"
       - "!electron-builder/**"
       - "!electron-builder-squirrel-windows/**"
@@ -103,20 +106,32 @@ extraResources:
       - "!wait-on/**"
       - "!@babel/**"
       - "!babel-plugin-*/**"
+      - "!prettier/**"
+      - "!webpack/**"
+      - "!jest/**"
+      - "!ts-node/**"
+      - "!vitest/**"
+      - "!turborepo/**"
       # 런타임 불필요 파일
       - "!**/*.md"
       - "!**/*.markdown"
       - "!**/*.d.ts"
+      - "!**/*.d.ts.map"
       - "!**/*.map"
       - "!**/*.ts.map"
       - "!**/*.js.map"
+      - "!**/*.ts"
       - "!**/LICENSE*"
       - "!**/CHANGELOG*"
       - "!**/HISTORY*"
       - "!**/AUTHORS*"
       - "!**/CONTRIBUTORS*"
+      - "!**/COPYING*"
       - "!**/.github/**"
       - "!**/.vscode/**"
+      - "!**/.gitignore"
+      - "!**/.npmignore"
+      - "!**/.eslintignore"
       - "!**/test/**"
       - "!**/tests/**"
       - "!**/__tests__/**"
@@ -124,9 +139,19 @@ extraResources:
       - "!**/examples/**"
       - "!**/docs/**"
       - "!**/doc/**"
+      - "!**/demo/**"
+      - "!**/samples/**"
+      - "!**/src/**"
       - "!**/*.test.js"
       - "!**/*.spec.js"
+      - "!**/*.test.ts"
+      - "!**/*.spec.ts"
       - "!**/*.min.js.map"
+      - "!**/.bin/**"
+      - "!**/.pnpm/**"
+      - "!**/Dockerfile*"
+      - "!**/docker-compose*"
+      - "!**/.git/**"
 
 win:
   target:
@@ -145,6 +170,12 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: BIZPOS
+  # 설치 속도 최적화: 압축 대신 빠른 I/O 선택
+  artifactName: bizpos-setup-${version}.exe
+  deleteAppDataOnUninstall: false
+  installerHeaderIcon: resources/icon.ico
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
 
 mac:
   target: dmg
