@@ -18,19 +18,16 @@ files:
   - "!public/**"
   - "!.next/**"
 
-# Next.js standalone 빌드 결과물을 별도 리소스로 포함
-# Next.js standalone 출력 경로는 환경에 따라 두 가지로 나뉨:
-#   A) .next/standalone/bizpos-web/server.js  (pnpm workspace 등)
-#   B) .next/standalone/server.js             (단일 패키지)
-# 두 경우 모두 resources/nextjs/server.js 에 배치되도록 양쪽 모두 복사한다.
-# 존재하지 않는 from 경로는 electron-builder가 skip 하므로 양쪽 선언이 안전하다.
+# Next.js standalone + 루트 node_modules를 조합해 resources/nextjs/ 에 self-contained 배치.
+# standalone만으로는 pnpm 환경에서 node_modules/next 해석이 실패하는 사례가 발생해,
+# 루트 node_modules를 nextjs/node_modules 로 그대로 복사해 require()를 보장한다.
+# (.npmrc에 node-linker=hoisted 설정으로 flat 구조 강제, 심볼릭 링크 없음)
 extraResources:
-  # A 구조: bizpos-web 하위를 nextjs로 평탄화
+  # A/B 구조 어느 쪽이든 server.js + .next/ 를 nextjs/ 로 복사
   - from: .next/standalone/bizpos-web
     to: nextjs
     filter:
       - "**/*"
-  # B 구조: standalone 루트를 nextjs로 (bizpos-web 폴더는 A에서 이미 처리)
   - from: .next/standalone
     to: nextjs
     filter:
@@ -44,6 +41,37 @@ extraResources:
     to: nextjs/public
     filter:
       - "**/*"
+  # 루트 node_modules를 직접 복사 (dev 전용 대형 패키지 제외)
+  - from: node_modules
+    to: nextjs/node_modules
+    filter:
+      - "**/*"
+      - "!electron/**"
+      - "!electron-builder/**"
+      - "!electron-builder-squirrel-windows/**"
+      - "!electron-publish/**"
+      - "!electron-publisher-*/**"
+      - "!@electron/**"
+      - "!app-builder-lib/**"
+      - "!app-builder-bin/**"
+      - "!dmg-builder/**"
+      - "!builder-util/**"
+      - "!builder-util-runtime/**"
+      - "!@types/**"
+      - "!typescript/**"
+      - "!eslint/**"
+      - "!@eslint/**"
+      - "!eslint-*/**"
+      - "!concurrently/**"
+      - "!cross-env/**"
+      - "!wait-on/**"
+      - "!@babel/**"
+      - "!babel-plugin-*/**"
+      - "!**/*.md"
+      - "!**/*.d.ts"
+      - "!**/test/**"
+      - "!**/tests/**"
+      - "!**/__tests__/**"
 
 win:
   target:
