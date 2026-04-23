@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { getBrowserClient } from '@/lib/supabase/browser'
 
 type Role = 'platform_admin' | 'merchant' | 'client' | null
@@ -33,7 +33,7 @@ export function useAuth() {
     })()
 
     const { data: subData } = supabase.auth.onAuthStateChange(
-      (_event, session: Session | null) => {
+      (_event: AuthChangeEvent, session: Session | null) => {
         setUser(session?.user ?? null)
         setRole(extractRole(session))
       }
