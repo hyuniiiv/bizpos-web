@@ -1,5 +1,6 @@
 // lib/meal/mealRecord.ts
 import type { MealType } from '@/types/menu'
+import { getServerUrl } from '@/lib/serverUrl'
 
 export type MealRecordResult =
   | { status: 'ok'; employeeName: string; department?: string; mealType: MealType }
@@ -11,7 +12,7 @@ export async function recordMealUsage(
   deviceToken: string,
 ): Promise<MealRecordResult> {
   try {
-    const res = await fetch('/api/meal/record', {
+    const res = await fetch(getServerUrl() + '/api/meal/record', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

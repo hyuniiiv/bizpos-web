@@ -104,7 +104,7 @@ export default function PosAdminPage() {
       ? (JSON.parse(stored)?.state?.deviceToken ?? null)
       : null
 
-    fetch('/api/transactions/realtime', {
+    fetch(getServerUrl() + '/api/transactions/realtime', {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       signal: controller.signal,
     })
@@ -154,7 +154,7 @@ export default function PosAdminPage() {
     const api = (window as Window & { electronAPI?: { getVersion?: () => Promise<string> } }).electronAPI
     if (!api?.getVersion) return
     api.getVersion().then((version) => {
-      fetch('/api/terminal/report-version', {
+      fetch(getServerUrl() + '/api/terminal/report-version', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken}` },
         body: JSON.stringify({ version }),
@@ -193,7 +193,7 @@ export default function PosAdminPage() {
 
   const loadRtTxs = async (date: string, page = 1) => {
     try {
-      const res = await fetch(`/api/transactions?date=${date}&limit=20&offset=${(page - 1) * 20}`, { headers: { 'Authorization': `Bearer ${deviceToken ?? ''}` } })
+      const res = await fetch(getServerUrl() + `/api/transactions?date=${date}&limit=20&offset=${(page - 1) * 20}`, { headers: { 'Authorization': `Bearer ${deviceToken ?? ''}` } })
       const d = await res.json()
       setRtTxs(d.items ?? []); setRtTotalCount(d.total ?? 0); setRtTotalAmount(d.totalAmount ?? 0)
     } catch {}
@@ -202,7 +202,7 @@ export default function PosAdminPage() {
   const loadHistTxs = useCallback(async () => {
     setHistLoading(true); setSelectedIds(new Set())
     try {
-      const res = await fetch(`/api/transactions?date=${histDates.start}&limit=200`, { headers: { 'Authorization': `Bearer ${deviceToken ?? ''}` } })
+      const res = await fetch(getServerUrl() + `/api/transactions?date=${histDates.start}&limit=200`, { headers: { 'Authorization': `Bearer ${deviceToken ?? ''}` } })
       const d = await res.json()
       setHistTxs(d.items ?? []); setHistTotal(d.total ?? 0); setHistTotalAmount(d.totalAmount ?? 0)
     } finally { setHistLoading(false) }
@@ -248,8 +248,11 @@ export default function PosAdminPage() {
     const configToSave = pinInput ? { ...form, adminPin: pinInput } : form
     await updateConfig(configToSave)
 
-    // 로컬 파일 저장 (fallback)
-    await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(configToSave) })
+    // 로컬 파일 저장 (웹 서버 환경에서만 - Electron은 zustand persist로 대체)
+    const isElectron = typeof window !== 'undefined' && !!(window as Window & { electronAPI?: unknown }).electronAPI
+    if (!isElectron) {
+      await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(configToSave) })
+    }
 
     // Supabase 동기화 (토큰 있을 경우)
     if (deviceToken && deviceToken !== 'manual') {

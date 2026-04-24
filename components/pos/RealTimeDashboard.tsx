@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSettingsStore } from '@/lib/store/settingsStore'
 import { getPendingPayments } from '@/lib/db/indexeddb'
+import { getServerUrl } from '@/lib/serverUrl'
 import Link from 'next/link'
 
 interface TxRecord {
@@ -63,7 +64,7 @@ export default function RealTimeDashboard({ refreshTrigger }: Props) {
   const fetchTx = useCallback(async () => {
     try {
       const [res, pending] = await Promise.all([
-        fetch(`/api/transactions?date=${today}&limit=100`, {
+        fetch(getServerUrl() + `/api/transactions?date=${today}&limit=100`, {
           headers: { 'Authorization': `Bearer ${deviceToken ?? ''}` },
         }),
         getPendingPayments(),

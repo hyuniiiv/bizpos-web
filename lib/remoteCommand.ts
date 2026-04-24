@@ -11,13 +11,11 @@ import { useSettingsStore } from '@/lib/store/settingsStore'
 import { PaymentRepository } from '@/lib/repository/payment.repository'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
-const ACCESS_TOKEN_KEY = 'terminal_access_token'
-
 async function uploadToServer(
   kind: 'log' | 'screenshot',
   base64: string,
 ): Promise<{ result?: unknown; error?: string }> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem(ACCESS_TOKEN_KEY) : null
+  const token = useSettingsStore.getState().deviceToken
   if (!token) return { error: 'NO_ACCESS_TOKEN' }
 
   try {
@@ -33,8 +31,6 @@ async function uploadToServer(
     return { error: e instanceof Error ? e.message : 'FETCH_FAILED' }
   }
 }
-
-const TERMINAL_ID_KEY = 'terminal_id'
 
 export type RemoteCommand = 'restart' | 'flush_queue' | 'upload_log' | 'screenshot' | 'reconnect'
 
@@ -120,10 +116,9 @@ async function handleCommand(cmd: CommandRow): Promise<void> {
   }
 }
 
-export function startRemoteCommandListener(): () => void {
+export function startRemoteCommandListener(terminalId: string): () => void {
   try {
     if (channel) return () => {}
-    const terminalId = typeof window !== 'undefined' ? localStorage.getItem(TERMINAL_ID_KEY) : null
     if (!terminalId) return () => {}
 
     const supabase = getBrowserClient()

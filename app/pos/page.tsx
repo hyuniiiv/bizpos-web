@@ -38,7 +38,7 @@ export default function PosPage() {
     setScreen, clearMenu, setLastTransaction, setLastError
   } = usePosStore()
 
-  const { deviceToken, terminalType } = useSettingsStore()
+  const { deviceToken, terminalType, deviceTerminalId } = useSettingsStore()
   const [mounted, setMounted] = useState(false)
   const [txRefreshTrigger, setTxRefreshTrigger] = useState(0)
   const [badgeResult, setBadgeResult] = useState<{
@@ -51,14 +51,15 @@ export default function PosPage() {
 
   useEffect(() => {
     if (!deviceToken || deviceToken === 'manual') return
+    if (!deviceTerminalId) return
     let stop = () => {}
     try {
-      stop = startRemoteCommandListener()
+      stop = startRemoteCommandListener(deviceTerminalId)
     } catch (err) {
       console.warn('[pos] remote command listener failed to start:', err)
     }
     return () => { try { stop() } catch { /* ignore */ } }
-  }, [deviceToken])
+  }, [deviceToken, deviceTerminalId])
 
   useEffect(() => {
     if (!deviceToken || deviceToken === 'manual') return
