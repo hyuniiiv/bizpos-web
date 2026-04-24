@@ -201,10 +201,24 @@ function setupPermissions() {
       let filePath = decodeURIComponent(request.url.replace(/^file:\/\//, '').replace(/\?.*$/, ''))
       // Windows 드라이브 경로 보정 (/C:/... → C:/...)
       if (/^\/[A-Za-z]:\//.test(filePath)) filePath = filePath.slice(1)
-      // pos/_next/ 요청을 상위 _next/로 rewrite
-      if (filePath.includes('/pos/_next/')) {
-        filePath = filePath.replace('/pos/_next/', '/_next/')
+
+      // 드라이브 루트 기준 경로(C:/...)이고 실제 파일이 없으면 앱 리소스로 rewrite
+      const driveRootMatch = filePath.match(/^[A-Za-z]:\/(.+)/)
+      if (driveRootMatch && !fs.existsSync(filePath)) {
+        let subPath = driveRootMatch[1]
+        // 서브경로의 _next/ 에셋은 루트 _next/로 정규화
+        subPath = subPath.replace(/^[^/]+\/_next\//, '_next/')
+        let candidate = path.join(process.resourcesPath, 'nextjs', subPath)
+        // 디렉토리 요청(슬래시 끝 or .html 없음)은 index.html 붙임
+        if (!path.extname(subPath) && !subPath.includes('_next')) {
+          candidate = path.join(candidate, 'index.html')
+        }
+        if (fs.existsSync(candidate)) {
+          callback(path.normalize(candidate))
+          return
+        }
       }
+
       callback(path.normalize(filePath))
     })
   }
