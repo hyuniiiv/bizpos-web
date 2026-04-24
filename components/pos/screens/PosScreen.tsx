@@ -206,8 +206,8 @@ export default function PosScreen() {
             </div>
           </div>
 
-          {/* ── 고객 디스플레이 (우) ── */}
-          <div className="flex flex-col overflow-hidden" style={{ flex: '0 0 45%' }}>
+          {/* ── 고객 디스플레이 (우) — showPaymentList가 false면 숨김 (기본 표시) ── */}
+          {config.showPaymentList !== false && <div className="flex flex-col overflow-hidden" style={{ flex: '0 0 45%' }}>
             <div className="px-5 py-3 border-b border-white/08 flex items-center gap-2" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
               <span className="text-[10px] text-white/30 uppercase tracking-widest font-semibold">고객 화면</span>
             </div>
@@ -251,7 +251,7 @@ export default function PosScreen() {
                 </div>
               ) : null}
             </div>
-          </div>
+          </div>}
         </div>
 
         <StatusBar />

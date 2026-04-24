@@ -608,6 +608,7 @@ export default function PosAdminPage() {
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer"><input type="checkbox" checked={form.externalDisplay ?? true} onChange={e => setForm(f => ({ ...f, externalDisplay: e.target.checked }))} />외부 디스플레이 사용</label>
+                <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer"><input type="checkbox" checked={form.showPaymentList ?? true} onChange={e => setForm(f => ({ ...f, showPaymentList: e.target.checked }))} />오른쪽 결제목록(고객 화면) 표시</label>
                 <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer"><input type="checkbox" checked={form.offlineMode} onChange={e => setForm(f => ({ ...f, offlineMode: e.target.checked }))} />오프라인 모드 강제 활성화</label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: form.cafeteriaMode ? '#06D6A0' : 'rgba(255,255,255,0.70)' }}><input type="checkbox" checked={form.cafeteriaMode ?? false} onChange={e => setForm(f => ({ ...f, cafeteriaMode: e.target.checked }))} />학생식당 모드 (판매현황 동시 표시)</label>
               </div>

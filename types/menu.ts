@@ -75,6 +75,7 @@ export interface DeviceConfig {
   barcodePort: string                         // 시리얼 바코드 리더 COM 포트
   externalDisplay: boolean                    // 외부 디스플레이 사용 여부
   cafeteriaMode: boolean                      // 학생식당 모드 (판매현황 동시 표시)
+  showPaymentList?: boolean                   // POS 기본화면 오른쪽 결제목록(고객 화면) 표시 여부
   tableCount?: number                         // 테이블오더 테이블 수
   receiptPrint?: boolean                      // 영수증 출력 여부
   inputPolicy?: InputPolicy
