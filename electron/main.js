@@ -291,8 +291,10 @@ function setupAutoUpdater() {
     })
 
     // 앱 시작 시 즉시 확인 + 이후 4시간마다 주기적 확인
-    autoUpdater.checkForUpdates()
-    setInterval(() => autoUpdater.checkForUpdates(), 4 * 60 * 60 * 1000)
+    autoUpdater.checkForUpdates().catch(err => console.error('[updater] checkForUpdates rejected:', err.message))
+    setInterval(() => {
+      autoUpdater.checkForUpdates().catch(err => console.error('[updater] checkForUpdates rejected:', err.message))
+    }, 4 * 60 * 60 * 1000)
   } catch (err) {
     // electron-updater 미설치 환경에서는 무시
     console.warn('[updater] electron-updater를 찾을 수 없습니다:', err.message)
@@ -425,7 +427,7 @@ ipcMain.handle('app:quit', () => {
 ipcMain.handle('app:checkUpdate', () => {
   try {
     const { autoUpdater } = require('electron-updater')
-    autoUpdater.checkForUpdates()
+    autoUpdater.checkForUpdates().catch(err => console.error('[updater] checkForUpdates rejected:', err.message))
   } catch (err) {
     console.warn('[updater] checkForUpdates 실패:', err.message)
   }
