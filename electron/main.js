@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, BrowserWindow, shell, dialog, session, ipcMain } = require('electron')
+const { app, BrowserWindow, shell, dialog, session, ipcMain, protocol } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const Database = require('better-sqlite3')
@@ -194,6 +194,21 @@ function initLogging() {
 // 권한 핸들러 등록 (카메라, 시리얼 포트, USB, HID)
 // ---------------------------------------------------------------------------
 function setupPermissions() {
+  // pos/index.html에서 _next/ 에셋 요청 시 pos/_next/로 해석됨을 _next/로 rewrite
+  // 이유: assetPrefix: './' 설정이 서브 경로에서는 상위 _next/를 pos/_next/로 잘못 해석
+  if (!isDev) {
+    protocol.interceptFileProtocol('file', (request, callback) => {
+      let filePath = decodeURIComponent(request.url.replace(/^file:\/\//, '').replace(/\?.*$/, ''))
+      // Windows 드라이브 경로 보정 (/C:/... → C:/...)
+      if (/^\/[A-Za-z]:\//.test(filePath)) filePath = filePath.slice(1)
+      // pos/_next/ 요청을 상위 _next/로 rewrite
+      if (filePath.includes('/pos/_next/')) {
+        filePath = filePath.replace('/pos/_next/', '/_next/')
+      }
+      callback(path.normalize(filePath))
+    })
+  }
+
   // Vercel 서버(NEXT_PUBLIC_SERVER_URL)로의 cross-origin 결제 API 호출 허용
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const origin = details.responseHeaders?.['access-control-allow-origin']
