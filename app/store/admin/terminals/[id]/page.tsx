@@ -1,10 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import TerminalForm from '../TerminalForm'
+import MenuManager from '../MenuManager'
 import PosConfigForm from './PosConfigForm'
 import TerminalKeyPanel from './TerminalKeyPanel'
 import CloneTerminalButton from './CloneTerminalButton'
 import { UpdateCommandButton } from './UpdateCommandButton'
+import type { Role } from '@/lib/roles/permissions'
 
 export const revalidate = 0
 
@@ -20,9 +23,11 @@ export default async function TerminalDetailPage({
 
   const { data: merchantUser } = await supabase
     .from('merchant_users')
-    .select('merchant_id')
+    .select('merchant_id, role')
     .eq('user_id', user.id)
     .single()
+
+  const userRole = (merchantUser?.role as Role | null) || null
 
   // RLS 정책이 merchant_id 소유권 검증
   const { data: terminal } = await supabase
@@ -60,6 +65,32 @@ export default async function TerminalDetailPage({
       </div>
       <h1 className="text-2xl font-bold text-white">{displayName} 설정</h1>
 
+      {/* CRUD & 메뉴 관리 섹션 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 왼쪽: 단말기 정보 (CRUD) */}
+        <div>
+          <TerminalForm
+            terminal={terminal}
+            userRole={userRole}
+            readOnly={false}
+          />
+        </div>
+
+        {/* 오른쪽: 메뉴 관리 */}
+        <div>
+          <MenuManager
+            terminal={terminal}
+            initialMenuConfig={{
+              pos: [],
+              kiosk: [],
+              ticket_checker: [],
+              table_order: [],
+            }}
+          />
+        </div>
+      </div>
+
+      {/* POS 설정 섹션 */}
       <div className="flex gap-6 items-start">
         <div className="flex-1 min-w-0">
           <PosConfigForm
