@@ -20,12 +20,25 @@ export async function POST(req: NextRequest) {
 
   if (!merchantUser) return NextResponse.json({ error: 'MERCHANT_NOT_FOUND' }, { status: 403 })
 
-  const { termId, name, corner, terminal_type } = await req.json()
-  if (!termId) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 })
+  const { termId, name, corner, terminal_type, store_id } = await req.json()
+  if (!termId || !store_id) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 })
+
+  // 권한 검증: store_id가 현재 merchant에 속하는지 확인
+  const { data: store, error: storeError } = await supabase
+    .from('stores')
+    .select('id')
+    .eq('id', store_id)
+    .eq('merchant_id', merchantUser.merchant_id)
+    .single()
+
+  if (storeError || !store) {
+    return NextResponse.json({ error: 'STORE_NOT_FOUND' }, { status: 403 })
+  }
 
   const validTypes = ['ticket_checker', 'pos', 'kiosk', 'table_order']
   const { data, error } = await supabase.from('terminals').insert({
     merchant_id: merchantUser.merchant_id,
+    store_id: store_id,
     term_id: String(termId).padStart(2, '0'),
     name: name ?? '',
     corner: corner ?? '',

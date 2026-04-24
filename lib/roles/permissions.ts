@@ -39,3 +39,44 @@ export const canUpdateTerminalSettings = (role: Role | string) => {
     ROLES.STORE_MANAGER,
   ].includes(role as any);
 };
+
+/**
+ * 멤버 관리 권한 확인
+ */
+export const canManageMembers = (role: Role | string) => {
+  return [
+    ROLES.PLATFORM_ADMIN,
+    ROLES.PLATFORM_MANAGER,
+    ROLES.MERCHANT_ADMIN,
+    ROLES.MERCHANT_MANAGER,
+    ROLES.STORE_ADMIN,
+  ].includes(role as any);
+};
+
+/**
+ * 역할 부여 권한 확인
+ */
+export const canAssignRole = (role: Role | string, targetRole: Role | string) => {
+  const assigner = role as Role;
+  const target = targetRole as Role;
+
+  // Platform admin can assign any role
+  if (assigner === ROLES.PLATFORM_ADMIN) return true;
+
+  // Platform manager can assign non-platform roles
+  if (assigner === ROLES.PLATFORM_MANAGER) {
+    return ![ROLES.PLATFORM_ADMIN, ROLES.PLATFORM_MANAGER].includes(target);
+  }
+
+  // Merchant admin can assign merchant and store roles
+  if (assigner === ROLES.MERCHANT_ADMIN) {
+    return [
+      ROLES.MERCHANT_MANAGER,
+      ROLES.STORE_ADMIN,
+      ROLES.STORE_MANAGER,
+    ].includes(target);
+  }
+
+  // Others cannot assign roles
+  return false;
+};

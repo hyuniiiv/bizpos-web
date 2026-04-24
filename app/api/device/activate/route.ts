@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
     termId: terminal.term_id,
     accessToken,
     merchantId: terminal.merchant_id,
+    storeId: terminal.store_id,
     corner: terminal.corner,
     terminalType: terminal.terminal_type ?? 'ticket_checker',
     config: configRow?.config ?? null,

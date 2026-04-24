@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getMerchantId } from '@/lib/merchant/getMerchantId'
+import { getEmailMapByIds } from '@/lib/supabase/emailMap'
 import MembersClient from './MembersClient'
 
 export const revalidate = 0
@@ -36,17 +36,11 @@ export default async function MembersPage() {
     .eq('merchant_id', merchantId)
     .order('created_at')
 
-  const members: Member[] = []
-  if (rawMembers?.length) {
-    const admin = createAdminClient()
-    await Promise.all(
-      rawMembers.map(async m => {
-        const { data } = await admin.auth.admin.getUserById(m.user_id)
-        members.push({ ...m, email: data.user?.email ?? '(알 수 없음)' })
-      })
-    )
-    members.sort((a, b) => a.created_at.localeCompare(b.created_at))
-  }
+  const emailMap = await getEmailMapByIds(rawMembers?.map(m => m.user_id) ?? [])
+  const members: Member[] = (rawMembers ?? []).map(m => ({
+    ...m,
+    email: emailMap[m.user_id] ?? '(알 수 없음)',
+  }))
 
   return (
     <MembersClient

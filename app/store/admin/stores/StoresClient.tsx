@@ -1,10 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2, X, ChevronDown, ChevronRight, Key, Store as StoreIcon } from 'lucide-react'
 import type { Store, StoreKey } from './page'
 import { ROLES } from '@/lib/roles/permissions'
+
+interface Terminal {
+  id: string
+  store_id: string
+  term_id: string
+  name: string
+  status: 'online' | 'offline'
+}
 
 type StoreForm = { store_name: string; biz_no: string }
 type KeyForm = { name: string; mid: string; enc_key: string; online_ak: string; description: string; env: 'production' | 'development' }
@@ -67,8 +75,35 @@ function KeyRow({
   )
 }
 
+function TerminalRow({ terminal }: { terminal: Terminal }) {
+  return (
+    <div
+      className="flex items-center justify-between px-4 py-2.5 rounded-lg"
+      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+    >
+      <div className="flex-1">
+        <div className="text-sm font-medium text-white">{terminal.name}</div>
+        <div className="text-xs mt-0.5" style={{ color: 'var(--bp-text-3)' }}>
+          ID: {terminal.term_id}
+        </div>
+      </div>
+      <div
+        role="status"
+        className={`px-2 py-1 rounded text-xs font-semibold flex-shrink-0 ml-2 ${
+          terminal.status === 'online'
+            ? 'bg-green-100 text-green-800'
+            : 'bg-gray-200 text-gray-700'
+        }`}
+      >
+        {terminal.status === 'online' ? '온라인' : '오프라인'}
+      </div>
+    </div>
+  )
+}
+
 function StoreCard({
   store,
+  terminals,
   onEdit,
   onDelete,
   onAddKey,
@@ -79,6 +114,7 @@ function StoreCard({
   canDeleteKey,
 }: {
   store: Store
+  terminals: Terminal[]
   onEdit: (s: Store) => void
   onDelete: (id: string, name: string) => void
   onAddKey: (store: Store) => void
@@ -121,6 +157,7 @@ function StoreCard({
             키 {store.merchant_keys.length}개
             {prodCount > 0 && ` (운영 ${prodCount})`}
             {devCount > 0 && ` (개발 ${devCount})`}
+            {terminals.length > 0 && ` · 단말기 ${terminals.length}개`}
           </p>
         </div>
         <div
@@ -151,26 +188,48 @@ function StoreCard({
       </div>
 
       {expanded && (
-        <div className="p-4 space-y-2">
-          {store.merchant_keys.length === 0 ? (
-            <p className="text-xs py-2 text-center" style={{ color: 'var(--bp-text-3)' }}>
-              등록된 가맹점 키가 없습니다.
-            </p>
-          ) : (
-            store.merchant_keys.map(k => (
-              <KeyRow key={k.id} k={k} onDelete={canDeleteKey ? onDeleteKey : () => {}} />
-            ))
-          )}
-          {canAddKey && (
-            <button
-              onClick={() => onAddKey(store)}
-              className="w-full flex items-center justify-center gap-2 py-2 mt-1 rounded-lg text-xs font-medium transition-colors hover:bg-white/5"
-              style={{ color: 'var(--bp-text-3)', border: '1px dashed var(--bp-border)' }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              키 추가
-            </button>
-          )}
+        <div className="p-4 space-y-4">
+          {/* 가맹점 키 섹션 */}
+          <div>
+            <h4 className="text-xs font-semibold mb-2" style={{ color: 'var(--bp-text-3)' }}>가맹점 키</h4>
+            {store.merchant_keys.length === 0 ? (
+              <p className="text-xs py-2 text-center" style={{ color: 'var(--bp-text-3)' }}>
+                등록된 가맹점 키가 없습니다.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {store.merchant_keys.map(k => (
+                  <KeyRow key={k.id} k={k} onDelete={canDeleteKey ? onDeleteKey : () => {}} />
+                ))}
+              </div>
+            )}
+            {canAddKey && (
+              <button
+                onClick={() => onAddKey(store)}
+                className="w-full flex items-center justify-center gap-2 py-2 mt-2 rounded-lg text-xs font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--bp-text-3)', border: '1px dashed var(--bp-border)' }}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                키 추가
+              </button>
+            )}
+          </div>
+
+          {/* 단말기 섹션 */}
+          <div>
+            <h4 className="text-xs font-semibold mb-2" style={{ color: 'var(--bp-text-3)' }}>단말기</h4>
+            {terminals.length === 0 ? (
+              <p className="text-xs py-2 text-center" style={{ color: 'var(--bp-text-3)' }}>
+                등록된 단말기가 없습니다.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {terminals.map(t => (
+                  <TerminalRow key={t.id} terminal={t} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -181,15 +240,27 @@ export default function StoresClient({
   stores: initialStores,
   myRole,
   merchantId,
+  terminals = [],
 }: {
   stores: Store[]
   myRole: string
   merchantId: string
+  terminals?: Terminal[]
 }) {
   const router = useRouter()
   const [stores, setStores] = useState<Store[]>(initialStores)
-  
-  // 권한 제어 로직 (간소화)
+
+  const terminalsByStore = useMemo(() => {
+    const map = new Map<string, Terminal[]>()
+    for (const terminal of terminals) {
+      if (!map.has(terminal.store_id)) {
+        map.set(terminal.store_id, [])
+      }
+      map.get(terminal.store_id)!.push(terminal)
+    }
+    return map
+  }, [terminals])
+
   const canAddStore = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN].includes(myRole as any)
   const canEditStore = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN, ROLES.STORE_ADMIN].includes(myRole as any)
   const canDeleteStore = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN].includes(myRole as any)
@@ -332,7 +403,7 @@ export default function StoresClient({
         <div>
           <h1 className="text-xl font-bold text-white">매장 관리</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--bp-text-3)' }}>
-            매장별 가맹점 키를 등록·관리합니다 ({stores.length}개 매장)
+            매장별 가맹점 키와 단말기를 관리합니다 ({stores.length}개 매장)
           </p>
         </div>
         <button
@@ -357,6 +428,7 @@ export default function StoresClient({
           <StoreCard
             key={s.id}
             store={s}
+            terminals={terminalsByStore.get(s.id) ?? []}
             onEdit={openEditStore}
             onDelete={deleteStore}
             onAddKey={openAddKey}

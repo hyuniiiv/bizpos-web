@@ -5,30 +5,22 @@ import { useRouter } from 'next/navigation'
 import { Plus, Trash2, X, ShieldCheck, KeyRound } from 'lucide-react'
 import type { Member } from './page'
 import { MERCHANT_ASSIGNABLE as ASSIGNABLE, NEEDS_PASSWORD_ROLES as NEEDS_PASSWORD } from '@/lib/roles/assignable'
+import { filterMembersByRole } from '@/lib/roles/memberFilter'
 
-const ROLE_LABEL: Record<string, string> = {
-  platform_admin: '시스템 관리자',
-  platform_manager: '시스템 운영자',
-  merchant_admin: '가맹점 관리자',
-  merchant_manager: '가맹점 운영자',
-  store_admin: '매장 관리자',
-  store_manager: '매장 운영자',
-  terminal_admin: '단말기 관리자',
-  client_admin: '고객사 관리자',
-  client_manager: '고객사 운영자',
+const ROLE_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  platform_admin: { label: '시스템 관리자', bg: 'rgba(239,68,68,0.12)', color: '#ef4444' },
+  platform_manager: { label: '시스템 운영자', bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
+  merchant_admin: { label: '가맹점 관리자', bg: 'rgba(16,185,129,0.12)', color: '#10b981' },
+  merchant_manager: { label: '가맹점 운영자', bg: 'rgba(16,185,129,0.06)', color: '#34d399' },
+  store_admin: { label: '매장 관리자', bg: 'rgba(96,165,250,0.12)', color: '#60a5fa' },
+  store_manager: { label: '매장 운영자', bg: 'rgba(96,165,250,0.06)', color: '#93c5fd' },
+  terminal_admin: { label: '단말기 관리자', bg: 'rgba(139,92,246,0.12)', color: '#8b5cf6' },
+  client_admin: { label: '고객사 관리자', bg: 'rgba(236,72,153,0.12)', color: '#ec4899' },
+  client_manager: { label: '고객사 운영자', bg: 'rgba(236,72,153,0.06)', color: '#f472b6' },
 }
 
-const ROLE_COLOR: Record<string, { bg: string; color: string }> = {
-  platform_admin: { bg: 'rgba(239,68,68,0.12)', color: '#ef4444' }, // 시스템 관리자
-  platform_manager: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' }, // 시스템 운영자
-  merchant_admin: { bg: 'rgba(16,185,129,0.12)', color: '#10b981' }, // 가맹점 관리자
-  merchant_manager: { bg: 'rgba(16,185,129,0.06)', color: '#34d399' }, // 가맹점 운영자
-  store_admin: { bg: 'rgba(96,165,250,0.12)', color: '#60a5fa' }, // 매장 관리자
-  store_manager: { bg: 'rgba(96,165,250,0.06)', color: '#93c5fd' }, // 매장 운영자
-  terminal_admin: { bg: 'rgba(139,92,246,0.12)', color: '#8b5cf6' }, // 단말기 관리자
-  client_admin: { bg: 'rgba(236,72,153,0.12)', color: '#ec4899' }, // 고객사 관리자
-  client_manager: { bg: 'rgba(236,72,153,0.06)', color: '#f472b6' }, // 고객사 운영자
-}
+const ROLE_LABEL = Object.fromEntries(Object.entries(ROLE_CONFIG).map(([key, { label }]) => [key, label]))
+const ROLE_COLOR = Object.fromEntries(Object.entries(ROLE_CONFIG).map(([key, { bg, color }]) => [key, { bg, color }]))
 
 
 type FormData = { email: string; password: string; role: string }
@@ -45,7 +37,7 @@ export default function MembersClient({
   currentUserId: string
 }) {
   const router = useRouter()
-  const [members, setMembers] = useState<Member[]>(initial)
+  const [members, setMembers] = useState<Member[]>(filterMembersByRole(initial, myRole))
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState<FormData>({ email: '', password: '', role: ASSIGNABLE[myRole]?.[0] ?? '' })
   const [saving, setSaving] = useState(false)
@@ -140,24 +132,26 @@ export default function MembersClient({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-white">권한 관리</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--bp-text-3)' }}>
-            멤버 {members.length}명 · 내 역할:{' '}
-            <span style={{ color: '#06D6A0' }}>{ROLE_LABEL[myRole]}</span>
-          </p>
+      {members.length > 0 && (
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-white">권한 관리</h1>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--bp-text-3)' }}>
+              멤버 {members.length}명 · 내 역할:{' '}
+              <span style={{ color: '#06D6A0' }}>{ROLE_LABEL[myRole]}</span>
+            </p>
+          </div>
+          {canManage && (
+            <button
+              onClick={openModal}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black transition-opacity hover:opacity-80"
+              style={{ background: '#06D6A0' }}
+            >
+              <Plus className="w-4 h-4" />멤버 추가
+            </button>
+          )}
         </div>
-        {canManage && (
-          <button
-            onClick={openModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black transition-opacity hover:opacity-80"
-            style={{ background: '#06D6A0' }}
-          >
-            <Plus className="w-4 h-4" />멤버 추가
-          </button>
-        )}
-      </div>
+      )}
 
       <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
         <table className="w-full text-sm">
@@ -206,6 +200,7 @@ export default function MembersClient({
                     ) : (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style={rc}>
                         {ROLE_LABEL[m.role] ?? m.role}
+                        <span className="hidden">{m.role}</span>
                       </span>
                     )}
                   </td>

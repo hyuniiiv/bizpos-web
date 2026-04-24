@@ -23,6 +23,36 @@ export async function GET(req: Request) {
   if (!mu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const url = new URL(req.url)
+  const storeId = url.searchParams.get('store_id')
+
+  // store_id가 있으면 store 범위 멤버 조회
+  if (storeId) {
+    // store이 현재 merchant에 속하는지 확인
+    const { data: store } = await supabase
+      .from('stores')
+      .select('id, merchant_id')
+      .eq('id', storeId)
+      .single()
+
+    if (!store || (mu.role !== 'platform_admin' && store.merchant_id !== mu.merchant_id)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const { data: members } = await supabase
+      .from('store_managers')
+      .select('id, user_id, created_at')
+      .eq('store_id', storeId)
+      .order('created_at')
+
+    if (!members) return NextResponse.json({ data: [], storeId, myRole: mu.role })
+
+    const emailMap = await getEmailMapByIds(members.map(m => m.user_id))
+    const result = members.map(m => ({ ...m, email: emailMap[m.user_id] ?? '(알 수 없음)' }))
+
+    return NextResponse.json({ data: result, storeId, myRole: mu.role })
+  }
+
+  // store_id 없으면 merchant 범위 멤버 조회 (기존 로직)
   let merchantId = url.searchParams.get('merchant_id')
   if (mu.role !== 'platform_admin' || !merchantId) {
     merchantId = await getMerchantId(supabase) ?? mu.merchant_id
