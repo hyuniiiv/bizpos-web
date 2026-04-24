@@ -32,12 +32,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   // stores 데이터 fetch
-  const { data: stores = [] } = await supabase
+  const { data: rawStores } = await supabase
     .from('stores')
     .select('id, merchant_id, store_name, is_active')
     .eq('merchant_id', effectiveMerchantId)
     .order('store_name')
 
+  const stores = rawStores ?? []
   const savedStoreId = cookieStore.get('bp_selected_store')?.value
   const initialStoreId = stores.find(s => s.id === savedStoreId)?.id || stores[0]?.id || null
 
