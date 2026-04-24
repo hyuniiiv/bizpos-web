@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 async function getMembership(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
   const { data } = await supabase
@@ -43,7 +44,7 @@ export async function GET() {
     `)
     .order('created_at', { ascending: true })
 
-  if (mu.role !== 'platform_store_admin') {
+  if (mu.role !== 'platform_admin') {
     q = q.eq('merchant_id', mu.merchant_id)
   }
 
@@ -82,11 +83,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '매장명을 입력하세요' }, { status: 400 })
   }
 
-  const targetMerchantId = mu.role === 'platform_store_admin' && merchant_id
+  const targetMerchantId = mu.role === 'platform_admin' && merchant_id
     ? merchant_id
     : mu.merchant_id
 
-  const { data, error } = await supabase
+  if (!targetMerchantId) {
+    return NextResponse.json({ error: '유효한 가맹점 ID가 없습니다' }, { status: 400 })
+  }
+
+  const adminDb = createAdminClient()
+  const { data, error } = await adminDb
     .from('stores')
     .insert({
       merchant_id: targetMerchantId,
@@ -97,7 +103,10 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[store-locations POST] insert error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ data }, { status: 201 })
 }
 
@@ -115,7 +124,7 @@ export async function PATCH(req: NextRequest) {
 
   if (!id) return NextResponse.json({ error: 'id가 필요합니다' }, { status: 400 })
 
-  if (mu.role !== 'platform_store_admin') {
+  if (mu.role !== 'platform_admin') {
     const { data: store } = await supabase
       .from('stores')
       .select('merchant_id')
@@ -131,14 +140,18 @@ export async function PATCH(req: NextRequest) {
   if (biz_no !== undefined) updates.biz_no = biz_no?.trim() || null
   if (is_active !== undefined) updates.is_active = is_active
 
-  const { data, error } = await supabase
+  const adminDb = createAdminClient()
+  const { data, error } = await adminDb
     .from('stores')
     .update(updates)
     .eq('id', id)
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[store-locations PATCH] update error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ data })
 }
 
@@ -154,7 +167,7 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
   if (!id) return NextResponse.json({ error: 'id가 필요합니다' }, { status: 400 })
 
-  if (mu.role !== 'platform_store_admin') {
+  if (mu.role !== 'platform_admin') {
     const { data: store } = await supabase
       .from('stores')
       .select('merchant_id')
@@ -165,7 +178,12 @@ export async function DELETE(req: NextRequest) {
     }
   }
 
-  const { error } = await supabase.from('stores').delete().eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const adminDb = createAdminClient()
+  const { error } = await adminDb.from('stores').delete().eq('id', id)
+  
+  if (error) {
+    console.error('[store-locations DELETE] delete error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ success: true })
 }

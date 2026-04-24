@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     .single()
   if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (mu.role !== 'platform_store_admin' && target.merchant_id !== mu.merchant_id) {
+  if (mu.role !== 'platform_admin' && target.merchant_id !== mu.merchant_id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   if (!ASSIGNABLE[mu.role]?.includes(target.role)) {

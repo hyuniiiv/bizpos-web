@@ -2,12 +2,12 @@
 // API 라우트와 클라이언트 컴포넌트 모두 이 파일에서 import
 
 export const MERCHANT_ASSIGNABLE: Record<string, string[]> = {
-  platform_store_admin: ['platform_store_admin', 'store_owner', 'store_manager'],
+  platform_admin: ['platform_admin', 'store_owner', 'store_manager'],
   store_owner: ['store_manager'],
   store_manager: [],
 }
 
-export const MERCHANT_PLATFORM_ROLES = new Set(['platform_store_admin'])
+export const MERCHANT_PLATFORM_ROLES = new Set(['platform_admin'])
 
 export const CLIENT_ASSIGNABLE: Record<string, string[]> = {
   platform_client_admin: ['platform_client_admin', 'client_admin', 'client_operator'],

@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url)
   let merchantId = url.searchParams.get('merchant_id')
-  if (mu.role !== 'platform_store_admin' || !merchantId) {
+  if (mu.role !== 'platform_admin' || !merchantId) {
     merchantId = await getMerchantId(supabase) ?? mu.merchant_id
   }
 
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: '해당 역할을 부여할 권한이 없습니다.' }, { status: 403 })
   }
 
-  const merchantId = mu.role === 'platform_store_admin'
+  const merchantId = mu.role === 'platform_admin'
     ? (body.merchant_id ?? mu.merchant_id)
     : mu.merchant_id
 
@@ -119,7 +119,7 @@ export async function PATCH(req: Request) {
 
   const { data: target } = await supabase.from('merchant_users').select('merchant_id, role').eq('id', id).single()
   if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (mu.role !== 'platform_store_admin' && target.merchant_id !== mu.merchant_id) {
+  if (mu.role !== 'platform_admin' && target.merchant_id !== mu.merchant_id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   if (!ASSIGNABLE[mu.role]?.includes(target.role)) {
@@ -153,7 +153,7 @@ export async function DELETE(req: Request) {
   const { id } = await req.json()
   const { data: target } = await supabase.from('merchant_users').select('merchant_id, user_id, role').eq('id', id).single()
   if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (mu.role !== 'platform_store_admin' && target.merchant_id !== mu.merchant_id) {
+  if (mu.role !== 'platform_admin' && target.merchant_id !== mu.merchant_id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   if (!ASSIGNABLE[mu.role]?.includes(target.role)) {

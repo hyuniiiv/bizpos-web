@@ -207,7 +207,7 @@ export default function StoresClient({
         const res = await fetch('/api/merchant/store-locations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...storeForm, merchant_id: isPlatformAdmin ? undefined : merchantId }),
+          body: JSON.stringify({ ...storeForm, merchant_id: merchantId }),
         })
         const json = await res.json()
         if (!res.ok) throw new Error(json.error ?? '저장 실패')

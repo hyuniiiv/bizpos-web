@@ -40,7 +40,7 @@ export default async function StoresPage() {
 
   if (!membership) redirect('/login')
 
-  const isPlatformAdmin = membership.role === 'platform_store_admin'
+  const isPlatformAdmin = membership.role === 'platform_admin'
 
   let q = supabase
     .from('stores')

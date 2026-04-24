@@ -12,6 +12,7 @@ import { generateOrderId } from '@/lib/payment/order'
 import { checkAndMarkBarcode } from '@/lib/db/indexeddb' // Keep IndexedDB for barcode check if needed
 import { createDeviceBridge, type DeviceBridge } from '@/lib/device/bridge'
 import { getServerUrl } from '@/lib/serverUrl'
+import { flushOfflineQueue } from '@/lib/txSync'
 
 import ActivationScreen from '@/components/pos/ActivationScreen'
 import PosScreen from '@/components/pos/screens/PosScreen'
@@ -129,7 +130,7 @@ export default function PosPage() {
   useEffect(() => {
     const handleOnline = () => {
       setOnline(true)
-      syncOffline()
+      flushOfflineQueue()
     }
     const handleOffline = () => setOnline(false)
     window.addEventListener('online', handleOnline)
@@ -143,43 +144,16 @@ export default function PosPage() {
   // 앱 시작 시 이미 온라인이면 즉시 오프라인 큐 동기화
   useEffect(() => {
     if (!deviceToken || deviceToken === 'manual') return
-    if (typeof window !== 'undefined' && navigator.onLine) syncOffline()
+    if (typeof window !== 'undefined' && navigator.onLine) flushOfflineQueue()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceToken])
 
+  // 최초 1회 및 마운트 시 팬딩 카운트 조회
   useEffect(() => {
     if (typeof window !== 'undefined') {
       PaymentRepository.getPendingPayments().then(p => setPendingCount(p.length))
     }
-  }, [screen])
-
-  async function syncOffline() {
-    const pending = await PaymentRepository.getPendingPayments()
-    if (pending.length === 0) return
-
-    const retryDelays = [0, 5_000, 30_000]
-    for (let attempt = 0; attempt < retryDelays.length; attempt++) {
-      if (retryDelays[attempt] > 0) await new Promise(r => setTimeout(r, retryDelays[attempt]))
-      if (!navigator.onLine) return
-      try {
-        const res = await fetch(getServerUrl() + '/api/payment/offline', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ records: pending }),
-        })
-        if (res.ok) {
-          const result = await res.json()
-          const syncedIds: string[] = result.syncedIds ?? pending.map(r => r.merchantOrderID)
-          await Promise.all(syncedIds.map(id => PaymentRepository.markPaymentSynced(id)))
-          const remaining = await PaymentRepository.getPendingPayments()
-          setPendingCount(remaining.length)
-          return
-        }
-      } catch {
-        if (attempt === retryDelays.length - 1) return
-      }
-    }
-  }
+  }, [setPendingCount])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -283,6 +257,9 @@ export default function PosPage() {
         savedAt: new Date().toISOString(),
         synced: false,
       })
+      
+      // 방금 추가된 팬딩 건수 반영
+      PaymentRepository.getPendingPayments().then(p => setPendingCount(p.length))
 
       if (!isOnline) {
         incrementCount(menu.id)
@@ -365,6 +342,9 @@ export default function PosPage() {
 
       // 3. [트랜잭션 종료] 결제 성공 시 Local DB 동기화 완료 처리
       await PaymentRepository.markPaymentSynced(merchantOrderID)
+      
+      // 팬딩 건수 반영
+      PaymentRepository.getPendingPayments().then(p => setPendingCount(p.length))
       
       incrementCount(menu.id)
       setLastTransaction(approveRes.transaction)

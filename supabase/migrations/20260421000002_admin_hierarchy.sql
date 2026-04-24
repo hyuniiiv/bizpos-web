@@ -48,11 +48,13 @@ ALTER TABLE merchants DROP CONSTRAINT IF EXISTS merchants_biz_no_key;
 CREATE INDEX IF NOT EXISTS idx_merchants_biz_no ON merchants(biz_no);
 
 -- 6. merchant_users.role 체계 변경
-UPDATE merchant_users SET role = 'platform_store_admin' WHERE role = 'admin';
+-- 기존 role 매핑: admin → platform_admin, 호환되지 않는 role → store_owner
+UPDATE merchant_users SET role = 'platform_admin' WHERE role = 'admin';
+UPDATE merchant_users SET role = 'store_owner' WHERE role NOT IN ('platform_admin', 'store_owner', 'store_manager');
 ALTER TABLE merchant_users DROP CONSTRAINT IF EXISTS merchant_users_role_check;
 ALTER TABLE merchant_users
   ADD CONSTRAINT merchant_users_role_check
-  CHECK (role IN ('platform_store_admin', 'store_owner', 'store_manager'));
+  CHECK (role IN ('platform_admin', 'store_owner', 'store_manager'));
 
 -- 7. terminals.store_id 추가
 ALTER TABLE terminals ADD COLUMN IF NOT EXISTS store_id uuid REFERENCES stores(id);
@@ -133,10 +135,10 @@ ALTER TABLE settlements      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settlement_items ENABLE ROW LEVEL SECURITY;
 
 -- 10. RLS 헬퍼 함수
-CREATE OR REPLACE FUNCTION is_platform_store_admin() RETURNS boolean AS $$
+CREATE OR REPLACE FUNCTION is_platform_admin() RETURNS boolean AS $$
   SELECT EXISTS (
     SELECT 1 FROM merchant_users
-    WHERE user_id = auth.uid() AND role = 'platform_store_admin'
+    WHERE user_id = auth.uid() AND role = 'platform_admin'
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
@@ -147,50 +149,60 @@ CREATE OR REPLACE FUNCTION is_platform_client_admin() RETURNS boolean AS $$
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- 11. RLS 정책
+-- 11. RLS 정책 (DROP IF EXISTS로 재실행 가능하게)
 
 -- clients
+DROP POLICY IF EXISTS clients_select ON clients;
 CREATE POLICY clients_select ON clients FOR SELECT USING (
   is_platform_client_admin()
   OR EXISTS (SELECT 1 FROM client_users cu WHERE cu.user_id = auth.uid() AND cu.client_id = clients.id)
 );
+DROP POLICY IF EXISTS clients_insert ON clients;
 CREATE POLICY clients_insert ON clients FOR INSERT WITH CHECK (is_platform_client_admin());
+DROP POLICY IF EXISTS clients_update ON clients;
 CREATE POLICY clients_update ON clients FOR UPDATE USING (is_platform_client_admin());
 
 -- stores
+DROP POLICY IF EXISTS stores_select ON stores;
 CREATE POLICY stores_select ON stores FOR SELECT USING (
-  is_platform_store_admin()
+  is_platform_admin()
   OR EXISTS (
     SELECT 1 FROM merchant_users mu
     WHERE mu.user_id = auth.uid() AND mu.merchant_id = stores.merchant_id
   )
   OR EXISTS (SELECT 1 FROM store_managers sm WHERE sm.user_id = auth.uid() AND sm.store_id = stores.id)
 );
-CREATE POLICY stores_manage ON stores FOR ALL USING (is_platform_store_admin());
+DROP POLICY IF EXISTS stores_manage ON stores;
+CREATE POLICY stores_manage ON stores FOR ALL USING (is_platform_admin());
 
 -- employees
+DROP POLICY IF EXISTS employees_select ON employees;
 CREATE POLICY employees_select ON employees FOR SELECT USING (
   is_platform_client_admin()
   OR EXISTS (SELECT 1 FROM client_users cu WHERE cu.user_id = auth.uid() AND cu.client_id = employees.client_id)
 );
+DROP POLICY IF EXISTS employees_manage ON employees;
 CREATE POLICY employees_manage ON employees FOR ALL USING (
   is_platform_client_admin()
   OR EXISTS (SELECT 1 FROM client_users cu WHERE cu.user_id = auth.uid() AND cu.client_id = employees.client_id)
 );
 
 -- meal_usages (조회만; INSERT는 단말기 토큰 기반 서비스키)
+DROP POLICY IF EXISTS meal_usages_select ON meal_usages;
 CREATE POLICY meal_usages_select ON meal_usages FOR SELECT USING (
   is_platform_client_admin()
   OR EXISTS (SELECT 1 FROM client_users cu WHERE cu.user_id = auth.uid() AND cu.client_id = meal_usages.client_id)
 );
 
 -- settlements
+DROP POLICY IF EXISTS settlements_all ON settlements;
 CREATE POLICY settlements_all ON settlements FOR ALL USING (
   is_platform_client_admin()
   OR EXISTS (SELECT 1 FROM client_users cu WHERE cu.user_id = auth.uid() AND cu.client_id = settlements.client_id)
 );
 
 -- settlement_items
+DROP POLICY IF EXISTS settlement_items_select ON settlement_items;
 CREATE POLICY settlement_items_select ON settlement_items FOR SELECT USING (
   EXISTS (
     SELECT 1 FROM settlements s
@@ -201,6 +213,7 @@ CREATE POLICY settlement_items_select ON settlement_items FOR SELECT USING (
       )
   )
 );
+DROP POLICY IF EXISTS settlement_items_manage ON settlement_items;
 CREATE POLICY settlement_items_manage ON settlement_items FOR ALL USING (
   EXISTS (
     SELECT 1 FROM settlements s

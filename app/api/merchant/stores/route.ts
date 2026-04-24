@@ -23,7 +23,7 @@ export async function GET() {
     .select('id, name, biz_no, merchant_id, contact_email, created_at')
     .order('name')
 
-  if (mu.role !== 'platform_store_admin') {
+  if (mu.role !== 'platform_admin') {
     q = q.eq('id', mu.merchant_id)
   }
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const mu = await getMembership(supabase, user.id)
-  if (mu?.role !== 'platform_store_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (mu?.role !== 'platform_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
   const { data, error } = await supabase
@@ -66,7 +66,7 @@ export async function PATCH(req: Request) {
   const body = await req.json()
   const { id, ...updates } = body
 
-  if (mu.role !== 'platform_store_admin' && id !== mu.merchant_id) {
+  if (mu.role !== 'platform_admin' && id !== mu.merchant_id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -92,7 +92,7 @@ export async function DELETE(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const mu = await getMembership(supabase, user.id)
-  if (mu?.role !== 'platform_store_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (mu?.role !== 'platform_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await req.json()
   const { error } = await supabase.from('merchants').delete().eq('id', id)

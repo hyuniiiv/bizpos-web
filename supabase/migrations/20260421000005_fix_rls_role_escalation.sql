@@ -21,11 +21,11 @@ $$ LANGUAGE sql SECURITY DEFINER STABLE;
 DROP POLICY IF EXISTS mu_update ON merchant_users;
 CREATE POLICY mu_update ON merchant_users FOR UPDATE
   USING (
-    is_platform_store_admin()
+    is_platform_admin()
     OR merchant_id = get_my_merchant_id()
   )
   WITH CHECK (
-    is_platform_store_admin()
+    is_platform_admin()
     OR (
       merchant_id = get_my_merchant_id()
       -- 비플랫폼 사용자는 role 컬럼을 변경할 수 없음 (현재값과 동일해야 통과)

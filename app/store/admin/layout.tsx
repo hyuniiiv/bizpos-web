@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('user_id', user.id)
     .single()
 
-  const isPlatformAdmin = membership?.role === 'platform_store_admin'
+  const isPlatformAdmin = membership?.role === 'platform_admin'
 
   let effectiveMerchantId = membership?.merchant_id ?? ''
   if (isPlatformAdmin) {

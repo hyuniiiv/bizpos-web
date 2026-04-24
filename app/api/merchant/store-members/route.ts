@@ -39,7 +39,7 @@ export async function GET(req: Request) {
   const storeId = new URL(req.url).searchParams.get('store_id')
   if (!storeId) return NextResponse.json({ error: 'store_id required' }, { status: 400 })
 
-  const isPlatform = mu.role === 'platform_store_admin'
+  const isPlatform = mu.role === 'platform_admin'
   const store = await getStoreAndVerify(supabase, storeId, mu.merchant_id, isPlatform)
   if (!store) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
   const { store_id, user_id } = await req.json()
   if (!store_id || !user_id) return NextResponse.json({ error: 'store_id, user_id required' }, { status: 400 })
 
-  const isPlatform = mu.role === 'platform_store_admin'
+  const isPlatform = mu.role === 'platform_admin'
   const store = await getStoreAndVerify(supabase, store_id, mu.merchant_id, isPlatform)
   if (!store) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
@@ -116,7 +116,7 @@ export async function DELETE(req: Request) {
   const { data: sm } = await supabase.from('store_managers').select('store_id').eq('id', id).single()
   if (!sm) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const isPlatform = mu.role === 'platform_store_admin'
+  const isPlatform = mu.role === 'platform_admin'
   const store = await getStoreAndVerify(supabase, sm.store_id, mu.merchant_id, isPlatform)
   if (!store) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 

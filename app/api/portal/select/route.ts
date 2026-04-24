@@ -22,10 +22,10 @@ export async function POST(req: Request) {
       .single()
     if (!mu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-    if (mu.role !== 'platform_store_admin' && mu.merchant_id !== id) {
+    if (mu.role !== 'platform_admin' && mu.merchant_id !== id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    if (mu.role === 'platform_store_admin') {
+    if (mu.role === 'platform_admin') {
       const { count } = await supabase
         .from('merchant_users')
         .select('*', { count: 'exact', head: true })

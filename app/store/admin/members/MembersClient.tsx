@@ -7,13 +7,13 @@ import type { Member } from './page'
 import { MERCHANT_ASSIGNABLE as ASSIGNABLE, NEEDS_PASSWORD_ROLES as NEEDS_PASSWORD } from '@/lib/roles/assignable'
 
 const ROLE_LABEL: Record<string, string> = {
-  platform_store_admin: '관리자',
+  platform_admin: '관리자',
   store_owner: '매장관리자',
   store_manager: '매장운영자',
 }
 
 const ROLE_COLOR: Record<string, { bg: string; color: string }> = {
-  platform_store_admin: { bg: 'rgba(6,214,160,0.12)', color: '#06D6A0' },
+  platform_admin: { bg: 'rgba(6,214,160,0.12)', color: '#06D6A0' },
   store_owner:          { bg: 'rgba(96,165,250,0.12)', color: '#60a5fa' },
   store_manager:        { bg: 'rgba(255,255,255,0.06)', color: 'var(--bp-text-3)' },
 }

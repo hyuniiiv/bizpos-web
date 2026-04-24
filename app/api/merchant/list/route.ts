@@ -12,7 +12,7 @@ export async function GET() {
     .eq('user_id', user.id)
     .single()
 
-  if (!mu || mu.role !== 'platform_store_admin') {
+  if (!mu || mu.role !== 'platform_admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

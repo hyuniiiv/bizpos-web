@@ -1,5 +1,6 @@
 import { PaymentRepository } from '@/lib/repository/payment.repository'
 import { getServerUrl } from '@/lib/serverUrl'
+import { useSettingsStore } from '@/lib/store/settingsStore'
 
 const ACCESS_TOKEN_KEY = 'terminal_access_token'
 
@@ -16,7 +17,10 @@ export async function flushOfflineQueue(): Promise<{ synced: number; failed: num
   const token = getAccessToken()
   const queue = await PaymentRepository.getPendingPayments()
 
-  if (!token || queue.length === 0) return { synced: 0, failed: 0 }
+  if (!token || queue.length === 0) {
+    useSettingsStore.getState().setPendingCount(0)
+    return { synced: 0, failed: 0 }
+  }
 
   let totalSynced = 0;
   let totalFailed = 0;
@@ -56,6 +60,10 @@ export async function flushOfflineQueue(): Promise<{ synced: number; failed: num
       console.error('[txSync] Network or sync error:', err);
     }
   }
+
+  // 동기화 완료 후 남은 건수로 UI 스토어 갱신
+  const remaining = await PaymentRepository.getPendingPayments()
+  useSettingsStore.getState().setPendingCount(remaining.length)
 
   return { synced: totalSynced, failed: totalFailed }
 }

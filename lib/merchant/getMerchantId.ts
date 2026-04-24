@@ -12,7 +12,7 @@ export async function getMerchantId(supabase: Awaited<ReturnType<typeof createCl
     .single()
   if (!data) return null
 
-  if (data.role === 'platform_store_admin') {
+  if (data.role === 'platform_admin') {
     const cookieStore = await cookies()
     const selected = cookieStore.get('bp_selected_merchant')?.value
     if (selected) {
