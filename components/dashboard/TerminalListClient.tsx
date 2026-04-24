@@ -96,7 +96,7 @@ export default function TerminalListClient({ initialTerminals, merchantId }: Pro
               <td className="px-4 py-3 text-white/50">{t.corner || '-'}</td>
               <td className="px-4 py-3 text-center">
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                  <span role="status" className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                     t.status === 'online' ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/40'
                   }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${t.status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />

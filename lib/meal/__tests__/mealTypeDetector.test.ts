@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { detectMealType } from '../mealTypeDetector'
 import type { PeriodConfig } from '@/types/menu'
 
@@ -8,16 +9,22 @@ const mockPeriods: PeriodConfig[] = [
 ]
 
 describe('detectMealType', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('08:00이면 breakfast 반환', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-04-21T08:00:00'))
+    vi.setSystemTime(new Date('2026-04-21T08:00:00'))
     expect(detectMealType(mockPeriods)).toBe('breakfast')
-    jest.useRealTimers()
   })
 
   it('시간대 없으면(15:00) lunch 반환', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-04-21T15:00:00'))
+    vi.setSystemTime(new Date('2026-04-21T15:00:00'))
     expect(detectMealType(mockPeriods)).toBe('lunch')
-    jest.useRealTimers()
   })
 
   it('빈 periods는 lunch 반환', () => {
@@ -25,8 +32,7 @@ describe('detectMealType', () => {
   })
 
   it('18:00이면 dinner 반환', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-04-21T18:00:00'))
+    vi.setSystemTime(new Date('2026-04-21T18:00:00'))
     expect(detectMealType(mockPeriods)).toBe('dinner')
-    jest.useRealTimers()
   })
 })

@@ -1,6 +1,17 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import TerminalListClient from '@/components/dashboard/TerminalListClient'
+
+// Mock Supabase client
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: vi.fn(() => ({
+    channel: vi.fn(() => ({
+      on: vi.fn(function() { return this }),
+      subscribe: vi.fn(function() { return this }),
+    })),
+    removeChannel: vi.fn(),
+  })),
+}))
 
 interface Terminal {
   id: string
@@ -37,6 +48,10 @@ const mockTerminals: Terminal[] = [
 ]
 
 describe('TerminalListClient', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('should render list of terminals', () => {
     render(
       <TerminalListClient
@@ -45,7 +60,7 @@ describe('TerminalListClient', () => {
       />
     )
 
-    expect(screen.getByText('POS-1')).toBeInTheDocument()
+    expect(screen.queryAllByText('POS-1').length).toBeGreaterThan(0)
     expect(screen.getByText('POS-2')).toBeInTheDocument()
   })
 

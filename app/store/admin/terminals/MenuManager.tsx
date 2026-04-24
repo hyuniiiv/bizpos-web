@@ -29,7 +29,14 @@ interface MenuManagerProps {
 
 const inputStyle = { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)' }
 
-export default function MenuManager({ terminal, initialMenuConfig = {} }: MenuManagerProps) {
+const DEFAULT_MENU_CONFIG: Record<MenuType, string[]> = {
+  pos: [],
+  kiosk: [],
+  ticket_checker: [],
+  table_order: [],
+}
+
+export default function MenuManager({ terminal, initialMenuConfig = DEFAULT_MENU_CONFIG }: MenuManagerProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<MenuType>('pos')
   const [menuConfig, setMenuConfig] = useState<Record<MenuType, string[]>>(initialMenuConfig)
