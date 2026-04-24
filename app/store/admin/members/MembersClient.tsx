@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, X, ShieldCheck, KeyRound } from 'lucide-react'
+import { Plus, Trash2, ShieldCheck, KeyRound, X } from 'lucide-react'
 import type { Member } from './page'
 import { MERCHANT_ASSIGNABLE as ASSIGNABLE, NEEDS_PASSWORD_ROLES as NEEDS_PASSWORD } from '@/lib/roles/assignable'
 import { filterMembersByRole } from '@/lib/roles/memberFilter'
+import CreateAccountForm, { type CreateAccountFormData } from './CreateAccountForm'
 
 const ROLE_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
   platform_admin: { label: '시스템 관리자', bg: 'rgba(239,68,68,0.12)', color: '#ef4444' },
@@ -23,8 +24,6 @@ const ROLE_LABEL = Object.fromEntries(Object.entries(ROLE_CONFIG).map(([key, { l
 const ROLE_COLOR = Object.fromEntries(Object.entries(ROLE_CONFIG).map(([key, { bg, color }]) => [key, { bg, color }]))
 
 
-type FormData = { email: string; password: string; role: string }
-
 export default function MembersClient({
   members: initial,
   myRole,
@@ -38,8 +37,7 @@ export default function MembersClient({
 }) {
   const router = useRouter()
   const [members, setMembers] = useState<Member[]>(filterMembersByRole(initial, myRole))
-  const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState<FormData>({ email: '', password: '', role: ASSIGNABLE[myRole]?.[0] ?? '' })
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -51,10 +49,9 @@ export default function MembersClient({
   const assignable = ASSIGNABLE[myRole] ?? []
   const canManage = assignable.length > 0
 
-  function openModal() {
-    setForm({ email: '', password: '', role: assignable[0] ?? '' })
+  function openCreateForm() {
     setError('')
-    setShowModal(true)
+    setShowCreateForm(true)
   }
 
   function openPwModal(id: string) {
@@ -63,23 +60,30 @@ export default function MembersClient({
     setPwError('')
   }
 
-  async function handleAdd() {
-    if (!form.email.trim()) { setError('이메일을 입력하세요.'); return }
-    if (NEEDS_PASSWORD.has(form.role) && !form.password.trim()) { setError('비밀번호를 입력하세요.'); return }
-    setSaving(true); setError('')
+  async function handleCreateAccount(formData: CreateAccountFormData) {
+    setSaving(true)
+    setError('')
     try {
+      const payload = {
+        role: formData.role,
+        merchant_id: merchantId,
+        ...(formData.email ? { email: formData.email } : { email: formData.id }),
+        ...(formData.password ? { password: formData.password } : {}),
+      }
+
       const res = await fetch('/api/merchant/members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, merchant_id: merchantId }),
+        body: JSON.stringify(payload),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? '추가 실패')
+      if (!res.ok) throw new Error(json.error ?? '계정 생성 실패')
       setMembers(prev => [...prev, json.data])
-      setShowModal(false)
+      setShowCreateForm(false)
       router.refresh()
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : '추가 실패')
+      setError(e instanceof Error ? e.message : '계정 생성 실패')
+      throw e
     } finally {
       setSaving(false)
     }
@@ -143,11 +147,11 @@ export default function MembersClient({
           </div>
           {canManage && (
             <button
-              onClick={openModal}
+              onClick={openCreateForm}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black transition-opacity hover:opacity-80"
               style={{ background: '#06D6A0' }}
             >
-              <Plus className="w-4 h-4" />멤버 추가
+              <Plus className="w-4 h-4" />계정 생성
             </button>
           )}
         </div>
@@ -238,79 +242,15 @@ export default function MembersClient({
         </table>
       </div>
 
-      {/* 멤버 추가 모달 */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-bold text-white">멤버 추가</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-white/10" style={{ color: 'var(--bp-text-3)' }}>
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--bp-text-3)' }}>
-                  역할<span className="text-red-400 ml-0.5">*</span>
-                </label>
-                <select
-                  value={form.role}
-                  onChange={e => setForm(prev => ({ ...prev, role: e.target.value, password: '' }))}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)' }}
-                >
-                  {assignable.map(r => (
-                    <option key={r} value={r} style={{ background: '#1e2533' }}>{ROLE_LABEL[r]}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--bp-text-3)' }}>
-                  이메일 (ID)<span className="text-red-400 ml-0.5">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={e => setForm(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="user@example.com"
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)' }}
-                />
-              </div>
-              {NEEDS_PASSWORD.has(form.role) ? (
-                <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--bp-text-3)' }}>
-                    임시 비밀번호<span className="text-red-400 ml-0.5">*</span>
-                  </label>
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={e => setForm(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="8자 이상 입력"
-                    className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                    style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)' }}
-                  />
-                  <p className="text-xs mt-1.5" style={{ color: 'var(--bp-text-3)' }}>
-                    ID/PW 기반 계정이 생성됩니다. 사용자에게 별도 전달하세요.
-                  </p>
-                </div>
-              ) : (
-                <p className="text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(6,214,160,0.08)', color: '#06D6A0' }}>
-                  시스템관리자는 이미 가입된 이메일 계정을 연결합니다.
-                </p>
-              )}
-            </div>
-            {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
-            <div className="flex gap-2 mt-6">
-              <button onClick={() => setShowModal(false)} className="flex-1 py-2 rounded-lg text-sm hover:bg-white/10" style={{ color: 'var(--bp-text-3)', border: '1px solid var(--bp-border)' }}>
-                취소
-              </button>
-              <button onClick={handleAdd} disabled={saving} className="flex-1 py-2 rounded-lg text-sm font-semibold text-black hover:opacity-80 disabled:opacity-50" style={{ background: '#06D6A0' }}>
-                {saving ? '추가 중…' : '추가'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* 계정 생성 폼 */}
+      {showCreateForm && (
+        <CreateAccountForm
+          myRole={myRole}
+          onSubmit={handleCreateAccount}
+          onCancel={() => setShowCreateForm(false)}
+          isLoading={saving}
+          error={error}
+        />
       )}
 
       {/* 비밀번호 재설정 모달 */}
