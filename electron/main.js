@@ -197,19 +197,31 @@ function setupPermissions() {
   // pos/index.html에서 _next/ 에셋 요청 시 pos/_next/로 해석됨을 _next/로 rewrite
   // 이유: assetPrefix: './' 설정이 서브 경로에서는 상위 _next/를 pos/_next/로 잘못 해석
   if (!isDev) {
+    const nextjsBase = path.join(process.resourcesPath, 'nextjs').replace(/\\/g, '/')
+
     protocol.interceptFileProtocol('file', (request, callback) => {
       let filePath = decodeURIComponent(request.url.replace(/^file:\/\//, '').replace(/\?.*$/, ''))
       // Windows 드라이브 경로 보정 (/C:/... → C:/...)
       if (/^\/[A-Za-z]:\//.test(filePath)) filePath = filePath.slice(1)
 
-      // 드라이브 루트 기준 경로(C:/...)이고 실제 파일이 없으면 앱 리소스로 rewrite
-      const driveRootMatch = filePath.match(/^[A-Za-z]:\/(.+)/)
-      if (driveRootMatch && !fs.existsSync(filePath)) {
-        let subPath = driveRootMatch[1]
-        // 서브경로의 _next/ 에셋은 루트 _next/로 정규화
+      // Case 1: resources/nextjs/ 내부 경로 — 서브경로/_next/ → 루트 _next/ rewrite
+      const normalizedFilePath = filePath.replace(/\\/g, '/')
+      if (normalizedFilePath.startsWith(nextjsBase) && !fs.existsSync(filePath)) {
+        let subPath = normalizedFilePath.slice(nextjsBase.length + 1)
+        // pos/_next/ or any-subpath/_next/ → _next/ 정규화
         subPath = subPath.replace(/^[^/]+\/_next\//, '_next/')
+        const candidate = path.join(process.resourcesPath, 'nextjs', subPath)
+        if (fs.existsSync(candidate)) {
+          callback(path.normalize(candidate))
+          return
+        }
+      }
+
+      // Case 2: 드라이브 루트 기준 잘못된 경로 (C:/pos/admin/ 등) → resources/nextjs/로 rewrite
+      const driveRootMatch = filePath.match(/^[A-Za-z]:\/(.+)/)
+      if (driveRootMatch && !normalizedFilePath.startsWith(nextjsBase) && !fs.existsSync(filePath)) {
+        let subPath = driveRootMatch[1]
         let candidate = path.join(process.resourcesPath, 'nextjs', subPath)
-        // 디렉토리 요청(슬래시 끝 or .html 없음)은 index.html 붙임
         if (!path.extname(subPath) && !subPath.includes('_next')) {
           candidate = path.join(candidate, 'index.html')
         }
