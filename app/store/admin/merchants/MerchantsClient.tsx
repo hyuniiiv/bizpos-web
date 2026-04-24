@@ -57,10 +57,13 @@ export default function MerchantsClient({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // 역할을 소문자로 정규화
+  const normalizedRole = userRole?.toLowerCase()
+
   // 권한 체크
   const isPlatform =
-    userRole === ROLES.PLATFORM_ADMIN || userRole === ROLES.PLATFORM_MANAGER
-  const isMerchantAdmin = userRole === ROLES.MERCHANT_ADMIN
+    normalizedRole === ROLES.PLATFORM_ADMIN || normalizedRole === ROLES.PLATFORM_MANAGER
+  const isMerchantAdmin = normalizedRole === ROLES.MERCHANT_ADMIN
   const canAccess = isPlatform || isMerchantAdmin
   const canCreate = isPlatform
   const canEdit = isPlatform || isMerchantAdmin
