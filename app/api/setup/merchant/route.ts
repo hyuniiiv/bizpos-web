@@ -29,7 +29,7 @@ export async function POST() {
   // merchant_users 연결
   const { error: muErr } = await supabase
     .from('merchant_users')
-    .insert({ merchant_id: merchant.id, user_id: user.id, role: 'admin' })
+    .insert({ merchant_id: merchant.id, user_id: user.id, role: 'platform_admin' })
 
   if (muErr) return NextResponse.json({ error: muErr.message }, { status: 500 })
 

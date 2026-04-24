@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2, X, ChevronDown, ChevronRight, Key, Store as StoreIcon } from 'lucide-react'
 import type { Store, StoreKey } from './page'
+import { ROLES } from '@/lib/roles/permissions'
 
 type StoreForm = { store_name: string; biz_no: string }
 type KeyForm = { name: string; mid: string; enc_key: string; online_ak: string; description: string; env: 'production' | 'development' }
@@ -118,22 +119,26 @@ function StoreCard({
           className="flex items-center gap-1 ml-2"
           onClick={e => e.stopPropagation()}
         >
-          <button
-            onClick={() => onEdit(store)}
-            className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
-            style={{ color: 'var(--bp-text-3)' }}
-            title="매장 수정"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => onDelete(store.id, store.store_name)}
-            className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20 hover:text-red-400"
-            style={{ color: 'var(--bp-text-3)' }}
-            title="매장 삭제"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          {canEditStore && (
+            <button
+              onClick={() => onEdit(store)}
+              className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+              style={{ color: 'var(--bp-text-3)' }}
+              title="매장 수정"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {canDeleteStore && (
+            <button
+              onClick={() => onDelete(store.id, store.store_name)}
+              className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20 hover:text-red-400"
+              style={{ color: 'var(--bp-text-3)' }}
+              title="매장 삭제"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -145,17 +150,19 @@ function StoreCard({
             </p>
           ) : (
             store.merchant_keys.map(k => (
-              <KeyRow key={k.id} k={k} onDelete={onDeleteKey} />
+              <KeyRow key={k.id} k={k} onDelete={canDeleteKey ? onDeleteKey : () => {}} />
             ))
           )}
-          <button
-            onClick={() => onAddKey(store)}
-            className="w-full flex items-center justify-center gap-2 py-2 mt-1 rounded-lg text-xs font-medium transition-colors hover:bg-white/5"
-            style={{ color: 'var(--bp-text-3)', border: '1px dashed var(--bp-border)' }}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            키 추가
-          </button>
+          {canAddKey && (
+            <button
+              onClick={() => onAddKey(store)}
+              className="w-full flex items-center justify-center gap-2 py-2 mt-1 rounded-lg text-xs font-medium transition-colors hover:bg-white/5"
+              style={{ color: 'var(--bp-text-3)', border: '1px dashed var(--bp-border)' }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              키 추가
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -164,15 +171,23 @@ function StoreCard({
 
 export default function StoresClient({
   stores: initialStores,
-  isPlatformAdmin,
+  myRole,
   merchantId,
 }: {
   stores: Store[]
-  isPlatformAdmin: boolean
+  myRole: string
   merchantId: string
 }) {
   const router = useRouter()
   const [stores, setStores] = useState<Store[]>(initialStores)
+  
+  // 권한 제어 로직 (간소화)
+  const canAddStore = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN].includes(myRole as any)
+  const canEditStore = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN, ROLES.STORE_ADMIN].includes(myRole as any)
+  const canDeleteStore = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN].includes(myRole as any)
+  const canAddKey = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN, ROLES.TERMINAL_ADMIN].includes(myRole as any)
+  const canDeleteKey = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN, ROLES.TERMINAL_ADMIN].includes(myRole as any)
+
   const [storeModal, setStoreModal] = useState<{ mode: 'add' | 'edit'; target?: Store } | null>(null)
   const [storeForm, setStoreForm] = useState<StoreForm>(EMPTY_STORE)
   const [keyModal, setKeyModal] = useState<{ store: Store } | null>(null)
@@ -315,7 +330,7 @@ export default function StoresClient({
         <button
           onClick={openAddStore}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black transition-opacity hover:opacity-80"
-          style={{ background: '#06D6A0' }}
+          style={{ background: '#06D6A0', display: canAddStore ? 'flex' : 'none' }}
         >
           <Plus className="w-4 h-4" />
           매장 추가

@@ -7,15 +7,27 @@ import type { Member } from './page'
 import { MERCHANT_ASSIGNABLE as ASSIGNABLE, NEEDS_PASSWORD_ROLES as NEEDS_PASSWORD } from '@/lib/roles/assignable'
 
 const ROLE_LABEL: Record<string, string> = {
-  platform_admin: '관리자',
-  store_owner: '매장관리자',
-  store_manager: '매장운영자',
+  platform_admin: '시스템 관리자',
+  platform_manager: '시스템 운영자',
+  merchant_admin: '가맹점 관리자',
+  merchant_manager: '가맹점 운영자',
+  store_admin: '매장 관리자',
+  store_manager: '매장 운영자',
+  terminal_admin: '단말기 관리자',
+  client_admin: '고객사 관리자',
+  client_manager: '고객사 운영자',
 }
 
 const ROLE_COLOR: Record<string, { bg: string; color: string }> = {
-  platform_admin: { bg: 'rgba(6,214,160,0.12)', color: '#06D6A0' },
-  store_owner:          { bg: 'rgba(96,165,250,0.12)', color: '#60a5fa' },
-  store_manager:        { bg: 'rgba(255,255,255,0.06)', color: 'var(--bp-text-3)' },
+  platform_admin: { bg: 'rgba(239,68,68,0.12)', color: '#ef4444' }, // 시스템 관리자
+  platform_manager: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' }, // 시스템 운영자
+  merchant_admin: { bg: 'rgba(16,185,129,0.12)', color: '#10b981' }, // 가맹점 관리자
+  merchant_manager: { bg: 'rgba(16,185,129,0.06)', color: '#34d399' }, // 가맹점 운영자
+  store_admin: { bg: 'rgba(96,165,250,0.12)', color: '#60a5fa' }, // 매장 관리자
+  store_manager: { bg: 'rgba(96,165,250,0.06)', color: '#93c5fd' }, // 매장 운영자
+  terminal_admin: { bg: 'rgba(139,92,246,0.12)', color: '#8b5cf6' }, // 단말기 관리자
+  client_admin: { bg: 'rgba(236,72,153,0.12)', color: '#ec4899' }, // 고객사 관리자
+  client_manager: { bg: 'rgba(236,72,153,0.06)', color: '#f472b6' }, // 고객사 운영자
 }
 
 

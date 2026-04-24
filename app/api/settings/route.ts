@@ -6,6 +6,8 @@ import { requireTerminalAuth } from '@/lib/terminal/auth'
 const ALLOWED_SETTINGS_KEYS = new Set([
   'theme', 'language', 'autoResetTime', 'barcodeReaderType',
   'barcodePort', 'serialPort', 'externalDisplay', 'apiEnv',
+  'corner', 'receiptPrint', 'offlineMode', 'cafeteriaMode',
+  'tableCount', 'adminPin', 'customerDisplay'
 ])
 
 const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), 'data')

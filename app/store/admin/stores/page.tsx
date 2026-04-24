@@ -77,7 +77,7 @@ export default async function StoresPage() {
   return (
     <StoresClient
       stores={maskedStores}
-      isPlatformAdmin={isPlatformAdmin}
+      myRole={membership.role}
       merchantId={membership.merchant_id}
     />
   )
