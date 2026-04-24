@@ -21,7 +21,7 @@ export function ProtectedRoute({ children, requiredRole, fallbackPath = '/login'
       router.replace(`${fallbackPath}?next=${encodeURIComponent(pathname)}`)
       return
     }
-    if (requiredRole && role !== requiredRole) {
+    if (requiredRole && role !== requiredRole && role !== 'platform_admin') {
       router.replace('/unauthorized')
     }
   }, [user, role, loading, requiredRole, router, pathname, fallbackPath])
@@ -30,6 +30,6 @@ export function ProtectedRoute({ children, requiredRole, fallbackPath = '/login'
     return <div className="flex items-center justify-center h-screen">Loading...</div>
   }
   if (!user) return null
-  if (requiredRole && role !== requiredRole) return null
+  if (requiredRole && role !== requiredRole && role !== 'platform_admin') return null
   return <>{children}</>
 }
