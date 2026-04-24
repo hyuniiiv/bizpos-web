@@ -149,13 +149,18 @@ let mainWindow = null
 // ---------------------------------------------------------------------------
 function getStartURL() {
   if (isDev) {
-    return `http://localhost:3000`
+    return `http://localhost:3000/pos`
   }
+  // 단말기는 항상 /pos 화면으로 시작 (루트 redirect 우회)
+  const posPath = path.join(process.resourcesPath, 'nextjs', 'pos', 'index.html')
+  if (fs.existsSync(posPath)) {
+    return `file://${posPath.replace(/\\/g, '/')}`
+  }
+  // fallback: root index.html
   const indexPath = path.join(process.resourcesPath, 'nextjs', 'index.html')
   if (!fs.existsSync(indexPath)) {
     throw new Error(`index.html 없음: ${indexPath}`)
   }
-  // file:// URL 형식으로 변환 (Windows 경로 대응)
   return `file://${indexPath.replace(/\\/g, '/')}`
 }
 
