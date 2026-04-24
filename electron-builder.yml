@@ -62,7 +62,6 @@ win:
 nsis:
   oneClick: true
   allowToChangeInstallationDirectory: false
-  disableWebInstaller: true
   installerLanguages:
     - ko
   language: "1042"
