@@ -1,6 +1,6 @@
 {
   "name": "bizpos-web",
-  "version": "0.1.49",
+  "version": "0.1.50",
   "description": "BIZPOS - POS Terminal Application",
   "author": "BIZPLAY",
   "license": "UNLICENSED",
@@ -63,6 +63,7 @@
     "electron-builder": "^26.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "pg": "^8.20.0",
     "shadcn": "^4.0.2",
     "tailwindcss": "^4",
     "typescript": "^5",
