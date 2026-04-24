@@ -19,6 +19,8 @@ export const CLIENT_ASSIGNABLE: Record<string, string[]> = {
   client_manager: [],
 }
 
+export const CLIENT_PLATFORM_ROLES = new Set(['platform_admin', 'platform_manager'])
+
 // 이메일 링크가 아닌 ID/PW로 생성되는 역할 (비밀번호 재설정 대상)
 export const NEEDS_PASSWORD_ROLES = new Set([
   'merchant_admin', 'merchant_manager', 'store_admin', 'store_manager', 'terminal_admin', 'client_admin', 'client_manager',
