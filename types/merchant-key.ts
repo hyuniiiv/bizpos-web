@@ -3,12 +3,13 @@ export type KeyEnv = 'production' | 'development'
 export interface MerchantKey {
   id: string
   name: string
-  mid: string
+  mid: string        // 마스킹됨: ****XXXX
   enc_key: string    // 마스킹됨: ****XXXX
   online_ak: string  // 마스킹됨: ****XXXX
   description: string | null
   is_active: boolean
   env: KeyEnv
+  store_id: string | null
   created_at: string
 }
 
@@ -19,6 +20,7 @@ export interface MerchantKeyCreateInput {
   online_ak: string
   description?: string
   env: KeyEnv
+  store_id?: string | null
 }
 
 export interface MerchantKeyUpdateInput {

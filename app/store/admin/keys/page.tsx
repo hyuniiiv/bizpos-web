@@ -17,7 +17,7 @@ export default async function MerchantKeysPage() {
 
   const { data: keys } = await supabase
     .from('merchant_keys')
-    .select('id, name, mid, enc_key, online_ak, description, is_active, env, created_at')
+    .select('id, name, mid, enc_key, online_ak, description, is_active, env, store_id, created_at')
     .eq('merchant_id', merchantUser?.merchant_id)
     .order('created_at', { ascending: false })
 
