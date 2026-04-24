@@ -74,11 +74,25 @@ export default async function StoresPage() {
     })),
   })) as Store[]
 
+  // Mock store statistics (실제 구현에서는 API에서 가져옴)
+  const storeStats: Record<string, { todayTransaction: number; weeklyTransaction: number; activeUsers: number; productSales: number; terminals: number; members: number }> = {}
+  for (const store of maskedStores) {
+    storeStats[store.id] = {
+      todayTransaction: Math.floor(Math.random() * 3000000),
+      weeklyTransaction: Math.floor(Math.random() * 20000000),
+      activeUsers: Math.floor(Math.random() * 100),
+      productSales: Math.floor(Math.random() * 500),
+      terminals: Math.floor(Math.random() * 10),
+      members: Math.floor(Math.random() * 50),
+    }
+  }
+
   return (
     <StoresClient
       stores={maskedStores}
       myRole={membership.role}
       merchantId={membership.merchant_id}
+      storeStats={storeStats}
     />
   )
 }

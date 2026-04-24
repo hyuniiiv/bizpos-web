@@ -14,6 +14,15 @@ interface Terminal {
   status: 'online' | 'offline'
 }
 
+interface StoreStats {
+  todayTransaction: number
+  weeklyTransaction: number
+  activeUsers: number
+  productSales: number
+  terminals: number
+  members: number
+}
+
 type StoreForm = { store_name: string; biz_no: string }
 type KeyForm = { name: string; mid: string; enc_key: string; online_ak: string; description: string; env: 'production' | 'development' }
 
@@ -33,6 +42,28 @@ function EnvBadge({ env }: { env: 'production' | 'development' }) {
     >
       {isProd ? '운영' : '개발'}
     </span>
+  )
+}
+
+function DashboardCard({ label, value, unit }: { label: string; value: number | string; unit?: string }) {
+  const formatValue = (val: number | string) => {
+    if (typeof val === 'string') return val
+    if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`
+    if (val >= 1000) return `${(val / 1000).toFixed(1)}K`
+    return val.toString()
+  }
+
+  return (
+    <div
+      className="rounded-lg p-4"
+      style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)' }}
+    >
+      <p className="text-xs mb-2" style={{ color: 'var(--bp-text-3)' }}>{label}</p>
+      <div className="flex items-baseline gap-1">
+        <span className="text-2xl font-bold text-white">{formatValue(value)}</span>
+        {unit && <span className="text-xs" style={{ color: 'var(--bp-text-3)' }}>{unit}</span>}
+      </div>
+    </div>
   )
 }
 
@@ -104,6 +135,7 @@ function TerminalRow({ terminal }: { terminal: Terminal }) {
 function StoreCard({
   store,
   terminals,
+  stats,
   onEdit,
   onDelete,
   onAddKey,
@@ -115,6 +147,7 @@ function StoreCard({
 }: {
   store: Store
   terminals: Terminal[]
+  stats?: StoreStats
   onEdit: (s: Store) => void
   onDelete: (id: string, name: string) => void
   onAddKey: (store: Store) => void
@@ -189,6 +222,18 @@ function StoreCard({
 
       {expanded && (
         <div className="p-4 space-y-4">
+          {/* 통계 카드 */}
+          {stats && (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              <DashboardCard label="오늘 거래액" value={stats.todayTransaction} unit="원" />
+              <DashboardCard label="주간 거래액" value={stats.weeklyTransaction} unit="원" />
+              <DashboardCard label="활성사용자" value={stats.activeUsers} unit="명" />
+              <DashboardCard label="상품판매" value={stats.productSales} unit="개" />
+              <DashboardCard label="단말기" value={stats.terminals} unit="대" />
+              <DashboardCard label="멤버" value={stats.members} unit="명" />
+            </div>
+          )}
+
           {/* 가맹점 키 섹션 */}
           <div>
             <h4 className="text-xs font-semibold mb-2" style={{ color: 'var(--bp-text-3)' }}>가맹점 키</h4>
@@ -241,14 +286,17 @@ export default function StoresClient({
   myRole,
   merchantId,
   terminals = [],
+  storeStats = {},
 }: {
   stores: Store[]
   myRole: string
   merchantId: string
   terminals?: Terminal[]
+  storeStats?: Record<string, StoreStats>
 }) {
   const router = useRouter()
   const [stores, setStores] = useState<Store[]>(initialStores)
+  const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(merchantId)
 
   const terminalsByStore = useMemo(() => {
     const map = new Map<string, Terminal[]>()
@@ -429,6 +477,7 @@ export default function StoresClient({
             key={s.id}
             store={s}
             terminals={terminalsByStore.get(s.id) ?? []}
+            stats={storeStats[s.id]}
             onEdit={openEditStore}
             onDelete={deleteStore}
             onAddKey={openAddKey}
