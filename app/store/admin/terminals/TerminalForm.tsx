@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
 import { canManageTerminalLifecycle } from '@/lib/roles/permissions'
 import type { Role } from '@/lib/roles/permissions'
 
@@ -13,13 +12,6 @@ const TYPE_LABELS: Record<TerminalType, string> = {
   pos: 'POS',
   kiosk: 'KIOSK',
   table_order: '테이블 오더',
-}
-
-interface TerminalFormData {
-  term_id: string
-  name: string
-  corner: string
-  terminal_type: TerminalType
 }
 
 interface TerminalFormProps {
@@ -40,27 +32,40 @@ const labelCls = 'block text-sm font-medium text-white/70 mb-2'
 
 export default function TerminalForm({ terminal, userRole, readOnly = false }: TerminalFormProps) {
   const router = useRouter()
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<TerminalFormData>({
-    defaultValues: {
-      term_id: terminal.term_id || '',
-      name: terminal.name || '',
-      corner: terminal.corner || '',
-      terminal_type: terminal.terminal_type || 'pos',
-    },
-  })
+  const [termId, setTermId] = useState(terminal.term_id || '')
+  const [name, setName] = useState(terminal.name || '')
+  const [corner, setCorner] = useState(terminal.corner || '')
+  const [terminalType, setTerminalType] = useState<TerminalType>(terminal.terminal_type || 'pos')
 
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
+  const [errorField, setErrorField] = useState('')
   const [success, setSuccess] = useState(false)
 
   const isEditable = !readOnly && canManageTerminalLifecycle(userRole || '')
-  const terminalType = watch('terminal_type')
 
-  const onSubmit = async (data: TerminalFormData) => {
+  const validateTermId = (value: string): string => {
+    if (!value) return '단말기 ID는 필수입니다'
+    if (!/^\d{1,2}$/.test(value)) return '숫자만 입력 가능합니다 (1-2자리)'
+    return ''
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!isEditable) return
+
+    // Validate
+    const termIdError = validateTermId(termId)
+    if (termIdError) {
+      setErrorField('term_id')
+      setError(termIdError)
+      return
+    }
+
     setSaving(true)
     setError('')
+    setErrorField('')
     setSuccess(false)
 
     try {
@@ -68,10 +73,10 @@ export default function TerminalForm({ terminal, userRole, readOnly = false }: T
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          term_id: data.term_id.padStart(2, '0'),
-          name: data.name,
-          corner: data.corner,
-          terminal_type: data.terminal_type,
+          term_id: termId.padStart(2, '0'),
+          name,
+          corner,
+          terminal_type: terminalType,
         }),
       })
 
@@ -97,6 +102,7 @@ export default function TerminalForm({ terminal, userRole, readOnly = false }: T
 
     setDeleting(true)
     setError('')
+    setErrorField('')
 
     try {
       const res = await fetch(`/api/terminals/${terminal.id}`, {
@@ -118,7 +124,7 @@ export default function TerminalForm({ terminal, userRole, readOnly = false }: T
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 glass-card rounded-xl p-6">
+    <form onSubmit={handleSubmit} className="space-y-6 glass-card rounded-xl p-6">
       <div>
         <h3 className="text-lg font-semibold text-white mb-4">
           {readOnly ? '단말기 정보 (읽기 전용)' : '단말기 설정'}
@@ -135,17 +141,12 @@ export default function TerminalForm({ terminal, userRole, readOnly = false }: T
             disabled={readOnly || !isEditable}
             placeholder="예: 01"
             maxLength={2}
-            {...register('term_id', {
-              required: '단말기 ID는 필수입니다',
-              pattern: {
-                value: /^\d{1,2}$/,
-                message: '숫자만 입력 가능합니다',
-              },
-            })}
+            value={termId}
+            onChange={(e) => setTermId(e.target.value)}
             className={inputCls}
             style={inputStyle}
           />
-          {errors.term_id && <p className="text-red-400 text-sm mt-1">{errors.term_id.message}</p>}
+          {errorField === 'term_id' && <p className="text-red-400 text-sm mt-1">{error}</p>}
         </div>
 
         {/* 단말기 이름 */}
@@ -158,7 +159,8 @@ export default function TerminalForm({ terminal, userRole, readOnly = false }: T
             type="text"
             disabled={readOnly || !isEditable}
             placeholder="예: 주방 POS"
-            {...register('name')}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className={inputCls}
             style={inputStyle}
           />
@@ -174,7 +176,8 @@ export default function TerminalForm({ terminal, userRole, readOnly = false }: T
             type="text"
             disabled={readOnly || !isEditable}
             placeholder="예: 주방"
-            {...register('corner')}
+            value={corner}
+            onChange={(e) => setCorner(e.target.value)}
             className={inputCls}
             style={inputStyle}
           />
@@ -188,7 +191,8 @@ export default function TerminalForm({ terminal, userRole, readOnly = false }: T
           <select
             id="terminal_type"
             disabled={readOnly || !isEditable}
-            {...register('terminal_type')}
+            value={terminalType}
+            onChange={(e) => setTerminalType(e.target.value as TerminalType)}
             className={inputCls}
             style={inputStyle}
           >
@@ -204,7 +208,7 @@ export default function TerminalForm({ terminal, userRole, readOnly = false }: T
         {terminalType && (
           <div className="p-3 rounded-lg bg-white/5 border border-white/10">
             <p className="text-sm text-white/70">
-              현재 타입: <span className="text-white font-medium">{TYPE_LABELS[terminalType as TerminalType]}</span>
+              현재 타입: <span className="text-white font-medium">{TYPE_LABELS[terminalType]}</span>
             </p>
           </div>
         )}
