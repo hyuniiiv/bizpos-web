@@ -20,10 +20,14 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { data: merchants } = await supabase
+  const { data: merchants, error } = await supabase
     .from('merchants')
-    .select('id, name, biz_no, address, admin_id, manager_id, description')
+    .select('*')
     .order('name')
+
+  if (error) {
+    console.error('Merchants query error:', error)
+  }
 
   return NextResponse.json({ data: merchants ?? [] })
 }
