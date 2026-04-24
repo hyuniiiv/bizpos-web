@@ -21,5 +21,5 @@ export async function checkPermission(
     .eq('resource', resource)
     .single();
 
-  return !!data?.[column];
+  return !!(data as any)?.[column];
 }

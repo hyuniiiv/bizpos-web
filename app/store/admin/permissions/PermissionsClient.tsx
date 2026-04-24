@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Checkbox } from '@/components/ui/checkbox'
 
 interface Permission {
   id: string

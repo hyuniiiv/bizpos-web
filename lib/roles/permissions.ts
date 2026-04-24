@@ -17,18 +17,18 @@ export type Role = typeof ROLES[keyof typeof ROLES];
 /**
  * 단말기 라이프사이클(생성/삭제) 권한 확인
  */
-export const canManageTerminalLifecycle = (role: string) => {
+export const canManageTerminalLifecycle = (role: Role | string) => {
   return [
     ROLES.PLATFORM_ADMIN,
     ROLES.PLATFORM_MANAGER,
     ROLES.TERMINAL_ADMIN,
-  ].includes(role);
+  ].includes(role as any);
 };
 
 /**
  * 단말기 설정 수정 권한 확인
  */
-export const canUpdateTerminalSettings = (role: string) => {
+export const canUpdateTerminalSettings = (role: Role | string) => {
   return [
     ROLES.PLATFORM_ADMIN,
     ROLES.PLATFORM_MANAGER,
@@ -37,5 +37,5 @@ export const canUpdateTerminalSettings = (role: string) => {
     ROLES.MERCHANT_MANAGER,
     ROLES.STORE_ADMIN,
     ROLES.STORE_MANAGER,
-  ].includes(role);
+  ].includes(role as any);
 };

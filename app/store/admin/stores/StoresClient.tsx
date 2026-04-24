@@ -73,12 +73,20 @@ function StoreCard({
   onDelete,
   onAddKey,
   onDeleteKey,
+  canEditStore,
+  canDeleteStore,
+  canAddKey,
+  canDeleteKey,
 }: {
   store: Store
   onEdit: (s: Store) => void
   onDelete: (id: string, name: string) => void
   onAddKey: (store: Store) => void
   onDeleteKey: (keyId: string, keyName: string) => void
+  canEditStore: boolean
+  canDeleteStore: boolean
+  canAddKey: boolean
+  canDeleteKey: boolean
 }) {
   const [expanded, setExpanded] = useState(true)
   const prodCount = store.merchant_keys.filter(k => k.env === 'production').length
@@ -353,6 +361,10 @@ export default function StoresClient({
             onDelete={deleteStore}
             onAddKey={openAddKey}
             onDeleteKey={deleteKey}
+            canEditStore={canEditStore}
+            canDeleteStore={canDeleteStore}
+            canAddKey={canAddKey}
+            canDeleteKey={canDeleteKey}
           />
         ))}
       </div>
