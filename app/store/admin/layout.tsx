@@ -21,7 +21,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('user_id', user.id)
     .single()
 
-  const isPlatformAdmin = membership?.role === 'platform_admin'
+  // 역할을 소문자로 정규화 (Platform_admin → platform_admin)
+  const normalizedRole = membership?.role?.toLowerCase()
+
+  const isPlatformAdmin = normalizedRole === 'platform_admin'
 
   const cookieStore = await cookies()
 
@@ -79,7 +82,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {isPlatformAdmin && <MerchantSwitcher currentMerchantId={effectiveMerchantId} />}
           <StoreSwitcher />
           <nav className="flex-1 px-2 py-3 space-y-0.5">
-            <SideNav alertCount={alertCount} myRole={membership?.role} />
+            <SideNav alertCount={alertCount} myRole={normalizedRole} />
           </nav>
           <div className="px-2 py-3" style={{ borderTop: '1px solid var(--bp-border)' }}>
             <LogoutButton />
@@ -104,7 +107,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <p className="text-xs truncate max-w-[140px]" style={{ color: 'var(--bp-text-3)' }}>{user.email}</p>
             </div>
             <nav className="flex overflow-x-auto gap-1 px-2 pb-2 scrollbar-none">
-              <MobileNav alertCount={alertCount} myRole={membership?.role} />
+              <MobileNav alertCount={alertCount} myRole={normalizedRole} />
             </nav>
           </div>
 

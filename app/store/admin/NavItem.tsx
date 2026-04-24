@@ -42,12 +42,12 @@ function checkActive(href: string, pathname: string) {
 }
 
 function isNavItemAllowed(item: NavEntry, role?: string): boolean {
-  // 가맹점 관리는 platform_admin만 접근 가능
-  if (item.href === '/store/admin/merchants' && role !== 'platform_admin') {
+  // 가맹점 관리는 platform_admin만 접근 가능 (대소문자 무시)
+  if (item.href === '/store/admin/merchants' && role?.toLowerCase() !== 'platform_admin') {
     return false
   }
-  // 권한 관리는 store_manager 제외
-  if (item.href === '/store/admin/members' && role === 'store_manager') {
+  // 권한 관리는 store_manager 제외 (대소문자 무시)
+  if (item.href === '/store/admin/members' && role?.toLowerCase() === 'store_manager') {
     return false
   }
   return true
