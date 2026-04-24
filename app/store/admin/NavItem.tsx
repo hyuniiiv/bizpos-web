@@ -12,6 +12,7 @@ import {
   Settings2,
   Store,
   ShieldCheck,
+  Building2,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -25,6 +26,7 @@ type NavEntry = {
 
 const NAV_ITEMS: NavEntry[] = [
   { href: '/store/admin',              label: '대시보드',   mobileLabel: '대시보드', icon: LayoutDashboard },
+  { href: '/store/admin/merchants',    label: '가맹점 관리', mobileLabel: '가맹점',   icon: Building2 },
   { href: '/store/admin/stores',       label: '매장 관리',  mobileLabel: '매장관리', icon: Store },
   { href: '/store/admin/terminals',    label: '단말기 관리', mobileLabel: '단말기',   icon: Monitor },
   { href: '/store/admin/keys',         label: '키 관리',    mobileLabel: '키 관리',  icon: KeyRound },
@@ -39,13 +41,23 @@ function checkActive(href: string, pathname: string) {
   return href === '/store/admin' ? pathname === '/store/admin' : pathname.startsWith(href)
 }
 
+function isNavItemAllowed(item: NavEntry, role?: string): boolean {
+  // 가맹점 관리는 platform_admin만 접근 가능
+  if (item.href === '/store/admin/merchants' && role !== 'platform_admin') {
+    return false
+  }
+  // 권한 관리는 store_manager 제외
+  if (item.href === '/store/admin/members' && role === 'store_manager') {
+    return false
+  }
+  return true
+}
+
 export function SideNav({ alertCount, myRole }: { alertCount: number; myRole?: string }) {
   const pathname = usePathname()
   return (
     <>
-      {NAV_ITEMS.filter(item =>
-        !(item.href === '/store/admin/members' && myRole === 'store_manager')
-      ).map(item => {
+      {NAV_ITEMS.filter(item => isNavItemAllowed(item, myRole)).map(item => {
         const active = checkActive(item.href, pathname)
         const badge = item.alertKey ? alertCount : 0
         const Icon = item.icon
@@ -79,9 +91,7 @@ export function MobileNav({ alertCount, myRole }: { alertCount: number; myRole?:
   const pathname = usePathname()
   return (
     <>
-      {NAV_ITEMS.filter(item =>
-        !(item.href === '/store/admin/members' && myRole === 'store_manager')
-      ).map(item => {
+      {NAV_ITEMS.filter(item => isNavItemAllowed(item, myRole)).map(item => {
         const active = checkActive(item.href, pathname)
         const badge = item.alertKey ? alertCount : 0
         return (
