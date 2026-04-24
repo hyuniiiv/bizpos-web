@@ -12,7 +12,7 @@ interface Manager {
 
 type FormData = {
   name: string
-  registration_number: string
+  biz_no: string
   address: string
   admin_id: string
   manager_id: string | null
@@ -70,9 +70,9 @@ export default function MerchantForm({
         </label>
         <input
           type="text"
-          value={form.registration_number}
+          value={form.biz_no}
           onChange={e =>
-            handleChange('registration_number', e.target.value)
+            handleChange('biz_no', e.target.value)
           }
           placeholder="123-45-67890"
           className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"

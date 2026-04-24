@@ -22,7 +22,7 @@ export async function GET() {
 
   const { data: merchants } = await supabase
     .from('merchants')
-    .select('id, name, registration_number, address, admin_id, manager_id, description')
+    .select('id, name, biz_no, address, admin_id, manager_id, description')
     .order('name')
 
   return NextResponse.json({ data: merchants ?? [] })
@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { name, registration_number, address, admin_id, manager_id, description } = body
+    const { name, biz_no, address, admin_id, manager_id, description } = body
 
-    if (!name || !registration_number || !address || !admin_id) {
+    if (!name || !biz_no || !address || !admin_id) {
       return NextResponse.json(
         { error: '필수 항목을 입력하세요' },
         { status: 400 }
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           name,
-          registration_number,
+          biz_no,
           address,
           admin_id,
           manager_id: manager_id || null,
@@ -101,7 +101,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { id, name, registration_number, address, admin_id, manager_id, description } = body
+    const { id, name, biz_no, address, admin_id, manager_id, description } = body
 
     if (!id) {
       return NextResponse.json({ error: '가맹점 ID가 필요합니다' }, { status: 400 })
@@ -111,7 +111,7 @@ export async function PATCH(request: NextRequest) {
       .from('merchants')
       .update({
         name,
-        registration_number,
+        biz_no,
         address,
         admin_id,
         manager_id: manager_id || null,

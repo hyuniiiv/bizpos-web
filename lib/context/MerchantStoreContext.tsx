@@ -6,7 +6,7 @@ import type { Role } from '@/lib/roles/permissions'
 export interface Merchant {
   id: string
   name: string
-  registration_number: string
+  biz_no: string
   address: string
   admin_id: string | null
   manager_id: string | null

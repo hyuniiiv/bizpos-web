@@ -19,7 +19,7 @@ interface Manager {
 
 type FormData = {
   name: string
-  registration_number: string
+  biz_no: string
   address: string
   admin_id: string
   manager_id: string | null
@@ -28,7 +28,7 @@ type FormData = {
 
 const EMPTY_FORM: FormData = {
   name: '',
-  registration_number: '',
+  biz_no: '',
   address: '',
   admin_id: '',
   manager_id: null,
@@ -87,7 +87,7 @@ export default function MerchantsClient({
   function openEditModal(merchant: Merchant) {
     setForm({
       name: merchant.name,
-      registration_number: merchant.registration_number,
+      biz_no: merchant.biz_no,
       address: merchant.address,
       admin_id: merchant.admin_id || '',
       manager_id: merchant.manager_id || null,
@@ -104,7 +104,7 @@ export default function MerchantsClient({
       setError('가맹점명을 입력하세요.')
       return
     }
-    if (!form.registration_number.trim()) {
+    if (!form.biz_no.trim()) {
       setError('사업자등록번호를 입력하세요.')
       return
     }
@@ -266,7 +266,7 @@ export default function MerchantsClient({
                       className="px-4 py-3 text-sm"
                       style={{ color: 'var(--bp-text-3)' }}
                     >
-                      {merchant.registration_number}
+                      {merchant.biz_no}
                     </td>
                     <td
                       className="px-4 py-3 text-sm hidden md:table-cell"

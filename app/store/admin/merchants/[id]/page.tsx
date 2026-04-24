@@ -116,7 +116,7 @@ export default async function MerchantDetailPage({
               사업자등록번호
             </label>
             <p className="text-white font-medium">
-              {merchant.registration_number}
+              {merchant.biz_no}
             </p>
           </div>
 
