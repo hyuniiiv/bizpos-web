@@ -65,7 +65,7 @@ export const canAssignRole = (role: Role | string, targetRole: Role | string) =>
 
   // Platform manager can assign non-platform roles
   if (assigner === ROLES.PLATFORM_MANAGER) {
-    return ![ROLES.PLATFORM_ADMIN, ROLES.PLATFORM_MANAGER].includes(target);
+    return ![ROLES.PLATFORM_ADMIN, ROLES.PLATFORM_MANAGER].includes(target as any);
   }
 
   // Merchant admin can assign merchant and store roles
@@ -74,7 +74,7 @@ export const canAssignRole = (role: Role | string, targetRole: Role | string) =>
       ROLES.MERCHANT_MANAGER,
       ROLES.STORE_ADMIN,
       ROLES.STORE_MANAGER,
-    ].includes(target);
+    ].includes(target as any);
   }
 
   // Others cannot assign roles

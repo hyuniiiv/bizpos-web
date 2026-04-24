@@ -6,7 +6,7 @@ configure({
   asyncUtilTimeout: 1000,
 })
 
-if (typeof window !== 'undefined' && !window.getComputedRole) {
+if (typeof window !== 'undefined' && !(window as any).getComputedRole) {
   // Enable jsdom accessibility API for role queries
   Object.defineProperty(window, 'getComputedRole', {
     value: (element: Element) => {
