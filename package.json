@@ -15,6 +15,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "build:electron": "node scripts/electron-build-wrapper.js",
     "electron:build": "node scripts/electron-build-wrapper.js && electron-builder",
@@ -80,6 +82,7 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.5",
-    "wait-on": "^9.0.4"
+    "wait-on": "^9.0.4",
+    "@playwright/test": "^1.40.1"
   }
 }
