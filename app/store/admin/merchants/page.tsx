@@ -1,3 +1,5 @@
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import MerchantsClient from './MerchantsClient'
 import type { Merchant } from '@/lib/context/MerchantStoreContext'
 
@@ -50,28 +52,22 @@ async function getManagers(): Promise<Manager[]> {
   }
 }
 
-async function getCurrentUser(): Promise<{ role: string | null; merchantId: string | null }> {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/auth/me`, {
-      next: { revalidate: 0 },
-    })
-    if (!res.ok) return { role: null, merchantId: null }
-    const json = await res.json()
-    return {
-      role: json.data?.role || null,
-      merchantId: json.data?.merchant_id || null,
-    }
-  } catch {
-    return { role: null, merchantId: null }
-  }
-}
-
 export default async function MerchantsPage() {
-  const [merchants, admins, managers, user] = await Promise.all([
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  const { data: membership } = await supabase
+    .from('merchant_users')
+    .select('merchant_id, role')
+    .eq('user_id', user.id)
+    .single()
+
+  const [merchants, admins, managers] = await Promise.all([
     getMerchants(),
     getAdmins(),
     getManagers(),
-    getCurrentUser(),
   ])
 
   return (
@@ -79,8 +75,8 @@ export default async function MerchantsPage() {
       merchants={merchants}
       admins={admins}
       managers={managers}
-      userRole={user.role}
-      userMerchantId={user.merchantId}
+      userRole={membership?.role || null}
+      userMerchantId={membership?.merchant_id || null}
     />
   )
 }
