@@ -60,8 +60,9 @@ win:
   icon: resources/icon.ico
 
 nsis:
-  oneClick: false
-  allowToChangeInstallationDirectory: true
+  oneClick: true
+  allowToChangeInstallationDirectory: false
+  disableWebInstaller: true
   installerLanguages:
     - ko
   language: "1042"
