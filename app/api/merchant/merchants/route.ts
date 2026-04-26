@@ -32,13 +32,13 @@ export async function GET() {
 
   // 중복 제거하고 정렬
   const merchantMap = new Map()
-  merchantUsers?.forEach(mu => {
+  merchantUsers?.forEach((mu: any) => {
     if (mu.merchants && !merchantMap.has(mu.merchants.id)) {
       merchantMap.set(mu.merchants.id, mu.merchants)
     }
   })
 
-  const merchants = Array.from(merchantMap.values()).sort((a, b) =>
+  const merchants = Array.from(merchantMap.values()).sort((a: any, b: any) =>
     (a.name || '').localeCompare(b.name || '')
   )
 
