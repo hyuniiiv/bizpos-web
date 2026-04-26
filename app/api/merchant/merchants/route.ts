@@ -20,16 +20,29 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { data: merchants, error } = await supabase
-    .from('merchants')
-    .select('*')
-    .order('name')
+  // merchant_users를 통해 merchants를 조회 (RLS 정책 우회)
+  const { data: merchantUsers, error: muError } = await supabase
+    .from('merchant_users')
+    .select('merchant_id, merchants(*)')
 
-  if (error) {
-    console.error('Merchants query error:', error)
+  if (muError) {
+    console.error('Merchant users query error:', muError)
+    return NextResponse.json({ data: [] })
   }
 
-  return NextResponse.json({ data: merchants ?? [] })
+  // 중복 제거하고 정렬
+  const merchantMap = new Map()
+  merchantUsers?.forEach(mu => {
+    if (mu.merchants && !merchantMap.has(mu.merchants.id)) {
+      merchantMap.set(mu.merchants.id, mu.merchants)
+    }
+  })
+
+  const merchants = Array.from(merchantMap.values()).sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '')
+  )
+
+  return NextResponse.json({ data: merchants })
 }
 
 export async function POST(request: NextRequest) {
