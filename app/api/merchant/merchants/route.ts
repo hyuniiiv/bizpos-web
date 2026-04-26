@@ -9,14 +9,14 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: mu } = await supabase
+  const { data: mus } = await supabase
     .from('merchant_users')
     .select('role')
     .eq('user_id', user.id)
-    .single()
 
   // platform_admin만 모든 가맹점 조회 가능
-  if (!mu || mu.role !== 'platform_admin') {
+  const hasPlatformAdminRole = mus?.some(mu => mu.role === 'platform_admin')
+  if (!hasPlatformAdminRole) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -40,13 +40,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: mu } = await supabase
+  const { data: mus } = await supabase
     .from('merchant_users')
     .select('role')
     .eq('user_id', user.id)
-    .single()
 
-  if (!mu || mu.role !== 'platform_admin') {
+  const hasPlatformAdminRole = mus?.some(mu => mu.role === 'platform_admin')
+  if (!hasPlatformAdminRole) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -93,13 +93,13 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: mu } = await supabase
+  const { data: mus } = await supabase
     .from('merchant_users')
     .select('role')
     .eq('user_id', user.id)
-    .single()
 
-  if (!mu || mu.role !== 'platform_admin') {
+  const hasPlatformAdminRole = mus?.some(mu => mu.role === 'platform_admin')
+  if (!hasPlatformAdminRole) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -143,13 +143,13 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: mu } = await supabase
+  const { data: mus } = await supabase
     .from('merchant_users')
     .select('role')
     .eq('user_id', user.id)
-    .single()
 
-  if (!mu || mu.role !== 'platform_admin') {
+  const hasPlatformAdminRole = mus?.some(mu => mu.role === 'platform_admin')
+  if (!hasPlatformAdminRole) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
