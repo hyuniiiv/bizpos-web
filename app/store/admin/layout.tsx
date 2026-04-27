@@ -4,10 +4,7 @@ import { redirect } from 'next/navigation'
 import { SideNav, MobileNav } from './NavItem'
 import LogoutButton from './LogoutButton'
 import { MerchantSwitcher } from './MerchantSwitcher'
-import { StoreSwitcher } from './StoreSwitcher'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { StoreProvider } from '@/lib/context/StoreContext'
-import type { Store } from '@/lib/context/StoreContext'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -34,17 +31,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     if (selected) effectiveMerchantId = selected
   }
 
-  // stores 데이터 fetch
-  const { data: rawStores } = await supabase
-    .from('stores')
-    .select('id, merchant_id, store_name, is_active')
-    .eq('merchant_id', effectiveMerchantId)
-    .order('store_name')
-
-  const stores = rawStores ?? []
-  const savedStoreId = cookieStore.get('bp_selected_store')?.value
-  const initialStoreId = stores.find(s => s.id === savedStoreId)?.id || stores[0]?.id || null
-
   let alertCount = 0
   if (effectiveMerchantId) {
     const { count } = await supabase
@@ -56,7 +42,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <StoreProvider initialStoreId={initialStoreId} initialStores={stores as Store[]}>
       <ProtectedRoute requiredRole="merchant">
       <div className="min-h-screen flex" style={{ background: 'var(--pos-bg-gradient)' }}>
 
@@ -79,8 +64,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               </div>
             </div>
           </div>
-          {isPlatformAdmin && <MerchantSwitcher currentMerchantId={effectiveMerchantId} />}
-          <StoreSwitcher />
+          <MerchantSwitcher currentMerchantId={effectiveMerchantId} />
           <nav className="flex-1 px-2 py-3 space-y-0.5">
             <SideNav alertCount={alertCount} myRole={normalizedRole} />
           </nav>
@@ -116,6 +100,5 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </div>
       </ProtectedRoute>
-    </StoreProvider>
   )
 }

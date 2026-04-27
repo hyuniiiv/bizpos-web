@@ -156,6 +156,10 @@
   --bp-text:         oklch(0.930 0.005 255);
   --bp-text-2:       oklch(0.680 0.012 255);
   --bp-text-3:       oklch(0.560 0.008 255);
+
+  /* Brand */
+  --bp-primary:      #06D6A0;
+  --bp-primary-fg:   #000000;
 }
 
 @layer utilities {

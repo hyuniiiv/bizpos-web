@@ -17,9 +17,19 @@ export async function PATCH(
 
   const body = await req.json()
   const allowed = ['name', 'corner', 'term_id', 'activation_code', 'terminal_type']
-  const updates: Record<string, string> = {}
+  const updates: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) updates[key] = body[key]
+  }
+
+  // store_id 변경 시 해당 store가 동일 merchant 소속인지 검증
+  if ('store_id' in body) {
+    if (body.store_id) {
+      const { data: store } = await supabase
+        .from('stores').select('id').eq('id', body.store_id).eq('merchant_id', mu.merchant_id).single()
+      if (!store) return NextResponse.json({ error: 'STORE_NOT_FOUND' }, { status: 403 })
+    }
+    updates['store_id'] = body.store_id
   }
 
   // RLS 정책이 merchant_id 소유권을 검증함

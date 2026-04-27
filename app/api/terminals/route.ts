@@ -20,34 +20,49 @@ export async function POST(req: NextRequest) {
 
   if (!merchantUser) return NextResponse.json({ error: 'MERCHANT_NOT_FOUND' }, { status: 403 })
 
-  const { termId, name, corner, terminal_type, store_id } = await req.json()
-  if (!termId || !store_id) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 })
+  const { name, terminal_type, store_id } = await req.json()
 
-  // 권한 검증: store_id가 현재 merchant에 속하는지 확인
-  const { data: store, error: storeError } = await supabase
-    .from('stores')
-    .select('id')
-    .eq('id', store_id)
-    .eq('merchant_id', merchantUser.merchant_id)
-    .single()
-
-  if (storeError || !store) {
-    return NextResponse.json({ error: 'STORE_NOT_FOUND' }, { status: 403 })
+  // store_id가 있으면 merchant 소속 검증
+  if (store_id) {
+    const { data: store } = await supabase
+      .from('stores')
+      .select('id')
+      .eq('id', store_id)
+      .eq('merchant_id', merchantUser.merchant_id)
+      .single()
+    if (!store) return NextResponse.json({ error: 'STORE_NOT_FOUND' }, { status: 403 })
   }
+
+  // 가맹점 내 최대 term_id 조회 → 다음 번호 자동 할당
+  const { data: existing } = await supabase
+    .from('terminals')
+    .select('term_id')
+    .eq('merchant_id', merchantUser.merchant_id)
+
+  const maxTermId = Math.max(0, ...(existing ?? []).map(t => parseInt(t.term_id) || 0))
+  const nextTermId = String(maxTermId + 1).padStart(2, '0')
 
   const validTypes = ['ticket_checker', 'pos', 'kiosk', 'table_order']
   const { data, error } = await supabase.from('terminals').insert({
     merchant_id: merchantUser.merchant_id,
-    store_id: store_id,
-    term_id: String(termId).padStart(2, '0'),
+    store_id: store_id ?? null,
+    term_id: nextTermId,
     name: name ?? '',
-    corner: corner ?? '',
+    corner: '',
     terminal_type: validTypes.includes(terminal_type) ? terminal_type : 'pos',
     activation_code: generateActivationCode(),
   }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+
+  // 기본 설정 저장 (초기 관리자 PIN: 1234)
+  await supabase.from('terminal_configs').insert({
+    terminal_id: data.id,
+    config: { adminPin: '1234' },
+    version: 1,
+  })
+
+  return NextResponse.json({ ...data, initialPin: '1234' })
 }
 
 // GET /api/terminals — POS 단말기 목록 조회 (terminal JWT 보호)

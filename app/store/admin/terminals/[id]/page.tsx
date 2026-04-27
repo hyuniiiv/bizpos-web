@@ -1,13 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import TerminalForm from '../TerminalForm'
-import MenuManager from '../MenuManager'
 import PosConfigForm from './PosConfigForm'
-import TerminalKeyPanel from './TerminalKeyPanel'
 import CloneTerminalButton from './CloneTerminalButton'
 import { UpdateCommandButton } from './UpdateCommandButton'
-import type { Role } from '@/lib/roles/permissions'
 
 export const revalidate = 0
 
@@ -27,19 +23,17 @@ export default async function TerminalDetailPage({
     .eq('user_id', user.id)
     .single()
 
-  const userRole = (merchantUser?.role as Role | null) || null
-
   // RLS 정책이 merchant_id 소유권 검증
   const { data: terminal } = await supabase
     .from('terminals')
-    .select('id, term_id, name, corner, status, terminal_type, last_seen_at, activation_code, access_token, merchant_key_id, current_app_version, update_requested_at')
+    .select('id, term_id, name, corner, status, terminal_type, last_seen_at, activation_code, access_token, merchant_key_id, store_id, current_app_version, update_requested_at')
     .eq('id', id)
     .eq('merchant_id', merchantUser?.merchant_id)
     .single()
 
   if (!terminal) notFound()
 
-  const [{ data: configRow }, { data: merchantKeys }] = await Promise.all([
+  const [{ data: configRow }, { data: merchantKeys }, { data: stores }] = await Promise.all([
     supabase
       .from('terminal_configs')
       .select('config, version')
@@ -52,6 +46,11 @@ export default async function TerminalDetailPage({
       .select('id, name, mid, is_active')
       .eq('merchant_id', merchantUser?.merchant_id)
       .order('created_at', { ascending: false }),
+    supabase
+      .from('stores')
+      .select('id, store_name')
+      .eq('merchant_id', merchantUser?.merchant_id)
+      .order('created_at', { ascending: true }),
   ])
 
   const displayName = terminal.name || `단말기 ${terminal.term_id}`
@@ -65,32 +64,7 @@ export default async function TerminalDetailPage({
       </div>
       <h1 className="text-2xl font-bold text-white">{displayName} 설정</h1>
 
-      {/* CRUD & 메뉴 관리 섹션 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 왼쪽: 단말기 정보 (CRUD) */}
-        <div>
-          <TerminalForm
-            terminal={terminal}
-            userRole={userRole}
-            readOnly={false}
-          />
-        </div>
-
-        {/* 오른쪽: 메뉴 관리 */}
-        <div>
-          <MenuManager
-            terminal={terminal}
-            initialMenuConfig={{
-              pos: [],
-              kiosk: [],
-              ticket_checker: [],
-              table_order: [],
-            }}
-          />
-        </div>
-      </div>
-
-      {/* POS 설정 섹션 */}
+      {/* 단말기 설정 섹션 */}
       <div className="flex gap-6 items-start">
         <div className="flex-1 min-w-0">
           <PosConfigForm
@@ -98,14 +72,11 @@ export default async function TerminalDetailPage({
             initialConfig={configRow?.config ?? null}
             currentVersion={configRow?.version ?? 0}
             terminal={terminal}
+            merchantKeys={merchantKeys ?? []}
+            stores={stores ?? []}
           />
         </div>
         <div className="w-72 shrink-0 space-y-4">
-          <TerminalKeyPanel
-            terminalId={id}
-            currentKeyId={terminal.merchant_key_id ?? null}
-            merchantKeys={merchantKeys ?? []}
-          />
           <div className="glass-card rounded-xl p-4 space-y-3" style={{ border: '1px solid rgba(96,165,250,0.30)' }}>
             <div>
               <p className="text-xs text-white/50 mb-1">앱 버전</p>

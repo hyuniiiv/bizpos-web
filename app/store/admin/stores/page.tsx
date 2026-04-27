@@ -4,27 +4,13 @@ import StoresClient from './StoresClient'
 
 export const revalidate = 0
 
-export type StoreKey = {
-  id: string
-  name: string
-  mid: string
-  enc_key: string
-  online_ak: string
-  description: string | null
-  is_active: boolean
-  env: 'production' | 'development'
-  store_id: string | null
-  created_at: string
-}
-
 export type Store = {
   id: string
   store_name: string
-  biz_no: string | null
+  address: string | null
   is_active: boolean
   merchant_id: string
   created_at: string
-  merchant_keys: StoreKey[]
 }
 
 export default async function StoresPage() {
@@ -44,17 +30,7 @@ export default async function StoresPage() {
 
   let q = supabase
     .from('stores')
-    .select(`
-      id,
-      store_name,
-      biz_no,
-      is_active,
-      merchant_id,
-      created_at,
-      merchant_keys (
-        id, name, mid, enc_key, online_ak, description, is_active, env, store_id, created_at
-      )
-    `)
+    .select('id, store_name, address, is_active, merchant_id, created_at')
     .order('created_at', { ascending: true })
 
   if (!isPlatformAdmin) {
@@ -63,36 +39,16 @@ export default async function StoresPage() {
 
   const { data: stores } = await q
 
-  // 서버사이드 키 마스킹
-  const maskedStores = (stores ?? []).map(s => ({
-    ...s,
-    merchant_keys: (s.merchant_keys ?? []).map((k: StoreKey) => ({
-      ...k,
-      mid: `****${k.mid.slice(-4)}`,
-      enc_key: `****${k.enc_key.slice(-4)}`,
-      online_ak: `****${k.online_ak.slice(-4)}`,
-    })),
-  })) as Store[]
-
-  // Mock store statistics (실제 구현에서는 API에서 가져옴)
-  const storeStats: Record<string, { todayTransaction: number; weeklyTransaction: number; activeUsers: number; productSales: number; terminals: number; members: number }> = {}
-  for (const store of maskedStores) {
-    storeStats[store.id] = {
-      todayTransaction: Math.floor(Math.random() * 3000000),
-      weeklyTransaction: Math.floor(Math.random() * 20000000),
-      activeUsers: Math.floor(Math.random() * 100),
-      productSales: Math.floor(Math.random() * 500),
-      terminals: Math.floor(Math.random() * 10),
-      members: Math.floor(Math.random() * 50),
-    }
-  }
+  const { data: merchant } = membership.merchant_id
+    ? await supabase.from('merchants').select('name').eq('id', membership.merchant_id).single()
+    : { data: null }
 
   return (
     <StoresClient
-      stores={maskedStores}
+      stores={(stores ?? []) as Store[]}
       myRole={membership.role}
       merchantId={membership.merchant_id}
-      storeStats={storeStats}
+      merchantName={merchant?.name ?? undefined}
     />
   )
 }

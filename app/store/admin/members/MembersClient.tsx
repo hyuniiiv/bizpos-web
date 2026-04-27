@@ -61,6 +61,7 @@ export default function MembersClient({
   }
 
   async function handleCreateAccount(formData: CreateAccountFormData) {
+    if (!confirm('저장하시겠습니까?')) return
     setSaving(true)
     setError('')
     try {
@@ -90,6 +91,7 @@ export default function MembersClient({
   }
 
   async function handleRoleChange(id: string, role: string) {
+    if (!confirm('역할을 변경하시겠습니까?')) return
     const res = await fetch('/api/merchant/members', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

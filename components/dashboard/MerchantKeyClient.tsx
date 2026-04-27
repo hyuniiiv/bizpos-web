@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useMerchantKeys } from '@/lib/hooks/useMerchantKeys'
 import type { MerchantKey, MerchantKeyCreateInput, MerchantKeyUpdateInput, KeyEnv } from '@/types/merchant-key'
@@ -21,6 +22,7 @@ function EnvBadge({ env }: { env: KeyEnv }) {
 }
 
 export default function MerchantKeyClient({ initialKeys }: Props) {
+  const router = useRouter()
   const { keys, loading: saving, createKey, updateKey, deleteKey } = useMerchantKeys(initialKeys)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -188,7 +190,8 @@ export default function MerchantKeyClient({ initialKeys }: Props) {
           <tbody>
             {filtered.map(k => (
               <tr key={k.id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
-                <td className="px-4 py-3 font-medium text-white">
+                <td className="px-4 py-3 font-medium text-white cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => router.push(`/store/admin/keys/${k.id}`)}>
                   {k.name}
                   {k.description && <p className="text-xs text-white/35 mt-0.5">{k.description}</p>}
                 </td>
@@ -204,8 +207,7 @@ export default function MerchantKeyClient({ initialKeys }: Props) {
                     {k.is_active ? '활성' : '비활성'}
                   </button>
                 </td>
-                <td className="px-4 py-3 text-right space-x-2">
-                  <button onClick={() => openEdit(k)} className="text-blue-400 hover:text-blue-300 text-xs transition-colors">수정</button>
+                <td className="px-4 py-3 text-right">
                   <button onClick={() => handleDelete(k.id)} className="text-red-400 hover:text-red-300 text-xs transition-colors">삭제</button>
                 </td>
               </tr>

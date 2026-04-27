@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   if (!mu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
-  const { store_name, biz_no, merchant_id } = body
+  const { store_name, address, merchant_id } = body
 
   if (!store_name?.trim()) {
     return NextResponse.json({ error: '매장명을 입력하세요' }, { status: 400 })
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     .insert({
       merchant_id: targetMerchantId,
       store_name: store_name.trim(),
-      biz_no: biz_no?.trim() || null,
+      address: address?.trim() || null,
       is_active: true,
     })
     .select()

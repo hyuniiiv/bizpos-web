@@ -120,10 +120,9 @@ export async function PATCH(request: NextRequest) {
         name,
         biz_no,
         address,
-        admin_id,
+        admin_id: admin_id || null,
         manager_id: manager_id || null,
         description: description || null,
-        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .select()
@@ -132,8 +131,13 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error
 
     return NextResponse.json({ data })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : '가맹점 수정 실패'
+  } catch (error: unknown) {
+    console.error('PATCH merchants error:', JSON.stringify(error))
+    const message =
+      error instanceof Error ? error.message :
+      (typeof error === 'object' && error !== null && 'message' in error)
+        ? String((error as { message: unknown }).message)
+        : '가맹점 수정 실패'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

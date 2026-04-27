@@ -10,7 +10,7 @@ const mockStores = [
     id: 'store-1',
     merchant_id: 'merchant-1',
     store_name: '강남점',
-    biz_no: '123-45-67890',
+    address: '서울시 강남구',
     is_active: true,
     merchant_keys: [],
     created_at: '2024-01-01T00:00:00Z',
@@ -19,7 +19,7 @@ const mockStores = [
     id: 'store-2',
     merchant_id: 'merchant-1',
     store_name: '서초점',
-    biz_no: '098-76-54321',
+    address: '서울시 서초구',
     is_active: true,
     merchant_keys: [],
     created_at: '2024-01-02T00:00:00Z',
@@ -28,7 +28,7 @@ const mockStores = [
     id: 'store-3',
     merchant_id: 'merchant-2',
     store_name: '강북점',
-    biz_no: null,
+    address: null,
     is_active: true,
     merchant_keys: [],
     created_at: '2024-01-03T00:00:00Z',
@@ -59,11 +59,6 @@ const mockTerminals = [
   },
 ]
 
-const mockStoreStats = {
-  'store-1': { todayTransaction: 1500000, weeklyTransaction: 8500000, activeUsers: 42, productSales: 127, terminals: 2, members: 5 },
-  'store-2': { todayTransaction: 800000, weeklyTransaction: 4200000, activeUsers: 28, productSales: 65, terminals: 1, members: 3 },
-}
-
 describe('StoresClient Dashboard', () => {
   it('should render dashboard heading', () => {
     render(
@@ -78,24 +73,6 @@ describe('StoresClient Dashboard', () => {
     )
 
     expect(screen.getByText('매장 관리')).toBeInTheDocument()
-  })
-
-  it('should render dashboard cards with statistics', () => {
-    render(
-      <StoreProvider initialStoreId="store-1" initialStores={mockStores}>
-        <StoresClient
-          stores={mockStores}
-          myRole="platform_admin"
-          merchantId="merchant-1"
-          terminals={mockTerminals}
-          storeStats={mockStoreStats}
-        />
-      </StoreProvider>
-    )
-
-    // 대시보드 카드 라벨 확인
-    const transactionCards = screen.queryAllByText(/거래액/)
-    expect(transactionCards.length).toBeGreaterThan(0)
   })
 
   it('should display store list table with store names', () => {
@@ -180,24 +157,29 @@ describe('StoresClient Dashboard', () => {
     expect(deleteButtons.length).toBe(0)
   })
 
-  it('should display terminals grouped by store', () => {
+  it('should show terminal count in collapsed store card', () => {
     render(
       <StoreProvider initialStoreId="store-1" initialStores={mockStores}>
         <StoresClient stores={mockStores} terminals={mockTerminals} myRole="platform_admin" merchantId="merchant-1" />
       </StoreProvider>
     )
 
-    const terminalElements = screen.getAllByText(/POS-/)
-    expect(terminalElements.length).toBe(3)
+    // 단말기 수는 접힌 상태에서도 부제목에 표시됨
+    const terminalCountText = screen.getAllByText(/단말기/)
+    expect(terminalCountText.length).toBeGreaterThan(0)
   })
 
-  it('should indicate terminal status', () => {
+  it('should indicate terminal status after expanding', async () => {
+    const user = userEvent.setup()
     render(
       <StoreProvider initialStoreId="store-1" initialStores={mockStores}>
         <StoresClient stores={mockStores} terminals={mockTerminals} myRole="platform_admin" merchantId="merchant-1" />
       </StoreProvider>
     )
 
+    // 강남점 카드의 주소 텍스트를 클릭하면 카드 펼쳐짐
+    const subtitles = screen.getAllByText(/서울시 강남구/)
+    await user.click(subtitles[0])
     const statusElements = screen.getAllByRole('status')
     expect(statusElements.length).toBeGreaterThan(0)
   })

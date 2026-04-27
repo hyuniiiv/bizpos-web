@@ -34,13 +34,23 @@ export default async function TerminalsPage() {
     .eq('merchant_id', merchantId)
     .order('store_name')
 
-  // For now, show all assigned stores - can be customized per user role
   const assignedStoreIds = (stores ?? []).map(s => s.id)
+
+  const { data: merchant } = await supabase
+    .from('merchants')
+    .select('name')
+    .eq('id', merchantId)
+    .single()
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">단말기 관리</h1>
+        <div>
+          <h1 className="text-xl font-bold text-white">단말기 관리</h1>
+          {merchant?.name && (
+            <p className="text-sm mt-0.5" style={{ color: 'var(--bp-text-3)' }}>{merchant.name}</p>
+          )}
+        </div>
         <AddTerminalButton merchantId={merchantId} />
       </div>
 

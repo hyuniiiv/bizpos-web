@@ -14,6 +14,13 @@ export interface BadgeSettings {
   settle_day: number
 }
 
+export interface MenuServiceCode {
+  id: string
+  code: string        // 2자리
+  amount: number
+  description?: string
+}
+
 export interface MenuConfig {
   id: string
   name: string
@@ -26,6 +33,7 @@ export interface MenuConfig {
   isActive: boolean
   count: number
   imageUrl?: string
+  serviceCodes?: MenuServiceCode[]
 }
 
 export interface PeriodConfig {

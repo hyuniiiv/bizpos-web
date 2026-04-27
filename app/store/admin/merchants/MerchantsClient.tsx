@@ -200,8 +200,8 @@ export default function MerchantsClient({
         {canCreate && (
           <button
             onClick={openAddModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black transition-opacity hover:opacity-80"
-            style={{ background: '#06D6A0' }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-80"
+            style={{ background: 'var(--bp-primary)', color: 'var(--bp-primary-fg)' }}
           >
             <Plus className="w-4 h-4" />
             가맹점 추가
@@ -336,8 +336,8 @@ export default function MerchantsClient({
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 py-2 rounded-lg text-sm font-semibold text-black transition-opacity hover:opacity-80 disabled:opacity-50"
-                style={{ background: '#06D6A0' }}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
+                style={{ background: 'var(--bp-primary)', color: 'var(--bp-primary-fg)' }}
               >
                 {saving ? '저장 중…' : '저장'}
               </button>

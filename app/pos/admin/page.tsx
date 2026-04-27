@@ -31,7 +31,7 @@ const readOnlyStyle = { background: 'rgba(255,255,255,0.03)', border: '1px solid
 export default function PosAdminPage() {
   const router = useRouter()
   const { config, updateConfig, verifyPin, clearDeviceToken, terminalType, deviceToken, deviceTerminalId } = useSettingsStore()
-  const { menus, periods, resetCount, clearAll, addMenu, updateMenu, deleteMenu, setPeriods, serviceCodes, addServiceCode, deleteServiceCode } = useMenuStore()
+  const { menus, periods, resetCount, clearAll, addMenu, updateMenu, deleteMenu, setPeriods } = useMenuStore()
 
   // PIN
   const [pin, setPin] = useState('')
@@ -76,10 +76,9 @@ export default function PosAdminPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   // 설정
-  const [form, setForm] = useState({ ...config })
   const [pinInput, setPinInput] = useState('')
   const [saved, setSaved] = useState(false)
-  const [newCode, setNewCode] = useState({ code: '', menuName: '', amount: 0 })
+  const [offlineMode, setOfflineMode] = useState(config.offlineMode ?? false)
 
   const handlePinSubmit = async () => {
     if (pinChecking) return
@@ -244,31 +243,28 @@ export default function PosAdminPage() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })); a.download = `transactions_${histDates.start}.csv`; a.click()
   }
 
-  const handleSettingsSave = async () => {
-    const configToSave = pinInput ? { ...form, adminPin: pinInput } : form
-    await updateConfig(configToSave)
-
-    // 로컬 파일 저장 (웹 서버 환경에서만 - Electron은 zustand persist로 대체)
-    const isElectron = typeof window !== 'undefined' && !!(window as Window & { electronAPI?: unknown }).electronAPI
-    if (!isElectron) {
-      await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(configToSave) })
-    }
-
-    // Supabase 동기화 (토큰 있을 경우)
+  const handleToggleOffline = async (v: boolean) => {
+    setOfflineMode(v)
+    await updateConfig({ ...config, offlineMode: v })
     if (deviceToken && deviceToken !== 'manual') {
-      const menuState = useMenuStore.getState()
       await fetch(getServerUrl() + '/api/device/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken}` },
-        body: JSON.stringify({
-          ...configToSave,
-          menus: menuState.menus,
-          periods: menuState.periods,
-          serviceCodes: menuState.serviceCodes,
-        }),
+        body: JSON.stringify({ ...config, offlineMode: v }),
       })
     }
+  }
 
+  const handleSavePin = async () => {
+    if (!pinInput) return
+    await updateConfig({ ...config, adminPin: pinInput })
+    if (deviceToken && deviceToken !== 'manual') {
+      await fetch(getServerUrl() + '/api/device/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken}` },
+        body: JSON.stringify({ ...config, adminPin: pinInput }),
+      })
+    }
     setPinInput(''); setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
@@ -548,126 +544,41 @@ export default function PosAdminPage() {
           </div>
         )}
 
-        {/* 설정 */}
+        {/* 설정 — 비상모드 전환 + PIN 변경만 */}
         {tab === 'settings' && (
           <div className="space-y-4">
-            <div className="glass-card rounded-xl p-4 space-y-4">
-              <div>
-                <label className="text-sm font-semibold text-white/60 mb-1.5 block">현재 단말기</label>
-                <div className="rounded-lg px-4 py-3 text-base text-white/70 flex items-center gap-2"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                  <span className="font-mono text-blue-300 font-semibold">[{config.termId || '??'}]</span>
-                  {config.termName && <span className="text-white/80">{config.termName}</span>}
-                  {config.corner && <><span className="text-white/25">|</span><span>{config.corner}</span></>}
-                </div>
-                <p className="text-xs text-white/35 mt-1">단말기 변경은 단말기 초기화 후 재활성화로 진행하세요</p>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-white/60 mb-1.5 block">코너명</label>
-                <input className={inputCls} style={inputStyle} value={form.corner} onChange={e => setForm(f => ({ ...f, corner: e.target.value }))} />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-white/60 mb-1.5 block">사업자번호</label>
-                <input readOnly className={readOnlyCls} style={readOnlyStyle} value={config.bizNo || '—'} onChange={() => {}} />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-white/60 mb-1.5 block">가맹점코드 (MID)</label>
-                <input readOnly className={readOnlyCls} style={readOnlyStyle} value={config.merchantId || '—'} onChange={() => {}} />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-white/60 mb-2 block">API 환경</label>
-                <div className="flex gap-4">
-                  {(['production', 'development'] as const).map(env => (
-                    <label key={env} className="flex items-center gap-2 text-sm text-white/70 cursor-pointer">
-                      <input type="radio" name="env" value={env} checked={form.apiEnv === env} onChange={() => setForm(f => ({ ...f, apiEnv: env }))} />
-                      {env === 'production' ? '운영' : '개발'}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-white/60 mb-2 block">바코드 리더 방식</label>
-                <div className="flex gap-4 flex-wrap mb-2">
-                  {(['keyboard', 'serial', 'camera'] as const).map((val, i) => (
-                    <label key={val} className="flex items-center gap-2 text-sm text-white/70 cursor-pointer">
-                      <input type="radio" name="barcodeReaderType" value={val} checked={form.barcodeReaderType === val || (!form.barcodeReaderType && val === 'keyboard')} onChange={() => setForm(f => ({ ...f, barcodeReaderType: val }))} />
-                      {['키보드(HID)', '시리얼(COM)', '카메라'][i]}
-                    </label>
-                  ))}
-                </div>
-                {form.barcodeReaderType === 'serial' && (
-                  <input className={`${inputCls} font-mono`} style={inputStyle} placeholder="COM4" value={form.barcodePort ?? ''} onChange={e => setForm(f => ({ ...f, barcodePort: e.target.value }))} />
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+            {/* 비상 모드 */}
+            <div className="glass-card rounded-xl p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">비상 모드</h3>
+              <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-sm font-semibold text-white/60 mb-1.5 block">경광봉 포트</label>
-                  <input className={inputCls} style={inputStyle} placeholder="COM3" value={form.serialPort} onChange={e => setForm(f => ({ ...f, serialPort: e.target.value }))} />
+                  <p className="text-base text-white">오프라인 모드 강제 활성화</p>
+                  <p className="text-xs text-white/40 mt-0.5">네트워크 없이 로컬에서만 운영</p>
                 </div>
-                <div>
-                  <label className="text-sm font-semibold text-white/60 mb-1.5 block">자동 초기화 시간</label>
-                  <input type="time" className={inputCls} style={inputStyle} value={form.autoResetTime} onChange={e => setForm(f => ({ ...f, autoResetTime: e.target.value }))} />
-                </div>
+                <button type="button" onClick={() => handleToggleOffline(!offlineMode)}
+                  className={`relative w-11 h-6 rounded-full transition-colors ml-4 ${offlineMode ? 'bg-orange-500' : 'bg-white/20'}`}>
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${offlineMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </button>
               </div>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer"><input type="checkbox" checked={form.externalDisplay ?? true} onChange={e => setForm(f => ({ ...f, externalDisplay: e.target.checked }))} />외부 디스플레이 사용</label>
-                <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer"><input type="checkbox" checked={form.showPaymentList ?? true} onChange={e => setForm(f => ({ ...f, showPaymentList: e.target.checked }))} />오른쪽 결제목록(고객 화면) 표시</label>
-                <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer"><input type="checkbox" checked={form.offlineMode} onChange={e => setForm(f => ({ ...f, offlineMode: e.target.checked }))} />오프라인 모드 강제 활성화</label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: form.cafeteriaMode ? '#06D6A0' : 'rgba(255,255,255,0.70)' }}><input type="checkbox" checked={form.cafeteriaMode ?? false} onChange={e => setForm(f => ({ ...f, cafeteriaMode: e.target.checked }))} />학생식당 모드 (판매현황 동시 표시)</label>
-              </div>
+              {offlineMode && (
+                <p className="text-xs text-orange-400 font-medium">⚠ 오프라인 모드 활성화 중 — 거래가 로컬에 저장됩니다</p>
+              )}
             </div>
 
-            <div className="glass-card rounded-xl p-4">
-              <label className="text-sm font-semibold text-white/60 mb-1.5 block">관리자 PIN 변경</label>
-              <input type="password" className={inputCls} style={inputStyle} value={pinInput} placeholder="변경하려면 새 PIN 입력" onChange={e => setPinInput(e.target.value)} />
-            </div>
-
-            <button onClick={handleSettingsSave} className={`w-full py-3 rounded-xl font-semibold text-white transition-all ${saved ? 'glow-green' : 'glow-blue'}`}
-              style={saved ? { background: 'rgba(74,222,128,0.30)', border: '1px solid rgba(74,222,128,0.50)' } : { background: 'rgba(96,165,250,0.30)', border: '1px solid rgba(96,165,250,0.50)' }}>
-              {saved ? '✓ 저장됨' : '설정 저장'}
-            </button>
-
-            {/* POS 일반 설정 (ticket_checker 제외) */}
-            {terminalType !== 'ticket_checker' && (
-              <div className="glass-card rounded-xl p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">POS 일반 설정</h3>
-                {terminalType === 'table_order' && (
-                  <div>
-                    <label className="text-sm font-semibold text-white/60 mb-1.5 block">테이블 수</label>
-                    <input type="number" min={1} max={99}
-                      className={inputCls} style={inputStyle}
-                      value={form.tableCount ?? 12}
-                      onChange={e => setForm(f => ({ ...f, tableCount: Number(e.target.value) }))} />
-                  </div>
-                )}
-                <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer">
-                  <input type="checkbox" checked={form.receiptPrint ?? false}
-                    onChange={e => setForm(f => ({ ...f, receiptPrint: e.target.checked }))} />
-                  영수증 출력
-                </label>
-              </div>
-            )}
-
-            {/* 서비스 구분코드 */}
-            <div className="glass-card rounded-xl p-4">
-              <h3 className="text-sm font-bold text-white mb-1">서비스 구분코드</h3>
-              <p className="text-xs text-white/50 mb-3">바코드 특정 자리 값(2자리)에 따른 차등 가격 운영</p>
-              <div className="space-y-2 mb-3">
-                {serviceCodes.map(sc => (
-                  <div key={sc.id} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    <span className="font-mono text-sm bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">{sc.code}</span>
-                    <span className="text-sm text-white/80 flex-1">{sc.menuName}</span>
-                    <span className="text-sm font-semibold text-white">{sc.amount.toLocaleString()}원</span>
-                    <button onClick={() => deleteServiceCode(sc.id)} className="text-red-400 text-xs hover:text-red-300 transition-colors">삭제</button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input className="w-16 rounded-lg px-3 py-2.5 text-sm font-mono text-white focus:outline-none" style={inputStyle} placeholder="코드" maxLength={2} value={newCode.code} onChange={e => setNewCode(n => ({ ...n, code: e.target.value }))} />
-                <input className="flex-1 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none" style={inputStyle} placeholder="메뉴명" value={newCode.menuName} onChange={e => setNewCode(n => ({ ...n, menuName: e.target.value }))} />
-                <input type="number" className="w-24 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none" style={inputStyle} placeholder="금액" value={newCode.amount || ''} onChange={e => setNewCode(n => ({ ...n, amount: +e.target.value }))} />
-                <button onClick={() => { if (!newCode.code || !newCode.menuName) return; addServiceCode(newCode); setNewCode({ code: '', menuName: '', amount: 0 }) }} className="px-3 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: 'rgba(96,165,250,0.25)', border: '1px solid rgba(96,165,250,0.40)' }}>추가</button>
-              </div>
+            {/* PIN 변경 */}
+            <div className="glass-card rounded-xl p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">관리자 PIN 변경</h3>
+              <input type="password" className={inputCls} style={inputStyle}
+                value={pinInput} placeholder="새 PIN 입력 (4~6자리)" maxLength={6}
+                onChange={e => setPinInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSavePin()} />
+              <button onClick={handleSavePin} disabled={!pinInput}
+                className="w-full py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-40"
+                style={saved
+                  ? { background: 'rgba(74,222,128,0.30)', border: '1px solid rgba(74,222,128,0.50)' }
+                  : { background: 'rgba(96,165,250,0.30)', border: '1px solid rgba(96,165,250,0.50)' }}>
+                {saved ? '✓ 변경 완료' : 'PIN 변경'}
+              </button>
             </div>
 
             {/* 단말기 초기화 */}
