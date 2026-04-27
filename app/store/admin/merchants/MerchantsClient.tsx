@@ -279,41 +279,7 @@ export default function MerchantsClient({
                     >
                       {adminName}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        {canEdit && (
-                          <button
-                            onClick={() => openEditModal(merchant)}
-                            className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
-                            style={{ color: 'var(--bp-text-3)' }}
-                            title="가맹점 수정"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {canDelete ? (
-                          <button
-                            onClick={() =>
-                              handleDelete(merchant.id, merchant.name)
-                            }
-                            className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20 hover:text-red-400"
-                            style={{ color: 'var(--bp-text-3)' }}
-                            title="가맹점 삭제"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        ) : (
-                          <button
-                            disabled
-                            className="p-1.5 rounded-lg opacity-50 cursor-not-allowed"
-                            style={{ color: 'var(--bp-text-3)' }}
-                            title="삭제 권한 없음"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                    <td className="px-4 py-3" />
                   </tr>
                 )
               })
