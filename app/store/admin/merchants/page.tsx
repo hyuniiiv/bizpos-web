@@ -17,6 +17,7 @@ async function getMerchants(): Promise<Merchant[]> {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/merchant/merchants`, {
       next: { revalidate: 0 },
+      credentials: 'include',
     })
     if (!res.ok) return []
     const json = await res.json()
@@ -30,6 +31,7 @@ async function getAdmins(): Promise<Admin[]> {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/merchant/admins`, {
       next: { revalidate: 0 },
+      credentials: 'include',
     })
     if (!res.ok) return []
     const json = await res.json()
@@ -43,6 +45,7 @@ async function getManagers(): Promise<Manager[]> {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/merchant/managers`, {
       next: { revalidate: 0 },
+      credentials: 'include',
     })
     if (!res.ok) return []
     const json = await res.json()
