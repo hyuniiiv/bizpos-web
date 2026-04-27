@@ -255,7 +255,10 @@ export default function MerchantsClient({
                     key={merchant.id}
                     style={{ borderBottom: '1px solid var(--bp-border)' }}
                   >
-                    <td className="px-4 py-3 text-white font-medium">
+                    <td
+                      className="px-4 py-3 text-white font-medium cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => router.push(`/store/admin/merchants/${merchant.id}`)}
+                    >
                       {merchant.name}
                     </td>
                     <td
