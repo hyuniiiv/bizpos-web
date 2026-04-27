@@ -13,43 +13,63 @@ interface Manager {
   email: string
 }
 
-async function getMerchants(): Promise<Merchant[]> {
+async function getMerchants(supabase: any): Promise<Merchant[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/merchant/merchants`, {
-      next: { revalidate: 0 },
-      credentials: 'include',
-    })
-    if (!res.ok) return []
-    const json = await res.json()
-    return json.data || []
+    const { data: merchants } = await supabase
+      .from('merchants')
+      .select('*')
+      .order('name')
+    return merchants || []
   } catch {
     return []
   }
 }
 
-async function getAdmins(): Promise<Admin[]> {
+async function getAdmins(supabase: any): Promise<Admin[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/merchant/admins`, {
-      next: { revalidate: 0 },
-      credentials: 'include',
-    })
-    if (!res.ok) return []
-    const json = await res.json()
-    return json.data || []
+    const { data: adminUsers } = await supabase
+      .from('merchant_users')
+      .select('user_id')
+      .eq('role', 'admin')
+
+    if (!adminUsers || adminUsers.length === 0) return []
+
+    const userIds = adminUsers.map((a: any) => a.user_id)
+    const { data: users, error } = await supabase.auth.admin.listUsers()
+
+    if (error || !users) return []
+
+    return users.users
+      .filter((u: any) => userIds.includes(u.id))
+      .map((u: any) => ({
+        id: u.id,
+        email: u.email || '',
+      }))
   } catch {
     return []
   }
 }
 
-async function getManagers(): Promise<Manager[]> {
+async function getManagers(supabase: any): Promise<Manager[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/merchant/managers`, {
-      next: { revalidate: 0 },
-      credentials: 'include',
-    })
-    if (!res.ok) return []
-    const json = await res.json()
-    return json.data || []
+    const { data: managerUsers } = await supabase
+      .from('merchant_users')
+      .select('user_id')
+      .eq('role', 'manager')
+
+    if (!managerUsers || managerUsers.length === 0) return []
+
+    const userIds = managerUsers.map((m: any) => m.user_id)
+    const { data: users, error } = await supabase.auth.admin.listUsers()
+
+    if (error || !users) return []
+
+    return users.users
+      .filter((u: any) => userIds.includes(u.id))
+      .map((u: any) => ({
+        id: u.id,
+        email: u.email || '',
+      }))
   } catch {
     return []
   }
@@ -68,9 +88,9 @@ export default async function MerchantsPage() {
     .single()
 
   const [merchants, admins, managers] = await Promise.all([
-    getMerchants(),
-    getAdmins(),
-    getManagers(),
+    getMerchants(supabase),
+    getAdmins(supabase),
+    getManagers(supabase),
   ])
 
   return (
