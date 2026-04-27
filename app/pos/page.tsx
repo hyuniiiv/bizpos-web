@@ -416,29 +416,33 @@ export default function PosPage() {
       {/* ── 2패널 (일반: ≥ 1024px / 학생식당: ≥ 768px) ── */}
       {config.cafeteriaMode ? (
         <div className="hidden md:flex flex-1 overflow-hidden">
-          <div className="flex flex-col overflow-hidden" style={{ flex: '0 0 58%' }}>
+          <div className="flex flex-col overflow-hidden" style={{ flex: config.showPaymentList ? '0 0 58%' : '1 1 100%' }}>
             <div className="flex-1 overflow-hidden">
               {!isOnline && screen !== 'processing' ? <OfflineScreen /> : <ScanWaitScreen />}
             </div>
             <ScanLogBar value={scanLog?.value ?? null} time={scanLog?.time ?? null} />
             <StatusBar lastMessage={lastMsgRef.current} lastOrderId={lastTransaction?.merchantOrderID} />
           </div>
-          <div className="flex flex-col overflow-hidden border-l border-white/10" style={{ flex: '0 0 42%' }}>
-            <RealTimeDashboard refreshTrigger={txRefreshTrigger} />
-          </div>
+          {config.showPaymentList && (
+            <div className="flex flex-col overflow-hidden border-l border-white/10" style={{ flex: '0 0 42%' }}>
+              <RealTimeDashboard refreshTrigger={txRefreshTrigger} />
+            </div>
+          )}
         </div>
       ) : (
         <div className="hidden lg:flex flex-1 overflow-hidden">
-          <div className="flex flex-col overflow-hidden" style={{ flex: '0 0 58%' }}>
+          <div className="flex flex-col overflow-hidden" style={{ flex: config.showPaymentList ? '0 0 58%' : '1 1 100%' }}>
             <div className="flex-1 overflow-hidden">
               {!isOnline && screen !== 'processing' ? <OfflineScreen /> : <ScanWaitScreen />}
             </div>
             <ScanLogBar value={scanLog?.value ?? null} time={scanLog?.time ?? null} />
             <StatusBar lastMessage={lastMsgRef.current} lastOrderId={lastTransaction?.merchantOrderID} />
           </div>
-          <div className="flex flex-col overflow-hidden border-l border-white/10" style={{ flex: '0 0 42%' }}>
-            <RealTimeDashboard refreshTrigger={txRefreshTrigger} />
-          </div>
+          {config.showPaymentList && (
+            <div className="flex flex-col overflow-hidden border-l border-white/10" style={{ flex: '0 0 42%' }}>
+              <RealTimeDashboard refreshTrigger={txRefreshTrigger} />
+            </div>
+          )}
         </div>
       )}
 
