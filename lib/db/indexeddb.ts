@@ -47,8 +47,7 @@ export async function markPaymentSynced(merchantOrderID: string) {
   const db = await getDB()
   const record = await db.get('pending_payments', merchantOrderID)
   if (record) {
-    record.synced = true
-    await db.put('pending_payments', record)
+    await db.put('pending_payments', { ...record, synced: true })
   }
 }
 

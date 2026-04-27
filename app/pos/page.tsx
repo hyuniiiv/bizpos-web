@@ -289,7 +289,7 @@ export default function PosPage() {
       // 2. [Remote API] 결제 처리
       const reserveRes = await fetch(getServerUrl() + '/api/payment/reserve', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` },
         body: JSON.stringify({
           merchantOrderDt,
           merchantOrderID,

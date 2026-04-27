@@ -8,6 +8,7 @@
 import { startConfigPolling, stopConfigPolling } from './configSync'
 import { flushOfflineQueue } from './txSync'
 import { getServerUrl } from '@/lib/serverUrl'
+import { useSettingsStore } from '@/lib/store/settingsStore'
 
 const ACCESS_TOKEN_KEY = 'terminal_access_token'
 const TERMINAL_ID_KEY = 'terminal_id'
@@ -136,19 +137,10 @@ async function refreshToken(currentToken: string): Promise<void> {
       const data = await res.json()
       // onlineSync 자체 토큰 갱신
       localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken)
-      // Zustand persist 스토어('bizpos-settings')도 동기화
-      // React 컴포넌트가 deviceToken을 Zustand에서 읽으므로 필요
-      const raw = localStorage.getItem('bizpos-settings')
-      if (raw) {
-        try {
-          const zustandState = JSON.parse(raw)
-          if (zustandState?.state) {
-            zustandState.state.deviceToken = data.accessToken
-            localStorage.setItem('bizpos-settings', JSON.stringify(zustandState))
-          }
-        } catch {
-          // Zustand 상태 파싱 실패 시 무시 (페이지 리로드 시 자동 복구)
-        }
+      // Zustand store API로 토큰 갱신 (내부 구조 직접 조작 금지)
+      const store = useSettingsStore.getState()
+      if (store.deviceTerminalId) {
+        store.setDeviceToken(data.accessToken, store.deviceTerminalId)
       }
     }
   } catch {

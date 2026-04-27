@@ -26,8 +26,6 @@ export async function GET(request: NextRequest) {
     .select('*')
     .order('name')
 
-  console.log('Merchants query result:', { count: merchants?.length || 0, error })
-
   if (error) {
     console.error('Merchants query error:', error)
   }

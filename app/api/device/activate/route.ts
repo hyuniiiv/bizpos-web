@@ -36,17 +36,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_CODE' }, { status: 404 })
   }
 
-  if (terminal.access_token) {
-    return NextResponse.json({ error: 'ALREADY_ACTIVATED' }, { status: 409 })
-  }
-
   const accessToken = await createTerminalJWT({
     terminalId: terminal.id,
     merchantId: terminal.merchant_id,
     termId: terminal.term_id,
   })
 
-  const { error: updateError } = await supabase
+  // 원자적 조건부 UPDATE: access_token이 NULL인 경우에만 성공 (TOCTOU 경쟁 조건 방지)
+  const { data: activated, error: updateError } = await supabase
     .from('terminals')
     .update({
       access_token: accessToken,
@@ -55,9 +52,12 @@ export async function POST(request: NextRequest) {
       last_seen_at: new Date().toISOString(),
     })
     .eq('id', terminal.id)
+    .is('access_token', null)
+    .select('id')
+    .single()
 
-  if (updateError) {
-    return NextResponse.json({ error: 'ACTIVATION_FAILED' }, { status: 500 })
+  if (updateError || !activated) {
+    return NextResponse.json({ error: 'ALREADY_ACTIVATED' }, { status: 409 })
   }
 
   const { data: configRow } = await supabase

@@ -60,7 +60,7 @@ export default function KioskScreen() {
 
       const reserveRes = await fetch(getServerUrl() + '/api/payment/reserve', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` },
         body: JSON.stringify({
           merchantOrderDt, merchantOrderID, productName,
           quantity: cart.reduce((s, c) => s + c.qty, 0),

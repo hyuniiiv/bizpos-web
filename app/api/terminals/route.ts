@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireTerminalAuth } from '@/lib/terminal/auth'
+import bcrypt from 'bcryptjs'
 
 function generateActivationCode(): string {
-  return Math.random().toString(36).substring(2, 8).toUpperCase()
+  const bytes = new Uint8Array(4)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase()
 }
 
 export async function POST(req: NextRequest) {
@@ -55,10 +58,11 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // 기본 설정 저장 (초기 관리자 PIN: 1234)
+  // 기본 설정 저장 (초기 관리자 PIN: bcrypt 해시로 저장)
+  const hashedPin = await bcrypt.hash('1234', 10)
   await supabase.from('terminal_configs').insert({
     terminal_id: data.id,
-    config: { adminPin: '1234' },
+    config: { adminPin: hashedPin },
     version: 1,
   })
 

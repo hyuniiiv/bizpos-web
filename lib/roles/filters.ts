@@ -8,10 +8,10 @@ export function filterMerchants<T extends { id: string }>(
 ): T[] {
   if (!userRole || !merchants.length) return []
 
-  const isPlatform = [ROLES.PLATFORM_ADMIN, ROLES.PLATFORM_MANAGER].includes(userRole as any)
+  const isPlatform = userRole === ROLES.PLATFORM_ADMIN || userRole === ROLES.PLATFORM_MANAGER
   if (isPlatform) return merchants
 
-  const isMerchant = [ROLES.MERCHANT_ADMIN, ROLES.MERCHANT_MANAGER].includes(userRole as any)
+  const isMerchant = userRole === ROLES.MERCHANT_ADMIN || userRole === ROLES.MERCHANT_MANAGER
   if (isMerchant && userMerchantId) {
     return merchants.filter(m => m.id === userMerchantId)
   }
@@ -27,15 +27,15 @@ export function filterStores<T extends { id: string; merchant_id: string }>(
 ): T[] {
   if (!userRole || !stores.length) return []
 
-  const isPlatform = [ROLES.PLATFORM_ADMIN, ROLES.PLATFORM_MANAGER].includes(userRole as any)
+  const isPlatform = userRole === ROLES.PLATFORM_ADMIN || userRole === ROLES.PLATFORM_MANAGER
   if (isPlatform) return stores
 
-  const isMerchant = [ROLES.MERCHANT_ADMIN, ROLES.MERCHANT_MANAGER].includes(userRole as any)
+  const isMerchant = userRole === ROLES.MERCHANT_ADMIN || userRole === ROLES.MERCHANT_MANAGER
   if (isMerchant && userMerchantId) {
     return stores.filter(s => s.merchant_id === userMerchantId)
   }
 
-  const isStore = [ROLES.STORE_ADMIN, ROLES.STORE_MANAGER].includes(userRole as any)
+  const isStore = userRole === ROLES.STORE_ADMIN || userRole === ROLES.STORE_MANAGER
   if (isStore && assignedStoreIds.length > 0) {
     return stores.filter(s => assignedStoreIds.includes(s.id))
   }

@@ -42,7 +42,8 @@ export async function flushOfflineQueue(): Promise<{ synced: number; failed: num
 
       if (res.ok) {
         const result = await res.json()
-        const syncedIds: string[] = result.syncedIds ?? chunk.map(r => r.merchantOrderID)
+        // 서버가 명시적으로 확인한 ID만 처리 (폴백 시 빈 배열 → 재시도 보장)
+        const syncedIds: string[] = result.syncedIds ?? []
         
         // Only mark records confirmed by the server as synced
         for (const id of syncedIds) {

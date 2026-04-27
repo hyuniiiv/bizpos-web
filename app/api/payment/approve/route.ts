@@ -26,7 +26,9 @@ export async function POST(req: NextRequest) {
       termId: string
     }
 
-    const client = await getBizplayClientForTerminal(body.termId)
+    // JWT에서 검증된 termId 사용 (바디 값 신뢰 금지)
+    const termId = auth.payload.termId
+    const client = await getBizplayClientForTerminal(termId)
     const result = await client.approve(body)
 
     if (result.code === '0000' && result.data) {
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
         status: 'success',
         approvedAt: result.data.approvedAt,
         barcodeInfo: body.barcodeInfo,
-        termId: body.termId,
+        termId,
         synced: true,
         createdAt: new Date().toISOString(),
       }
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
         try {
           const supabase = createAdminClient()
           const { error } = await supabase.from('transactions').insert({
-            terminal_id: body.termId ?? null,
+            terminal_id: termId,
             merchant_order_id: body.merchantOrderID,
             tid: approvedData.tid ?? '',
             menu_name: body.menuName ?? '',

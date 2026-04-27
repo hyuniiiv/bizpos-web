@@ -2,26 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { BizplayClient, MockBizplayClient } from '@/lib/payment/bizplay'
 import { generateOrderId } from '@/lib/payment/order'
 import type { ReserveRequest } from '@/types/payment'
-
-// Edge Runtime: 콜드 스타트 거의 없음 (~수ms), icn1(서울) region 배치.
-// 호환성 검증: crypto-js(pure JS), fetch, Supabase admin client 모두 Edge 호환.
-export const runtime = 'edge'
+import { requireTerminalAuth } from '@/lib/terminal/auth'
 
 export async function POST(req: NextRequest) {
+  const auth = await requireTerminalAuth(req)
+  if ('error' in auth) return auth.error
+
   const t0 = Date.now()
   try {
     const body = await req.json() as ReserveRequest & {
-      termId: string
       env?: 'production' | 'development'
       onlineAK?: string
       merchantId?: string
     }
 
-    // DB 기반 키 사용 — termId가 있으면 getBizplayClientForTerminal 사용
+    // JWT에서 검증된 termId 사용 (바디 값 신뢰 금지)
+    const termId = auth.payload.termId
     let client
-    if (body.termId) {
+    if (termId) {
       const { getBizplayClientForTerminal } = await import('@/lib/payment/getBizplayClient')
-      client = await getBizplayClientForTerminal(body.termId)
+      client = await getBizplayClientForTerminal(termId)
     } else if (process.env.BIZPLAY_MID) {
       client = new BizplayClient({
         mid: process.env.BIZPLAY_MID,
@@ -37,8 +37,7 @@ export async function POST(req: NextRequest) {
     const result = await client.reserve(body)
     const totalMs = Date.now() - t0
     const bizplayMs = Date.now() - tBizplay
-    // Vercel 로그에서 검색: "[reserve-timing]"
-    console.log(`[reserve-timing] total=${totalMs}ms bizplay=${bizplayMs}ms termId=${body.termId ?? 'none'} code=${result.code ?? '?'}`)
+    console.log(`[reserve-timing] total=${totalMs}ms bizplay=${bizplayMs}ms termId=${termId ?? 'none'} code=${result.code ?? '?'}`)
     return NextResponse.json(result)
   } catch (err) {
     console.error('[reserve] Error:', err)

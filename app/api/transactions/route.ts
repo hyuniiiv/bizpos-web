@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ id: data.id })
   } catch {
-    return NextResponse.json({ error: 'INVALID_TOKEN' }, { status: 401 })
+    return NextResponse.json({ error: 'SERVER_ERROR' }, { status: 500 })
   }
 }
 
@@ -116,13 +116,20 @@ export async function GET(req: NextRequest) {
   if ('error' in auth) return auth.error
 
   const { searchParams } = new URL(req.url)
-  const limit = parseInt(searchParams.get('limit') ?? '200')
+  const limit = Math.min(parseInt(searchParams.get('limit') ?? '200'), 1000)
   const offset = parseInt(searchParams.get('offset') ?? '0')
-  const date = searchParams.get('date')  // YYYY-MM-DD
+  const date = searchParams.get('date')           // YYYY-MM-DD (단일 날짜, 하위 호환)
+  const dateStart = searchParams.get('dateStart') // YYYY-MM-DD
+  const dateEnd = searchParams.get('dateEnd')     // YYYY-MM-DD
 
   const transactions = loadFromFile()
   let filtered = [...transactions]
-  if (date) {
+  if (dateStart && dateEnd) {
+    filtered = filtered.filter((tx: StoredTransaction) => {
+      const at: string = (tx.approvedAt ?? tx.createdAt ?? '').substring(0, 10)
+      return at >= dateStart && at <= dateEnd
+    })
+  } else if (date) {
     filtered = filtered.filter((tx: StoredTransaction) => {
       const at: string = tx.approvedAt ?? tx.createdAt ?? ''
       return at.startsWith(date)
@@ -131,7 +138,7 @@ export async function GET(req: NextRequest) {
 
   const validFiltered = filtered.filter((tx: StoredTransaction) => (tx.status === 'success' || tx.status === 'offline'))
   const total = validFiltered.length
-  const totalAmount = validFiltered.reduce((sum: number, tx: any) => sum + (tx.amount ?? 0), 0)
+  const totalAmount = validFiltered.reduce((sum: number, tx: StoredTransaction) => sum + (tx.amount ?? 0), 0)
 
   return NextResponse.json({
     total,

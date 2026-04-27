@@ -133,7 +133,7 @@ export default function PosAdminPage() {
               setRtTotalAmount(a => a + (tx.amount > 0 ? tx.amount : 0))
               setNewIds(ids => new Set([...ids, tx.id]))
               setTimeout(() => setNewIds(ids => { const n = new Set(ids); n.delete(tx.id); return n }), 2000)
-            } catch {}
+            } catch (e) { console.error('[SSE] parse error', e) }
           }
         }
       })
@@ -201,11 +201,11 @@ export default function PosAdminPage() {
   const loadHistTxs = useCallback(async () => {
     setHistLoading(true); setSelectedIds(new Set())
     try {
-      const res = await fetch(getServerUrl() + `/api/transactions?date=${histDates.start}&limit=200`, { headers: { 'Authorization': `Bearer ${deviceToken ?? ''}` } })
+      const res = await fetch(getServerUrl() + `/api/transactions?dateStart=${histDates.start}&dateEnd=${histDates.end}&limit=200`, { headers: { 'Authorization': `Bearer ${deviceToken ?? ''}` } })
       const d = await res.json()
       setHistTxs(d.items ?? []); setHistTotal(d.total ?? 0); setHistTotalAmount(d.totalAmount ?? 0)
     } finally { setHistLoading(false) }
-  }, [histDates.start])
+  }, [histDates.start, histDates.end])
 
   useEffect(() => {
     if (unlocked && tab === 'transactions' && txView === 'history') loadHistTxs()
@@ -232,7 +232,12 @@ export default function PosAdminPage() {
     const targets = filteredTxs.filter(tx => selectedIds.has(tx.id))
     if (!targets.length || !confirm(`선택한 ${targets.length}건을 일괄 취소하시겠습니까?`)) return
     let failed = 0
-    for (const tx of targets) { const res = await fetch(getServerUrl() + '/api/payment/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName, termId: tx.termId }) }).then(r => r.json()); if (res.code !== '0000') failed++ }
+    for (const tx of targets) {
+      try {
+        const res = await fetch(getServerUrl() + '/api/payment/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` }, body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName, termId: tx.termId }) }).then(r => r.json())
+        if (res.code !== '0000') failed++
+      } catch { failed++ }
+    }
     alert(failed === 0 ? `${targets.length}건 취소 완료` : `${targets.length - failed}건 성공, ${failed}건 실패`)
     loadHistTxs()
   }
@@ -544,60 +549,72 @@ export default function PosAdminPage() {
           </div>
         )}
 
-        {/* 설정 — 비상모드 전환 + PIN 변경만 */}
+        {/* 설정 */}
         {tab === 'settings' && (
-          <div className="space-y-4">
-            {/* 비상 모드 */}
-            <div className="glass-card rounded-xl p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">비상 모드</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-base text-white">오프라인 모드 강제 활성화</p>
-                  <p className="text-xs text-white/40 mt-0.5">네트워크 없이 로컬에서만 운영</p>
+          <div className="space-y-6">
+
+            {/* 일반 설정 */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-white/30 uppercase tracking-widest px-1">일반 설정</p>
+
+              <div className="glass-card rounded-xl p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">비상 모드</h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-base text-white">오프라인 모드 강제 활성화</p>
+                    <p className="text-xs text-white/40 mt-0.5">네트워크 없이 로컬에서만 운영</p>
+                  </div>
+                  <button type="button" onClick={() => handleToggleOffline(!offlineMode)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ml-4 ${offlineMode ? 'bg-orange-500' : 'bg-white/20'}`}>
+                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${offlineMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </button>
                 </div>
-                <button type="button" onClick={() => handleToggleOffline(!offlineMode)}
-                  className={`relative w-11 h-6 rounded-full transition-colors ml-4 ${offlineMode ? 'bg-orange-500' : 'bg-white/20'}`}>
-                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${offlineMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                {offlineMode && (
+                  <p className="text-xs text-orange-400 font-medium">⚠ 오프라인 모드 활성화 중 — 거래가 로컬에 저장됩니다</p>
+                )}
+              </div>
+
+              <div className="glass-card rounded-xl p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">관리자 PIN 변경</h3>
+                <input type="password" className={inputCls} style={inputStyle}
+                  value={pinInput} placeholder="새 PIN 입력 (4~6자리)" maxLength={6}
+                  onChange={e => setPinInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSavePin()} />
+                <button onClick={handleSavePin} disabled={!pinInput}
+                  className="w-full py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-40"
+                  style={saved
+                    ? { background: 'rgba(74,222,128,0.30)', border: '1px solid rgba(74,222,128,0.50)' }
+                    : { background: 'rgba(96,165,250,0.30)', border: '1px solid rgba(96,165,250,0.50)' }}>
+                  {saved ? '✓ 변경 완료' : 'PIN 변경'}
                 </button>
               </div>
-              {offlineMode && (
-                <p className="text-xs text-orange-400 font-medium">⚠ 오프라인 모드 활성화 중 — 거래가 로컬에 저장됩니다</p>
-              )}
             </div>
 
-            {/* PIN 변경 */}
-            <div className="glass-card rounded-xl p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">관리자 PIN 변경</h3>
-              <input type="password" className={inputCls} style={inputStyle}
-                value={pinInput} placeholder="새 PIN 입력 (4~6자리)" maxLength={6}
-                onChange={e => setPinInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSavePin()} />
-              <button onClick={handleSavePin} disabled={!pinInput}
-                className="w-full py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-40"
-                style={saved
-                  ? { background: 'rgba(74,222,128,0.30)', border: '1px solid rgba(74,222,128,0.50)' }
-                  : { background: 'rgba(96,165,250,0.30)', border: '1px solid rgba(96,165,250,0.50)' }}>
-                {saved ? '✓ 변경 완료' : 'PIN 변경'}
-              </button>
-            </div>
-
-            {/* 단말기 초기화 */}
-            <div className="glass-card rounded-xl p-4 space-y-2" style={{ border: '1px solid rgba(239,68,68,0.25)' }}>
-              <p className="text-sm font-semibold text-red-400">단말기 초기화</p>
-              <p className="text-xs text-white/40">활성화 토큰과 메뉴·설정 데이터를 모두 삭제합니다. 초기화 후 다시 활성화 코드를 입력해야 합니다.</p>
-              <button onClick={() => { if (!confirm('단말기를 초기화하시겠습니까?\n활성화 토큰과 모든 로컬 데이터가 삭제됩니다.')) return; clearAll(); clearDeviceToken(); router.replace('/pos') }}
-                className="w-full py-2.5 rounded-lg text-sm font-semibold text-red-300 transition-all hover:bg-red-500/10" style={{ border: '1px solid rgba(239,68,68,0.40)' }}>
-                단말기 초기화
-              </button>
-            </div>
-
-            {/* 업데이트 / 로그 / 종료 (Electron 전용) */}
+            {/* 시스템 (Electron 전용) */}
             {typeof window !== 'undefined' && (window as Window & { electronAPI?: { quitApp?: () => void; checkUpdate?: () => void } }).electronAPI && (
-              <>
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-white/30 uppercase tracking-widest px-1">시스템</p>
                 <UpdateButton />
                 <LogButton />
+              </div>
+            )}
+
+            {/* 위험 작업 */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-white/30 uppercase tracking-widest px-1">위험 작업</p>
+
+              <div className="glass-card rounded-xl p-4 space-y-2" style={{ border: '1px solid rgba(239,68,68,0.25)' }}>
+                <h3 className="text-sm font-semibold text-red-400">단말기 초기화</h3>
+                <p className="text-xs text-white/40">활성화 토큰과 메뉴·설정 데이터를 모두 삭제합니다. 초기화 후 다시 활성화 코드를 입력해야 합니다.</p>
+                <button onClick={() => { if (!confirm('단말기를 초기화하시겠습니까?\n활성화 토큰과 모든 로컬 데이터가 삭제됩니다.')) return; clearAll(); clearDeviceToken(); router.replace('/pos') }}
+                  className="w-full py-2.5 rounded-lg text-sm font-semibold text-red-300 transition-all hover:bg-red-500/10" style={{ border: '1px solid rgba(239,68,68,0.40)' }}>
+                  단말기 초기화
+                </button>
+              </div>
+
+              {typeof window !== 'undefined' && (window as Window & { electronAPI?: { quitApp?: () => void } }).electronAPI && (
                 <div className="glass-card rounded-xl p-4 space-y-2" style={{ border: '1px solid rgba(239,68,68,0.40)' }}>
-                  <p className="text-sm font-semibold text-red-300">프로그램 종료</p>
+                  <h3 className="text-sm font-semibold text-red-300">프로그램 종료</h3>
                   <p className="text-xs text-white/40">BIZPOS 애플리케이션을 완전히 종료합니다.</p>
                   <button
                     onClick={() => { if (!confirm('프로그램을 종료하시겠습니까?')) return; (window as Window & { electronAPI?: { quitApp?: () => void } }).electronAPI?.quitApp?.() }}
@@ -606,8 +623,9 @@ export default function PosAdminPage() {
                     프로그램 종료
                   </button>
                 </div>
-              </>
-            )}
+              )}
+            </div>
+
           </div>
         )}
       </div>

@@ -1,5 +1,3 @@
-// lib/roles/permissions.ts
-
 export const ROLES = {
   PLATFORM_ADMIN: 'platform_admin',
   PLATFORM_MANAGER: 'platform_manager',
@@ -14,69 +12,50 @@ export const ROLES = {
 
 export type Role = typeof ROLES[keyof typeof ROLES];
 
-/**
- * 단말기 라이프사이클(생성/삭제) 권한 확인
- */
-export const canManageTerminalLifecycle = (role: Role | string) => {
-  return [
-    ROLES.PLATFORM_ADMIN,
-    ROLES.PLATFORM_MANAGER,
-    ROLES.TERMINAL_ADMIN,
-  ].includes(role as any);
+export const canManageTerminalLifecycle = (role: Role | string): boolean => {
+  return (
+    role === ROLES.PLATFORM_ADMIN ||
+    role === ROLES.PLATFORM_MANAGER ||
+    role === ROLES.TERMINAL_ADMIN
+  );
 };
 
-/**
- * 단말기 설정 수정 권한 확인
- */
-export const canUpdateTerminalSettings = (role: Role | string) => {
-  return [
-    ROLES.PLATFORM_ADMIN,
-    ROLES.PLATFORM_MANAGER,
-    ROLES.TERMINAL_ADMIN,
-    ROLES.MERCHANT_ADMIN,
-    ROLES.MERCHANT_MANAGER,
-    ROLES.STORE_ADMIN,
-    ROLES.STORE_MANAGER,
-  ].includes(role as any);
+export const canUpdateTerminalSettings = (role: Role | string): boolean => {
+  return (
+    role === ROLES.PLATFORM_ADMIN ||
+    role === ROLES.PLATFORM_MANAGER ||
+    role === ROLES.TERMINAL_ADMIN ||
+    role === ROLES.MERCHANT_ADMIN ||
+    role === ROLES.MERCHANT_MANAGER ||
+    role === ROLES.STORE_ADMIN ||
+    role === ROLES.STORE_MANAGER
+  );
 };
 
-/**
- * 멤버 관리 권한 확인
- */
-export const canManageMembers = (role: Role | string) => {
-  return [
-    ROLES.PLATFORM_ADMIN,
-    ROLES.PLATFORM_MANAGER,
-    ROLES.MERCHANT_ADMIN,
-    ROLES.MERCHANT_MANAGER,
-    ROLES.STORE_ADMIN,
-  ].includes(role as any);
+export const canManageMembers = (role: Role | string): boolean => {
+  return (
+    role === ROLES.PLATFORM_ADMIN ||
+    role === ROLES.PLATFORM_MANAGER ||
+    role === ROLES.MERCHANT_ADMIN ||
+    role === ROLES.MERCHANT_MANAGER ||
+    role === ROLES.STORE_ADMIN
+  );
 };
 
-/**
- * 역할 부여 권한 확인
- */
-export const canAssignRole = (role: Role | string, targetRole: Role | string) => {
-  const assigner = role as Role;
-  const target = targetRole as Role;
+export const canAssignRole = (role: Role | string, targetRole: Role | string): boolean => {
+  if (role === ROLES.PLATFORM_ADMIN) return true;
 
-  // Platform admin can assign any role
-  if (assigner === ROLES.PLATFORM_ADMIN) return true;
-
-  // Platform manager can assign non-platform roles
-  if (assigner === ROLES.PLATFORM_MANAGER) {
-    return ![ROLES.PLATFORM_ADMIN, ROLES.PLATFORM_MANAGER].includes(target as any);
+  if (role === ROLES.PLATFORM_MANAGER) {
+    return targetRole !== ROLES.PLATFORM_ADMIN && targetRole !== ROLES.PLATFORM_MANAGER;
   }
 
-  // Merchant admin can assign merchant and store roles
-  if (assigner === ROLES.MERCHANT_ADMIN) {
-    return [
-      ROLES.MERCHANT_MANAGER,
-      ROLES.STORE_ADMIN,
-      ROLES.STORE_MANAGER,
-    ].includes(target as any);
+  if (role === ROLES.MERCHANT_ADMIN) {
+    return (
+      targetRole === ROLES.MERCHANT_MANAGER ||
+      targetRole === ROLES.STORE_ADMIN ||
+      targetRole === ROLES.STORE_MANAGER
+    );
   }
 
-  // Others cannot assign roles
   return false;
 };

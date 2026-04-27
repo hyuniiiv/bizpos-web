@@ -9,45 +9,45 @@ import type { MenuConfig } from '@/types/menu'
 export const PaymentRepository = {
   // ── 오프라인 결제 대기열 ──────────────────────────────
   async savePendingPayment(record: OfflineRecord): Promise<{ success: boolean }> {
-    const api = (window as any).electronAPI
+    const api = (window.electronAPI as (typeof window.electronAPI & { db?: ElectronDB }))
     if (api?.db) return await api.db.savePendingPayment(record)
     throw new Error('Electron DB API not available')
   },
 
   async getPendingPayments(): Promise<OfflineRecord[]> {
-    const api = (window as any).electronAPI
+    const api = (window.electronAPI as (typeof window.electronAPI & { db?: ElectronDB }))
     if (api?.db) return await api.db.getPendingPayments()
     throw new Error('Electron DB API not available')
   },
 
   async markPaymentSynced(merchantOrderID: string): Promise<{ success: boolean }> {
-    const api = (window as any).electronAPI
+    const api = (window.electronAPI as (typeof window.electronAPI & { db?: ElectronDB }))
     if (api?.db) return await api.db.markPaymentSynced(merchantOrderID)
     throw new Error('Electron DB API not available')
   },
 
   // ── 거래 기록 ─────────────────────────────────────────
   async saveTransaction(tx: Transaction): Promise<{ success: boolean }> {
-    const api = (window as any).electronAPI
+    const api = (window.electronAPI as (typeof window.electronAPI & { db?: ElectronDB }))
     if (api?.db) return await api.db.saveTransaction(tx)
     throw new Error('Electron DB API not available')
   },
 
   // ── 메뉴 설정 ─────────────────────────────────────────────
   async getMenus(): Promise<MenuConfig[]> {
-    const api = (window as any).electronAPI
+    const api = (window.electronAPI as (typeof window.electronAPI & { db?: ElectronDB }))
     if (api?.db) return await api.db.getMenus()
     throw new Error('Electron DB API not available')
   },
 
   async saveMenu(menu: MenuConfig): Promise<{ success: boolean }> {
-    const api = (window as any).electronAPI
+    const api = (window.electronAPI as (typeof window.electronAPI & { db?: ElectronDB }))
     if (api?.db) return await api.db.saveMenu(menu)
     throw new Error('Electron DB API not available')
   },
 
   async deleteMenu(id: string): Promise<{ success: boolean }> {
-    const api = (window as any).electronAPI
+    const api = (window.electronAPI as (typeof window.electronAPI & { db?: ElectronDB }))
     if (api?.db) return await api.db.deleteMenu(id)
     throw new Error('Electron DB API not available')
   }

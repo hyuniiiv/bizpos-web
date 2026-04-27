@@ -45,7 +45,17 @@ export async function POST(request: NextRequest) {
   if ('error' in auth) return auth.error
 
   const { terminalId } = auth.payload
-  const config = await request.json()
+
+  let config: unknown
+  try {
+    config = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
+  }
+
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    return NextResponse.json({ error: 'INVALID_CONFIG' }, { status: 400 })
+  }
 
   const supabase = createAdminClient()
 

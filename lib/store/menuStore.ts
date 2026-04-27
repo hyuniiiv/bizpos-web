@@ -1,9 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { MenuConfig, PeriodConfig, ServiceCodeConfig, DisplayMode, PosCategory, PosMenuItem } from '@/types/menu'
-import { v4 as uuid } from 'uuid'
-
-// uuid 없으면 간단 대체
 function genId() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36)
 }

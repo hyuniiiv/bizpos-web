@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as CancelRequest & { menuName: string; termId: string }
 
-    const client = await getBizplayClientForTerminal(body.termId)
+    const client = await getBizplayClientForTerminal(auth.payload.termId)
     const result = await client.cancel(body)
 
     if (result.code === '0000' && result.data) {
