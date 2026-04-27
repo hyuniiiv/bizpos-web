@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, biz_no, address, admin_id, manager_id, description } = body
 
-    if (!name || !biz_no || !address || !admin_id) {
+    if (!name || !biz_no || !address) {
       return NextResponse.json(
         { error: '필수 항목을 입력하세요' },
         { status: 400 }

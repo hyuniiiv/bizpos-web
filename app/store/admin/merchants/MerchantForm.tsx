@@ -110,7 +110,6 @@ export default function MerchantForm({
           style={{ color: 'var(--bp-text-3)' }}
         >
           관리자
-          <span className="text-red-400 ml-0.5">*</span>
         </label>
         <select
           value={form.admin_id}
@@ -122,7 +121,7 @@ export default function MerchantForm({
           }}
         >
           <option value="" style={{ background: '#1e2533' }}>
-            관리자를 선택하세요
+            관리자를 선택하세요 (선택)
           </option>
           {admins.map(admin => (
             <option key={admin.id} value={admin.id} style={{ background: '#1e2533' }}>

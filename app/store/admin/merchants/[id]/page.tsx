@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import type { Merchant } from '@/lib/context/MerchantStoreContext'
+import type { Merchant, Store } from '@/lib/context/MerchantStoreContext'
 
 interface Admin {
   id: string
@@ -59,16 +59,33 @@ async function getManagers(): Promise<Manager[]> {
   }
 }
 
+async function getStores(merchantId: string): Promise<Store[]> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/merchant/stores?merchant_id=${merchantId}`,
+      {
+        next: { revalidate: 0 },
+      }
+    )
+    if (!res.ok) return []
+    const json = await res.json()
+    return json.data || []
+  } catch {
+    return []
+  }
+}
+
 export default async function MerchantDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [merchant, admins, managers] = await Promise.all([
+  const [merchant, admins, managers, stores] = await Promise.all([
     getMerchant(id),
     getAdmins(),
     getManagers(),
+    getStores(id),
   ])
 
   if (!merchant) {
@@ -177,6 +194,52 @@ export default async function MerchantDetailPage({
           </div>
         )}
       </div>
+
+      {stores.length > 0 && (
+        <div>
+          <h2 className="text-xl font-bold text-white mb-4">매장 목록</h2>
+          <div className="grid grid-cols-1 gap-4">
+            {stores.map(store => (
+              <div
+                key={store.id}
+                className="rounded-xl p-4"
+                style={{
+                  background: 'var(--bp-surface)',
+                  border: '1px solid var(--bp-border)',
+                }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-white">{store.store_name}</h3>
+                  <span
+                    className={`text-xs px-2 py-1 rounded ${
+                      store.is_active
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}
+                  >
+                    {store.is_active ? '운영중' : '비운영'}
+                  </span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span style={{ color: 'var(--bp-text-3)' }}>주소: </span>
+                    <span className="text-white">{store.address}</span>
+                  </div>
+                  {store.description && (
+                    <div>
+                      <span style={{ color: 'var(--bp-text-3)' }}>설명: </span>
+                      <span className="text-white">{store.description}</span>
+                    </div>
+                  )}
+                  <div style={{ color: 'var(--bp-text-3)' }} className="text-xs">
+                    등록일: {new Date(store.created_at).toLocaleDateString('ko-KR')}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <a

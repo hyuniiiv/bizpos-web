@@ -112,10 +112,6 @@ export default function MerchantsClient({
       setError('주소를 입력하세요.')
       return
     }
-    if (!form.admin_id) {
-      setError('관리자를 선택하세요.')
-      return
-    }
 
     setSaving(true)
     setError('')
