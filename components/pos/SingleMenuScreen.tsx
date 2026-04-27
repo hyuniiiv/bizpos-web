@@ -37,7 +37,7 @@ export default function SingleMenuScreen() {
             className="font-black text-white tracking-tight drop-shadow-lg"
             style={{ fontSize: 'clamp(1.5rem, 4vmin, 2.5rem)' }}
           >
-            {mounted ? (config.corner || 'BIZPOS') : 'BIZPOS'}
+            {mounted ? (config.name || config.corner || 'BIZPOS') : 'BIZPOS'}
           </h1>
           {currentMenu && (
             <p className="text-base text-white/50 mt-1">{currentMenu.name}</p>

@@ -17,16 +17,17 @@ interface Props {
   preset: Preset
   from: string
   to: string
+  basePath?: string
 }
 
-export default function DateRangeFilter({ preset, from, to }: Props) {
+export default function DateRangeFilter({ preset, from, to, basePath = '/store/admin/analytics' }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   function navigate(params: Record<string, string>) {
     const sp = new URLSearchParams(searchParams.toString())
     Object.entries(params).forEach(([k, v]) => sp.set(k, v))
-    router.push(`/store/admin/analytics?${sp.toString()}`)
+    router.push(`${basePath}?${sp.toString()}`)
   }
 
   function handlePreset(p: Preset) {

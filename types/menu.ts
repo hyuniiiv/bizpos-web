@@ -73,7 +73,8 @@ export interface DeviceConfig {
   termName?: string                            // 단말기 이름 (활성화 시 서버에서 수신)
   merchantId: string
   bizNo: string
-  corner: string
+  name: string
+  corner?: string
   adminPin: string
   serialPort: string
   offlineMode: boolean

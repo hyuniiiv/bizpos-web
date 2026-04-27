@@ -34,10 +34,10 @@ export default function ActivationScreen() {
       if (data.terminalType) setTerminalType(data.terminalType)
       const cfg = data.config ?? {}
       await updateConfig({
-        termId: data.termId ?? '',
-        ...(data.name ? { termName: data.name } : {}),
+        ...cfg,                                        // 저장된 설정 먼저
+        termId: data.termId ?? cfg.termId ?? '',       // 서버 termId로 덮어씀
+        ...(data.name ? { name: data.name } : {}),
         ...(data.corner ? { corner: data.corner } : {}),
-        ...cfg,
       })
       if (Array.isArray(cfg.menus)) setMenus(cfg.menus)
       if (Array.isArray(cfg.periods)) setPeriods(cfg.periods)

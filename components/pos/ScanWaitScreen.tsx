@@ -2,10 +2,13 @@
 import { useEffect, useState } from 'react'
 import { usePosStore } from '@/lib/store/posStore'
 import { useSettingsStore } from '@/lib/store/settingsStore'
+import { useMenuStore } from '@/lib/store/menuStore'
 
 export default function ScanWaitScreen() {
   const { selectedMenu, setScreen, clearMenu } = usePosStore()
   const { config } = useSettingsStore()
+  const { getCurrentMode } = useMenuStore()
+  const isMultiMode = getCurrentMode() === 'multi'
   const [barWidths, setBarWidths] = useState<number[]>([])
   const [time, setTime] = useState('')
 
@@ -47,7 +50,7 @@ export default function ScanWaitScreen() {
             className="font-black tracking-tight text-white leading-none"
             style={{ fontSize: 'clamp(1.5rem, 5vmin, 2.4rem)' }}
           >
-            {config.corner || 'BIZPOS'}
+            {config.name || config.corner || 'BIZPOS'}
           </h1>
         </div>
 
@@ -166,20 +169,22 @@ export default function ScanWaitScreen() {
         )}
       </div>
 
-      {/* Bottom action */}
-      <div className="px-5 pb-6">
-        <button
-          onClick={handleBack}
-          className="pos-btn pos-touch w-full rounded-2xl glass-card"
-        >
-          <span className="flex items-center gap-2 text-white/55 font-semibold text-base">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 19l-7-7 7-7" />
-            </svg>
-            메뉴 선택으로 돌아가기
-          </span>
-        </button>
-      </div>
+      {/* Bottom action — 다중 메뉴 모드일 때만 표시 */}
+      {isMultiMode && (
+        <div className="px-5 pb-6">
+          <button
+            onClick={handleBack}
+            className="pos-btn pos-touch w-full rounded-2xl glass-card"
+          >
+            <span className="flex items-center gap-2 text-white/55 font-semibold text-base">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 19l-7-7 7-7" />
+              </svg>
+              메뉴 선택으로 돌아가기
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   )
 }

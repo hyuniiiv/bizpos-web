@@ -37,7 +37,7 @@ export default function MenuSelectScreen() {
         {/* 로고 */}
         <div className="text-center">
           <h1 className="font-black text-white tracking-tight drop-shadow-lg text-[clamp(1.5rem,4vmin,2.5rem)] lg:text-3xl">
-            {config.corner || 'BIZPOS'}
+            {config.name || config.corner || 'BIZPOS'}
           </h1>
         </div>
 

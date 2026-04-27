@@ -88,7 +88,7 @@ export default function TableOrderScreen() {
       <div className="flex-1 p-5 overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="text-xs text-white/40 uppercase tracking-wider font-medium">
-            {config.corner || '테이블 현황'}
+            {config.name || config.corner || '테이블 현황'}
           </div>
           <div className="flex gap-3 text-xs text-white/40">
             <span className="flex items-center gap-1.5">

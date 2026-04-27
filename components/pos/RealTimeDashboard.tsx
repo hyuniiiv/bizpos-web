@@ -121,8 +121,8 @@ export default function RealTimeDashboard({ refreshTrigger }: Props) {
           <Link href="/pos/admin" className="text-sm text-blue-300 font-mono hover:text-white transition-colors">
             [{config.termId || '--'}]
           </Link>
-          {config.corner && (
-            <span className="text-sm text-white/40">{config.corner}</span>
+          {(config.name || config.corner) && (
+            <span className="text-sm text-white/40">{config.name || config.corner}</span>
           )}
           {cafeteriaMode && (
             <span className="text-xs px-1.5 py-0.5 rounded font-semibold"

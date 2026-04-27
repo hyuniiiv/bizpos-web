@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { useMerchantKeys } from '@/lib/hooks/useMerchantKeys'
 import type { MerchantKey, MerchantKeyCreateInput, MerchantKeyUpdateInput, KeyEnv } from '@/types/merchant-key'
 
-type Props = { initialKeys: MerchantKey[] }
+type Props = { initialKeys: MerchantKey[]; merchantId?: string }
 type EnvFilter = 'all' | KeyEnv
 
 const emptyForm: MerchantKeyCreateInput = { name: '', mid: '', enc_key: '', online_ak: '', description: '', env: 'production' }

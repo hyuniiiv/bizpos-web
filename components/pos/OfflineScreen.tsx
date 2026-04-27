@@ -63,7 +63,7 @@ export default function OfflineScreen() {
             className="font-black text-white tracking-tight leading-none"
             style={{ fontSize: 'clamp(1.8rem, 6vmin, 3rem)' }}
           >
-            {config.corner || 'BIZPOS'}
+            {config.name || config.corner || 'BIZPOS'}
           </h1>
         </div>
 
