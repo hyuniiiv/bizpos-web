@@ -17,7 +17,8 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const { error: signInError } = await signIn(email, password)
+    const loginEmail = email.includes('@') ? email : `${email}@bizpos.internal`
+    const { error: signInError } = await signIn(loginEmail, password)
 
     if (signInError) {
       setError('이메일 또는 비밀번호가 올바르지 않습니다.')
@@ -54,13 +55,14 @@ export default function LoginPage() {
               <label className="block text-xs font-medium mb-1.5"
                      style={{ color: 'var(--bp-text-2)' }}>이메일</label>
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
+                autoComplete="username"
                 className="w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
                 style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)' }}
-                placeholder="admin@example.com"
+                placeholder="admin@example.com 또는 사용자명"
               />
             </div>
             <div>
