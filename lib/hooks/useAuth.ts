@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react'
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { getBrowserClient } from '@/lib/supabase/browser'
 
-type Role = 'platform_admin' | 'merchant' | 'client' | null
+type Role = 'platform_admin' | 'terminal_admin' | 'merchant' | 'client' | null
 
 function extractRole(session: Session | null): Role {
   const raw = session?.user?.app_metadata?.role
-  if (raw === 'platform_admin' || raw === 'merchant' || raw === 'client') {
+  if (raw === 'platform_admin' || raw === 'terminal_admin' || raw === 'merchant' || raw === 'client') {
     return raw
   }
   return null

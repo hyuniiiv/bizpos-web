@@ -20,15 +20,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('user_id', user.id)
     .single()
 
-  // 역할을 소문자로 정규화 (Platform_admin → platform_admin)
-  const normalizedRole = membership?.role?.toLowerCase()
+  // terminal_admin은 app_metadata.role로 식별 (merchant_users 매핑 불필요)
+  const isTerminalAdmin = user.app_metadata?.role === 'terminal_admin'
+
+  // 역할을 소문자로 정규화
+  const normalizedRole = isTerminalAdmin ? 'terminal_admin' : membership?.role?.toLowerCase()
 
   const isPlatformAdmin = normalizedRole === 'platform_admin'
+  const isGlobalViewer = isPlatformAdmin || isTerminalAdmin
 
   const cookieStore = await cookies()
 
   let effectiveMerchantId = membership?.merchant_id ?? ''
-  if (isPlatformAdmin) {
+  if (isGlobalViewer) {
     const selected = cookieStore.get('bp_selected_merchant')?.value
     if (selected) effectiveMerchantId = selected
   }

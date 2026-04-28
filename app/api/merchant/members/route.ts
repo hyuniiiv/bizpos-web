@@ -125,9 +125,10 @@ export async function POST(req: Request) {
       targetUserId = created.user.id
     }
 
-    // app_metadata.role 설정 (ProtectedRoute에서 'merchant' 확인용)
+    // app_metadata.role 설정 (ProtectedRoute 및 권한 확인용)
+    const appRole = body.role === 'terminal_admin' ? 'terminal_admin' : 'merchant'
     await admin.auth.admin.updateUserById(targetUserId, {
-      app_metadata: { role: 'merchant' },
+      app_metadata: { role: appRole },
     })
   }
 

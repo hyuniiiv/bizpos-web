@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/hooks/useAuth'
 
 interface Props {
   children: React.ReactNode
-  requiredRole?: 'platform_admin' | 'merchant' | 'client'
+  requiredRole?: 'platform_admin' | 'terminal_admin' | 'merchant' | 'client'
   fallbackPath?: string
 }
 
@@ -21,7 +21,11 @@ export function ProtectedRoute({ children, requiredRole, fallbackPath = '/login'
       router.replace(`${fallbackPath}?next=${encodeURIComponent(pathname)}`)
       return
     }
-    if (requiredRole && role !== requiredRole && role !== 'platform_admin') {
+    const allowed = !requiredRole
+      || role === requiredRole
+      || role === 'platform_admin'
+      || (requiredRole === 'merchant' && role === 'terminal_admin')
+    if (!allowed) {
       router.replace('/unauthorized')
     }
   }, [user, role, loading, requiredRole, router, pathname, fallbackPath])
@@ -30,6 +34,10 @@ export function ProtectedRoute({ children, requiredRole, fallbackPath = '/login'
     return <div className="flex items-center justify-center h-screen">Loading...</div>
   }
   if (!user) return null
-  if (requiredRole && role !== requiredRole && role !== 'platform_admin') return null
+  const allowed = !requiredRole
+    || role === requiredRole
+    || role === 'platform_admin'
+    || (requiredRole === 'merchant' && role === 'terminal_admin')
+  if (!allowed) return null
   return <>{children}</>
 }

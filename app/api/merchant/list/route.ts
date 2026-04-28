@@ -15,17 +15,20 @@ export async function GET() {
     .select('merchant_id, role')
     .eq('user_id', user.id)
 
-  if (!memberships || memberships.length === 0) {
+  const isTerminalAdmin = user.app_metadata?.role === 'terminal_admin'
+  const safeMembers = memberships ?? []
+
+  if (!isTerminalAdmin && safeMembers.length === 0) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const isPlatformAdmin = memberships.some(m => m.role === 'platform_admin')
+  const isPlatformAdmin = safeMembers.some(m => m.role === 'platform_admin')
+  const isGlobalViewer = isPlatformAdmin || isTerminalAdmin
 
   let query = admin.from('merchants').select('id, name, biz_no').order('name')
 
-  if (!isPlatformAdmin) {
-    // 비 플랫폼 어드민: 소속 가맹점만
-    query = query.in('id', memberships.map(m => m.merchant_id))
+  if (!isGlobalViewer) {
+    query = query.in('id', safeMembers.map(m => m.merchant_id))
   }
 
   const { data: merchants } = await query

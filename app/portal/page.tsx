@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Store, Building } from 'lucide-react'
@@ -8,9 +9,13 @@ export default async function PortalPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // terminal_admin은 merchant_users 매핑 없이 바로 store/admin
+  if (user.app_metadata?.role === 'terminal_admin') redirect('/store/admin')
+
+  const admin = createAdminClient()
   const [{ data: mu }, { data: cu }] = await Promise.all([
-    supabase.from('merchant_users').select('merchant_id').eq('user_id', user.id).single(),
-    supabase.from('client_users').select('client_id').eq('user_id', user.id).single(),
+    admin.from('merchant_users').select('merchant_id').eq('user_id', user.id).single(),
+    admin.from('client_users').select('client_id').eq('user_id', user.id).single(),
   ])
 
   if (!mu && !cu) redirect('/unauthorized')
