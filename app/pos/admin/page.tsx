@@ -564,6 +564,17 @@ export default function PosAdminPage() {
         {tab === 'settings' && (
           <div className="space-y-6">
 
+            {/* 앱 버전 */}
+            <div className="glass-card rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white/60">프로그램 버전</p>
+                <p className="text-xs text-white/30 mt-0.5">BIZPOS POS Application</p>
+              </div>
+              <span className="font-mono text-base font-bold text-emerald-400">
+                v{process.env.NEXT_PUBLIC_APP_VERSION ?? '—'}
+              </span>
+            </div>
+
             {/* 일반 설정 */}
             <div className="space-y-3">
               <p className="text-xs font-semibold text-white/30 uppercase tracking-widest px-1">일반 설정</p>
