@@ -13,7 +13,6 @@ export async function createTerminalJWT(payload: TerminalJWTPayload): Promise<st
   return new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('7d')
     .sign(await getSecret())
 }
 
