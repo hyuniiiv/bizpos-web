@@ -437,12 +437,14 @@ export default function PosConfigForm({
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white/50">메뉴 #{i + 1}</span>
                   <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-1.5 text-sm text-white/60 cursor-pointer">
-                      <input type="checkbox" checked={menu.isActive} onChange={e => {
-                        const updated = [...menus]; updated[i] = { ...menu, isActive: e.target.checked }; setMenus(updated)
-                      }} />
+                    <button type="button"
+                      onClick={() => { const u = [...menus]; u[i] = { ...menu, isActive: !menu.isActive }; setMenus(u) }}
+                      className="flex items-center gap-2 text-sm text-white/60">
+                      <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${menu.isActive ? 'bg-green-500' : 'bg-white/20'}`}>
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${menu.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </span>
                       활성
-                    </label>
+                    </button>
                     <button onClick={() => setMenus(menus.filter((_, j) => j !== i))} className="text-sm text-red-400 hover:text-red-300 transition-colors">삭제</button>
                   </div>
                 </div>
