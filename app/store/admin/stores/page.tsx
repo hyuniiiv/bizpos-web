@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import StoresClient from './StoresClient'
 
@@ -18,37 +19,39 @@ export default async function StoresPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: membership } = await supabase
-    .from('merchant_users')
-    .select('merchant_id, role')
-    .eq('user_id', user.id)
-    .single()
+  const isTerminalAdmin = user.app_metadata?.role === 'terminal_admin'
 
-  if (!membership) redirect('/login')
+  const adminDb = createAdminClient()
+  const { data: membership } = isTerminalAdmin
+    ? { data: null }
+    : await adminDb
+        .from('merchant_users')
+        .select('merchant_id, role')
+        .eq('user_id', user.id)
+        .single()
 
-  const isPlatformAdmin = membership.role === 'platform_admin'
+  if (!isTerminalAdmin && !membership) redirect('/login')
 
-  let q = supabase
+  const role = isTerminalAdmin ? 'terminal_admin' : membership!.role
+  const isGlobalViewer = role === 'platform_admin' || role === 'terminal_admin'
+
+  let q = adminDb
     .from('stores')
     .select('id, store_name, address, is_active, merchant_id, created_at')
     .order('created_at', { ascending: true })
 
-  if (!isPlatformAdmin) {
-    q = q.eq('merchant_id', membership.merchant_id)
+  if (!isGlobalViewer) {
+    q = q.eq('merchant_id', membership!.merchant_id)
   }
 
   const { data: stores } = await q
 
-  const { data: merchant } = membership.merchant_id
-    ? await supabase.from('merchants').select('name').eq('id', membership.merchant_id).single()
-    : { data: null }
-
   return (
     <StoresClient
       stores={(stores ?? []) as Store[]}
-      myRole={membership.role}
-      merchantId={membership.merchant_id}
-      merchantName={merchant?.name ?? undefined}
+      myRole={role}
+      merchantId={membership?.merchant_id ?? ''}
+      merchantName={undefined}
     />
   )
 }

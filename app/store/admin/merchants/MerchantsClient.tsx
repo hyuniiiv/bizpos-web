@@ -64,13 +64,14 @@ export default function MerchantsClient({
   const isPlatform =
     normalizedRole === ROLES.PLATFORM_ADMIN || normalizedRole === ROLES.PLATFORM_MANAGER
   const isMerchantAdmin = normalizedRole === ROLES.MERCHANT_ADMIN
-  const canAccess = isPlatform || isMerchantAdmin
+  const isTerminalAdmin = normalizedRole === ROLES.TERMINAL_ADMIN
+  const canAccess = isPlatform || isMerchantAdmin || isTerminalAdmin
   const canCreate = isPlatform
   const canEdit = isPlatform || isMerchantAdmin
   const canDelete = isPlatform
 
   // 필터링: 권한에 따른 가맹점 목록
-  const filteredMerchants = isPlatform
+  const filteredMerchants = (isPlatform || isTerminalAdmin)
     ? merchants
     : isMerchantAdmin && userMerchantId
       ? merchants.filter(m => m.id === userMerchantId)

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import MerchantsClient from './MerchantsClient'
 import type { Merchant } from '@/lib/context/MerchantStoreContext'
@@ -13,9 +14,10 @@ interface Manager {
   email: string
 }
 
-async function getMerchants(supabase: any): Promise<Merchant[]> {
+async function getMerchants(): Promise<Merchant[]> {
   try {
-    const { data: merchants } = await supabase
+    const admin = createAdminClient()
+    const { data: merchants } = await admin
       .from('merchants')
       .select('*')
       .order('name')
@@ -81,14 +83,19 @@ export default async function MerchantsPage() {
 
   if (!user) redirect('/login')
 
-  const { data: membership } = await supabase
+  const isTerminalAdmin = user.app_metadata?.role === 'terminal_admin'
+
+  const admin = createAdminClient()
+  const { data: membership } = isTerminalAdmin ? { data: null } : await admin
     .from('merchant_users')
     .select('merchant_id, role')
     .eq('user_id', user.id)
     .single()
 
+  const userRole = isTerminalAdmin ? 'terminal_admin' : (membership?.role || null)
+
   const [merchants, admins, managers] = await Promise.all([
-    getMerchants(supabase),
+    getMerchants(),
     getAdmins(supabase),
     getManagers(supabase),
   ])
@@ -98,7 +105,7 @@ export default async function MerchantsPage() {
       merchants={merchants}
       admins={admins}
       managers={managers}
-      userRole={membership?.role || null}
+      userRole={userRole}
       userMerchantId={membership?.merchant_id || null}
     />
   )
