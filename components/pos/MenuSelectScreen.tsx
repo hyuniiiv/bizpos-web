@@ -1,82 +1,107 @@
 'use client'
-import MenuCard from './MenuCard'
-
-const BARCODE_BARS = Array.from({ length: 20 }, (_, i) => (i % 2 === 0 ? 3 : 1.5))
+import { useEffect, useState } from 'react'
 import { useMenuStore } from '@/lib/store/menuStore'
 import { useSettingsStore } from '@/lib/store/settingsStore'
 import { usePosStore } from '@/lib/store/posStore'
+import TodayStatBar from './TodayStatBar'
+import MenuCard from './MenuCard'
 import type { MenuConfig } from '@/types/menu'
 
-export default function MenuSelectScreen() {
-  const { menus, getActiveMenus } = useMenuStore()
+interface Props {
+  refreshTrigger?: number
+}
+
+export default function MenuSelectScreen({ refreshTrigger }: Props) {
+  const { getActiveMenus } = useMenuStore()
   const { config } = useSettingsStore()
   const { selectMenu, setScreen } = usePosStore()
+  const showStatBar = !config.showPaymentList
+  const [time, setTime] = useState('')
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date()
+      setTime(now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }))
+    }
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [])
 
   const activeMenus = getActiveMenus().slice(0, 4)
-  const totalCount = menus.reduce((sum, m) => sum + m.count, 0)
+  const gridCols = activeMenus.length <= 1 ? 'grid-cols-1' : 'grid-cols-2'
 
   const handleSelect = (menu: MenuConfig) => {
     selectMenu(menu)
     setScreen('scan-wait')
   }
 
-  const gridCols = activeMenus.length <= 1 ? 'grid-cols-1' : 'grid-cols-2'
-
-
   return (
-    <div className="h-full overflow-hidden flex flex-col">
-      {/* 상단 헤더 */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <span className="text-[10px] text-white/30 font-mono">메뉴선택_기능</span>
-        <span className="text-2xl font-black text-white">{totalCount}</span>
-      </div>
+    <div className="flex flex-col h-full relative overflow-hidden select-none">
+      {showStatBar && <TodayStatBar refreshTrigger={refreshTrigger} />}
 
-      {/* 메인 영역 */}
-      <div className="flex-1 flex flex-col items-center px-4 justify-between py-2 overflow-hidden">
+      {/* Background grid texture — ScanWaitScreen과 동일 */}
+      <div
+        className="absolute inset-0 opacity-[0.035] pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(6,214,160,1) 1px, transparent 1px), linear-gradient(90deg, rgba(6,214,160,1) 1px, transparent 1px)',
+          backgroundSize: '44px 44px',
+        }}
+      />
 
-        {/* 로고 */}
-        <div className="text-center">
-          <h1 className="font-black text-white tracking-tight drop-shadow-lg text-[clamp(1.5rem,4vmin,2.5rem)] lg:text-3xl">
+      {/* Header — ScanWaitScreen과 동일 */}
+      <div className="relative flex items-start justify-between px-5 pt-5 pb-3">
+        <div className="pos-rise">
+          <p className="text-[10px] font-mono tracking-[0.22em] text-white/25 uppercase mb-0.5">
+            POS Terminal
+          </p>
+          <h1
+            className="font-black tracking-tight text-white leading-none"
+            style={{ fontSize: 'clamp(1.5rem, 5vmin, 2.4rem)' }}
+          >
             {config.name || config.corner || 'BIZPOS'}
           </h1>
         </div>
 
-        {/* 안내 메시지 */}
+        <div className="text-right pos-rise-2">
+          <p
+            className="font-mono font-bold text-white/85 tabular-nums leading-none"
+            style={{ fontSize: 'clamp(1.5rem, 5vmin, 2.2rem)' }}
+          >
+            {time}
+          </p>
+          <span className="flex items-center justify-end gap-1.5 mt-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-mono text-emerald-400/60 uppercase tracking-widest">
+              Online
+            </span>
+          </span>
+        </div>
+      </div>
+
+      {/* Main */}
+      <div className="relative flex-1 flex flex-col px-5 pb-5 gap-4 min-h-0">
         <div className="text-center">
-          <p className="font-bold text-white text-[clamp(0.9rem,2.5vmin,1.1rem)]">이용하실 메뉴를 선택해 주세요.</p>
-          <p className="text-white/40 mt-1 text-[clamp(0.7rem,2vmin,0.8rem)]">Please select a menu.</p>
+          <p className="font-bold text-white" style={{ fontSize: 'clamp(1rem, 3vmin, 1.25rem)' }}>
+            이용하실 메뉴를 선택해 주세요
+          </p>
+          <p className="text-[10px] font-mono text-white/30 mt-0.5 tracking-wider">
+            Please select a menu
+          </p>
         </div>
 
-        {/* 메뉴 카드 그리드 */}
         {activeMenus.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-white/40 text-base">
+          <div className="flex-1 flex items-center justify-center text-white/40 text-sm">
             현재 운영 중인 메뉴가 없습니다
           </div>
         ) : (
-          <div className={`grid ${gridCols} auto-rows-fr gap-3 flex-1 min-h-0 w-full`}>
+          <div className={`grid ${gridCols} auto-rows-fr gap-3 flex-1 min-h-0`}>
             {activeMenus.map((menu) => (
               <MenuCard key={menu.id} menu={menu} onSelect={handleSelect} />
             ))}
           </div>
         )}
-
-        {/* 음식 이모지 */}
-        <div className="flex items-center justify-center gap-3 opacity-60">
-          <span className="text-[clamp(2rem,5vmin,3rem)]">🍜</span>
-          <span className="text-[clamp(2rem,5vmin,3rem)]">🥗</span>
-          <span className="text-[clamp(2rem,5vmin,3rem)]">🍱</span>
-        </div>
-
-        {/* 바코드 줄무늬 */}
-        <div className="w-full flex justify-center gap-1 opacity-15">
-          {BARCODE_BARS.map((width, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-sm h-[clamp(16px,3.5vmin,32px)]"
-              style={{ width: `${width}px` }}
-            />
-          ))}
-        </div>
       </div>
     </div>
   )
