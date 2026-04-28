@@ -88,10 +88,16 @@ export default function PosPage() {
     if (!deviceToken || deviceToken === 'manual') return
     startConfigPolling(
       (serverConfig, termName) => {
-        const { menus, periods, serviceCodes, ...deviceConfig } = serverConfig as
+        const {
+          menus, periods, serviceCodes,
+          // 단말기 정체성 필드는 활성화 시 값을 유지 — config 블롭으로 덮어쓰기 금지
+          termId: _termId, name: _name, corner: _corner, termName: _termName,
+          ...deviceConfig
+        } = serverConfig as
           { menus?: MenuConfig[]; periods?: PeriodConfig[]; serviceCodes?: ServiceCodeConfig[] }
-          & Partial<DeviceConfig>
-        updateConfig({ ...deviceConfig, ...(termName != null ? { termName } : {}) })
+          & Partial<DeviceConfig & { termName?: string }>
+        // termName은 terminals.name 컬럼에서 직접 가져온 값 — 반영
+        updateConfig({ ...deviceConfig, ...(termName != null ? { name: termName } : {}) })
         if (Array.isArray(menus)) useMenuStore.getState().setMenus(menus)
         if (Array.isArray(periods)) useMenuStore.getState().setPeriods(periods)
         if (Array.isArray(serviceCodes)) useMenuStore.getState().setServiceCodes(serviceCodes)
