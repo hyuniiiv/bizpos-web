@@ -32,6 +32,11 @@ export async function POST(req: NextRequest) {
     const result = await client.approve(body)
 
     if (result.code === '0000' && result.data) {
+      // usedAmount 불일치 감지 (정책상 거절하지 않되, 모니터링을 위해 경고 로그)
+      if (result.data.usedAmount !== undefined && result.data.usedAmount !== body.totalAmount) {
+        console.warn('[approve] amount mismatch', body.totalAmount, result.data.usedAmount)
+      }
+
       const tx = {
         id: crypto.randomUUID(),
         merchantOrderID: body.merchantOrderID,
