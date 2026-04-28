@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import RemoteCommandListener from '@/components/pos/RemoteCommandListener'
 
 export const metadata: Metadata = {
   title: 'BIZPOS - 식권 체크기',
@@ -11,6 +12,7 @@ export default function PosLayout({ children }: { children: React.ReactNode }) {
       className="fixed inset-0 overflow-hidden"
       style={{ background: 'var(--pos-bg-gradient)', fontFamily: 'system-ui, sans-serif' }}
     >
+      <RemoteCommandListener />
       <div className="w-full h-full flex flex-col">
         {children}
       </div>
