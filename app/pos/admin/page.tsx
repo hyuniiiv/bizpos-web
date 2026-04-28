@@ -89,16 +89,28 @@ export default function PosAdminPage() {
     abortRef.current = controller
     setConnStatus('재연결 중')
 
-    const stored = localStorage.getItem('bizpos-settings')
-    const token: string | null = stored
-      ? (JSON.parse(stored)?.state?.deviceToken ?? null)
-      : null
+    const token: string | null = useSettingsStore.getState().deviceToken
 
     fetch(getServerUrl() + '/api/transactions/realtime', {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       signal: controller.signal,
     })
       .then(async (res) => {
+        if (res.status === 401 && token) {
+          // 만료 토큰 → refresh 후 즉시 재연결
+          try {
+            const ref = await fetch(getServerUrl() + '/api/device/token/refresh', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` },
+            })
+            if (ref.ok) {
+              const { accessToken } = await ref.json()
+              const { setDeviceToken, deviceTerminalId: tid } = useSettingsStore.getState()
+              if (tid) setDeviceToken(accessToken, tid)
+            }
+          } catch { /* refresh 실패 시 일반 retry */ }
+          throw new Error('SSE 401')
+        }
         if (!res.ok || !res.body) throw new Error(`SSE ${res.status}`)
         setConnStatus('연결됨')
         retryDelayRef.current = SSE_BASE_DELAY_MS
