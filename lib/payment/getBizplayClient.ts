@@ -1,11 +1,14 @@
 /**
  * 단말기 termId 기준으로 merchant_keys에서 3종 키를 조회해
- * BizplayClient 또는 MockBizplayClient를 반환하는 헬퍼
+ * BizplayClient를 반환하는 헬퍼.
+ * 키가 없거나 비활성이면 에러를 throw한다 — MockBizplayClient 무음 폴백 금지.
  */
 import { BizplayClient, MockBizplayClient } from './bizplay'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function getBizplayClientForTerminal(termId: string) {
+  const isDev = process.env.NODE_ENV === 'development'
+
   const supabase = createAdminClient()
 
   const { data: terminal } = await supabase
@@ -15,7 +18,10 @@ export async function getBizplayClientForTerminal(termId: string) {
     .single()
 
   if (!terminal?.merchant_key_id) {
-    return new MockBizplayClient()
+    if (isDev) return new MockBizplayClient()
+    throw new Error(
+      `Terminal '${termId}' has no merchant key configured. Assign a merchant key before processing payments.`
+    )
   }
 
   const { data: key } = await supabase
@@ -26,7 +32,10 @@ export async function getBizplayClientForTerminal(termId: string) {
     .single()
 
   if (!key) {
-    return new MockBizplayClient()
+    if (isDev) return new MockBizplayClient()
+    throw new Error(
+      `Merchant key '${terminal.merchant_key_id}' not found or inactive for terminal '${termId}'.`
+    )
   }
 
   return new BizplayClient({
