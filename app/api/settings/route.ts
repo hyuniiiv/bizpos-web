@@ -6,7 +6,7 @@ import { requireTerminalAuth } from '@/lib/terminal/auth'
 const ALLOWED_SETTINGS_KEYS = new Set([
   'theme', 'language', 'autoResetTime', 'barcodeReaderType',
   'barcodePort', 'serialPort', 'externalDisplay', 'apiEnv',
-  'corner', 'receiptPrint', 'offlineMode', 'cafeteriaMode',
+  'corner', 'receiptPrint', 'offlineMode',
   'tableCount', 'adminPin', 'customerDisplay'
 ])
 

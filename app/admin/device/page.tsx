@@ -253,18 +253,6 @@ export default function DevicePage() {
           오프라인 모드 강제 활성화
         </label>
 
-        <label
-          className="flex items-center gap-2 text-base cursor-pointer"
-          style={{ color: form.cafeteriaMode ? '#06D6A0' : 'rgba(255,255,255,0.70)' }}
-        >
-          <input
-            type="checkbox"
-            checked={form.cafeteriaMode ?? false}
-            onChange={(e) => setForm((f) => ({ ...f, cafeteriaMode: e.target.checked }))}
-          />
-          학생식당 모드 (판매현황 동시 표시)
-        </label>
-
         <div className="flex gap-3 pt-2 items-center flex-wrap">
           <button
             onClick={handleSave}

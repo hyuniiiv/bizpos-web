@@ -28,15 +28,6 @@ function formatTime(isoStr: string) {
   }
 }
 
-function formatTimeShort(isoStr: string) {
-  try {
-    const d = new Date(isoStr)
-    return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
-  } catch {
-    return '--:--'
-  }
-}
-
 function formatAmount(amount: number) {
   return amount.toLocaleString('ko-KR') + '원'
 }
@@ -59,7 +50,6 @@ export default function RealTimeDashboard({ refreshTrigger }: Props) {
   const [txList, setTxList] = useState<TxRecord[]>([])
   const [loading, setLoading] = useState(true)
   const today = new Date().toISOString().slice(0, 10)
-  const cafeteriaMode = config.cafeteriaMode ?? false
 
   const fetchTx = useCallback(async () => {
     try {
@@ -124,12 +114,6 @@ export default function RealTimeDashboard({ refreshTrigger }: Props) {
           {(config.name || config.corner) && (
             <span className="text-sm text-white/40">{config.name || config.corner}</span>
           )}
-          {cafeteriaMode && (
-            <span className="text-xs px-1.5 py-0.5 rounded font-semibold"
-                  style={{ background: 'rgba(6,214,160,0.15)', color: '#06D6A0' }}>
-              학생식당
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2 text-sm">
           {!isOnline && <span className="text-orange-400 font-semibold">⚠ 오프라인</span>}
@@ -154,24 +138,12 @@ export default function RealTimeDashboard({ refreshTrigger }: Props) {
       </div>
 
       {/* 거래 목록 헤더 */}
-      {cafeteriaMode ? (
-        <div className="grid gap-1 px-4 py-1 text-xs text-blue-300/70 border-b border-white/10"
-             style={{ gridTemplateColumns: '2rem 3.5rem 1fr 1fr 4rem 3rem' }}>
-          <span>번호</span>
-          <span>시간</span>
-          <span>사용자</span>
-          <span>메뉴</span>
-          <span className="text-right">금액</span>
-          <span className="text-right">상태</span>
-        </div>
-      ) : (
-        <div className="grid grid-cols-[1fr_2fr_2fr_1.5fr] gap-1 px-4 py-1 text-xs text-blue-300/70 border-b border-white/10">
-          <span>시간</span>
-          <span>사용자</span>
-          <span>메뉴</span>
-          <span className="text-right">금액</span>
-        </div>
-      )}
+      <div className="grid grid-cols-[1fr_2fr_2fr_1.5fr] gap-1 px-4 py-1 text-xs text-blue-300/70 border-b border-white/10">
+        <span>시간</span>
+        <span>사용자</span>
+        <span>메뉴</span>
+        <span className="text-right">금액</span>
+      </div>
 
       {/* 거래 목록 */}
       <div className="flex-1 overflow-y-auto px-4 py-1">
@@ -184,34 +156,6 @@ export default function RealTimeDashboard({ refreshTrigger }: Props) {
             <span className="text-4xl">📋</span>
             <span className="text-base">오늘 거래 내역이 없습니다</span>
           </div>
-        ) : cafeteriaMode ? (
-          txList.map((tx, idx) => (
-            <div
-              key={tx.id}
-              className={`grid gap-1 py-2 border-b border-white/5 text-xs
-                ${idx === 0 ? 'text-white' : 'text-white/70'}`}
-              style={{ gridTemplateColumns: '2rem 3.5rem 1fr 1fr 4rem 3rem' }}
-            >
-              <span className="text-white/30 font-mono tabular-nums">
-                {txList.length - idx}
-              </span>
-              <span className="text-blue-300/80 font-mono tabular-nums">
-                {formatTimeShort(tx.approvedAt)}
-              </span>
-              <span className="truncate">
-                {tx.userName || '-'}
-              </span>
-              <span className="truncate text-white/60">
-                {tx.menuName || '-'}
-              </span>
-              <span className="text-right font-semibold tabular-nums" style={{ color: '#4ade80' }}>
-                {tx.amount.toLocaleString('ko-KR')}
-              </span>
-              <span className="text-right">
-                <StatusBadge status={tx.status} />
-              </span>
-            </div>
-          ))
         ) : (
           txList.map((tx, idx) => (
             <div
@@ -235,20 +179,6 @@ export default function RealTimeDashboard({ refreshTrigger }: Props) {
           ))
         )}
       </div>
-
-      {/* 합계 행 (학생식당 모드) */}
-      {cafeteriaMode && totalCount > 0 && (
-        <div className="px-4 py-2 border-t border-white/15 flex items-center justify-between text-xs"
-             style={{ background: 'rgba(6,214,160,0.06)' }}>
-          <span className="font-semibold text-white/60">합계</span>
-          <div className="flex items-center gap-4">
-            <span className="text-white/60">총 <span className="font-bold text-white">{totalCount}</span>건</span>
-            <span style={{ color: '#06D6A0' }} className="font-bold tabular-nums">
-              {totalAmount.toLocaleString('ko-KR')}원
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* 하단 스캔 대기 */}
       <div className="px-4 py-3 border-t border-white/10 text-center"

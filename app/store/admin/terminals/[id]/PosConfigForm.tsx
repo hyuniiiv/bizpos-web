@@ -88,7 +88,7 @@ export default function PosConfigForm({
     corner: '', adminPin: '', serialPort: 'COM3',
     offlineMode: false, apiEnv: 'development',
     autoResetTime: '00:00', barcodeReaderType: 'keyboard', barcodePort: 'COM4',
-    cafeteriaMode: false, externalDisplay: false,
+    externalDisplay: false,
     showPaymentList: false, receiptPrint: true, tableCount: 0,
     ...(initialConfig ?? {}),
   })
@@ -338,21 +338,6 @@ export default function PosConfigForm({
                   <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform"
                     style={{ transform: device.offlineMode ? 'translateX(22px)' : 'translateX(4px)' }} />
                 </button>
-              </div>
-              {/* 학생식당 모드 */}
-              <div className="p-3 rounded-lg space-y-1" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: device.cafeteriaMode ? '#06D6A0' : 'rgba(255,255,255,0.70)' }}>
-                    학생식당 모드
-                  </span>
-                  <button type="button" onClick={() => d('cafeteriaMode', !(device.cafeteriaMode ?? false))}
-                    className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors shrink-0 ml-2"
-                    style={{ background: device.cafeteriaMode ? '#06D6A0' : 'rgba(255,255,255,0.15)' }}>
-                    <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform"
-                      style={{ transform: device.cafeteriaMode ? 'translateX(22px)' : 'translateX(4px)' }} />
-                  </button>
-                </div>
-                <p className="text-xs text-white/35">태블릿 가로(768px+)에서 스캔+이력 동시 표시</p>
               </div>
             </div>
 

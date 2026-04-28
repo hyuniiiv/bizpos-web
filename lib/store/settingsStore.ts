@@ -41,7 +41,6 @@ export const useSettingsStore = create<SettingsStore>()(
         barcodeReaderType: 'keyboard' as const,
         barcodePort: 'COM4',
         externalDisplay: true,
-        cafeteriaMode: false,
         inputPolicy: {
           barcode: 'bizplay_payment',
           qr: 'bizplay_payment',
