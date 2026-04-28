@@ -273,12 +273,23 @@ export default function PosAdminPage() {
     setPinInput(''); setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
+  const syncMenusToServer = useCallback(() => {
+    if (!deviceToken || deviceToken === 'manual') return
+    const { menus: m, periods: p, serviceCodes: s } = useMenuStore.getState()
+    fetch(getServerUrl() + '/api/device/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken}` },
+      body: JSON.stringify({ ...config, menus: m, periods: p, serviceCodes: s }),
+    }).catch(() => {})
+  }, [deviceToken, config])
+
   const openAddMenu = () => { setEditingMenu(null); setMenuForm({ mealType: 'lunch', name: '', displayAmount: 8000, paymentAmount: 8000, startTime: '11:30', endTime: '13:00', soundFile: 'success.mp3', isActive: true }); setShowMenuForm(true) }
   const openEditMenu = (m: MenuConfig) => { setEditingMenu(m); setMenuForm({ ...m }); setShowMenuForm(true) }
   const handleMenuSave = () => {
     if (!menuForm.name || !menuForm.startTime || !menuForm.endTime) return
     if (editingMenu) updateMenu(editingMenu.id, menuForm); else addMenu(menuForm as Omit<MenuConfig, 'id' | 'count'>)
     setShowMenuForm(false); setMenuForm({})
+    syncMenusToServer()
   }
 
   const groupedMenus = (Object.keys(MEAL_LABELS) as MealType[]).map(mt => ({ mealType: mt, label: MEAL_LABELS[mt], menus: menus.filter(m => m.mealType === mt) }))
@@ -395,7 +406,7 @@ export default function PosAdminPage() {
                 <h3 className="text-sm font-semibold text-white/80">식사시간대 기본 설정</h3>
                 {!editingPeriods
                   ? <button onClick={() => { setPeriodDraft([...periods]); setEditingPeriods(true) }} className="text-sm text-blue-400 hover:text-blue-300">수정</button>
-                  : <div className="flex gap-3"><button onClick={() => setEditingPeriods(false)} className="text-sm text-white/50">취소</button><button onClick={() => { setPeriods(periodDraft); setEditingPeriods(false) }} className="text-sm text-blue-400 font-semibold">저장</button></div>
+                  : <div className="flex gap-3"><button onClick={() => setEditingPeriods(false)} className="text-sm text-white/50">취소</button><button onClick={() => { setPeriods(periodDraft); setEditingPeriods(false); syncMenusToServer() }} className="text-sm text-blue-400 font-semibold">저장</button></div>
                 }
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -438,7 +449,7 @@ export default function PosAdminPage() {
                             <td className="px-4 py-3 text-right text-white/80">{m.paymentAmount.toLocaleString()}</td>
                             <td className="px-4 py-3 text-center text-white/60">{m.startTime}~{m.endTime}</td>
                             <td className="px-4 py-3 text-center">
-                              <button onClick={() => updateMenu(m.id, { isActive: !m.isActive })}>
+                              <button onClick={() => { updateMenu(m.id, { isActive: !m.isActive }); syncMenusToServer() }}>
                                 <span className={`w-10 h-5 rounded-full inline-flex relative transition-colors ${m.isActive ? 'bg-green-500' : 'bg-white/20'}`}>
                                   <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${m.isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
                                 </span>
@@ -446,7 +457,7 @@ export default function PosAdminPage() {
                             </td>
                             <td className="px-4 py-3 text-center space-x-2">
                               <button onClick={() => openEditMenu(m)} className="text-blue-400 hover:text-blue-300 text-xs">수정</button>
-                              <button onClick={() => deleteMenu(m.id)} className="text-red-400 hover:text-red-300 text-xs">삭제</button>
+                              <button onClick={() => { deleteMenu(m.id); syncMenusToServer() }} className="text-red-400 hover:text-red-300 text-xs">삭제</button>
                             </td>
                           </tr>
                         ))}
