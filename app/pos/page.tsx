@@ -23,6 +23,7 @@ import BarcodeReader from '@/components/pos/BarcodeReader'
 import StatusBar from '@/components/pos/StatusBar'
 import RealTimeDashboard from '@/components/pos/RealTimeDashboard'
 import ScanWaitScreen from '@/components/pos/ScanWaitScreen'
+import MenuSelectScreen from '@/components/pos/MenuSelectScreen'
 import ProcessingScreen from '@/components/pos/ProcessingScreen'
 import SuccessScreen from '@/components/pos/SuccessScreen'
 import FailScreen from '@/components/pos/FailScreen'
@@ -162,16 +163,25 @@ export default function PosPage() {
     }
   }, [setPendingCount])
 
+  // 마운트 직후 + 30초 주기로 현재 운영 모드에 맞게 화면 전환
+  // IDB 비동기 hydration 완료 후에도 재실행
   useEffect(() => {
-    const interval = setInterval(() => {
+    const syncScreen = () => {
+      if (!useMenuStore.persist.hasHydrated()) return
       if (screen === 'single' || screen === 'menu-select') {
         const mode = getCurrentMode()
         if (mode === 'multi' && screen === 'single') setScreen('menu-select')
         else if (mode === 'single' && screen === 'menu-select') setScreen('single')
       }
-    }, 30_000)
-    return () => clearInterval(interval)
-  }, [screen, getCurrentMode])
+    }
+    syncScreen()
+    const unsubHydration = useMenuStore.persist.onFinishHydration(syncScreen)
+    const interval = setInterval(syncScreen, 30_000)
+    return () => {
+      clearInterval(interval)
+      unsubHydration()
+    }
+  }, [screen, getCurrentMode, setScreen])
 
   useEffect(() => {
     const checkReset = setInterval(() => {
@@ -397,6 +407,7 @@ export default function PosPage() {
 
   const renderMainScreen = () => {
     if (!isOnline && screen !== 'processing') return <OfflineScreen />
+    if (screen === 'menu-select') return <MenuSelectScreen />
     if (screen === 'scan-wait') return <ScanWaitScreen refreshTrigger={txRefreshTrigger} />
     return <RealTimeDashboard refreshTrigger={txRefreshTrigger} />
   }
@@ -444,7 +455,7 @@ export default function PosPage() {
         <div className="hidden md:flex flex-1 overflow-hidden">
           <div className="flex flex-col overflow-hidden" style={{ flex: config.showPaymentList ? '0 0 58%' : '1 1 100%' }}>
             <div className="flex-1 overflow-hidden">
-              {!isOnline && screen !== 'processing' ? <OfflineScreen /> : <ScanWaitScreen refreshTrigger={txRefreshTrigger} />}
+              {!isOnline && screen !== 'processing' ? <OfflineScreen /> : screen === 'menu-select' ? <MenuSelectScreen /> : <ScanWaitScreen refreshTrigger={txRefreshTrigger} />}
             </div>
             <ScanLogBar value={scanLog?.value ?? null} time={scanLog?.time ?? null} />
             <StatusBar lastMessage={lastMsgRef.current} lastOrderId={lastTransaction?.merchantOrderID} />
@@ -459,7 +470,7 @@ export default function PosPage() {
         <div className="hidden lg:flex flex-1 overflow-hidden">
           <div className="flex flex-col overflow-hidden" style={{ flex: config.showPaymentList ? '0 0 58%' : '1 1 100%' }}>
             <div className="flex-1 overflow-hidden">
-              {!isOnline && screen !== 'processing' ? <OfflineScreen /> : <ScanWaitScreen refreshTrigger={txRefreshTrigger} />}
+              {!isOnline && screen !== 'processing' ? <OfflineScreen /> : screen === 'menu-select' ? <MenuSelectScreen /> : <ScanWaitScreen refreshTrigger={txRefreshTrigger} />}
             </div>
             <ScanLogBar value={scanLog?.value ?? null} time={scanLog?.time ?? null} />
             <StatusBar lastMessage={lastMsgRef.current} lastOrderId={lastTransaction?.merchantOrderID} />

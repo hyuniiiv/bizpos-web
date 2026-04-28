@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import { idbStorage } from './idbStorage'
 import type { MenuConfig, PeriodConfig, ServiceCodeConfig, DisplayMode, PosCategory, PosMenuItem } from '@/types/menu'
 function genId() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36)
@@ -146,14 +147,7 @@ export const useMenuStore = create<MenuStore>()(
       },
 
       getCurrentMode: (): DisplayMode => {
-        const now = getNowMinutes()
-        const { periods } = get()
-        for (const p of periods) {
-          const start = timeToMinutes(p.startTime)
-          const end = timeToMinutes(p.endTime)
-          if (now >= start && now <= end) return p.mode
-        }
-        return 'single'
+        return get().getActiveMenus().length >= 2 ? 'multi' : 'single'
       },
 
       setPeriods: (periods) => set({ periods }),
@@ -181,6 +175,6 @@ export const useMenuStore = create<MenuStore>()(
         posMenuItems: s.posMenuItems.filter(m => m.id !== id)
       })),
     }),
-    { name: 'bizpos-menu-store' }
+    { name: 'bizpos-menu-store', storage: createJSONStorage(() => idbStorage) }
   )
 )

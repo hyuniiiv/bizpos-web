@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import bcrypt from 'bcryptjs'
+import { idbStorage } from './idbStorage'
 import type { DeviceConfig } from '@/types/menu'
 
 export type TerminalType = 'ticket_checker' | 'pos' | 'kiosk' | 'table_order'
@@ -71,6 +72,7 @@ export const useSettingsStore = create<SettingsStore>()(
     }),
     {
       name: 'bizpos-settings',
+      storage: createJSONStorage(() => idbStorage),
       merge: (persisted: unknown, current: SettingsStore) => {
         const p = persisted as Partial<SettingsStore>
         return {
