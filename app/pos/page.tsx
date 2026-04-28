@@ -13,6 +13,7 @@ import { checkAndMarkBarcode } from '@/lib/db/indexeddb' // Keep IndexedDB for b
 import { createDeviceBridge, type DeviceBridge } from '@/lib/device/bridge'
 import { getServerUrl } from '@/lib/serverUrl'
 import { flushOfflineQueue } from '@/lib/txSync'
+import { resolveApproveFailure } from '@/lib/payment/paymentFlow'
 
 import ActivationScreen from '@/components/pos/ActivationScreen'
 import PosScreen from '@/components/pos/screens/PosScreen'
@@ -335,6 +336,25 @@ export default function PosPage() {
       }).then(r => r.json())
 
       if (approveRes.code !== '0000') {
+        // PG 실제 상태 조회 — 타임아웃 후 실제로는 성공했을 수 있음
+        const { isActuallySucceeded } = await resolveApproveFailure({
+          serverUrl: getServerUrl(),
+          deviceToken: deviceToken ?? '',
+          merchantOrderID,
+          tid: reserveRes.data?.tid ?? '',
+          markPaymentSynced: (id) => PaymentRepository.markPaymentSynced(id),
+        })
+
+        if (isActuallySucceeded) {
+          // PG 승인 성공 → 정상 처리
+          incrementCount(menu.id)
+          lastMsgRef.current = '정상결제 됨.'
+          clearMenu()
+          setTxRefreshTrigger(t => t + 1)
+          setScreen('success')
+          return
+        }
+
         setLastError(approveRes.msg)
         setScreen('fail')
         return
