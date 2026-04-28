@@ -4,6 +4,7 @@ import Link from 'next/link'
 import PosConfigForm from './PosConfigForm'
 import CloneTerminalButton from './CloneTerminalButton'
 import { UpdateCommandButton } from './UpdateCommandButton'
+import TerminalCommandPanel from '@/components/dashboard/TerminalCommandPanel'
 
 export const revalidate = 0
 
@@ -95,6 +96,10 @@ export default async function TerminalDetailPage({
               </div>
             )}
             <UpdateCommandButton terminalId={id} />
+          </div>
+          <div className="glass-card rounded-xl p-4 space-y-3">
+            <p className="text-xs font-semibold text-white/50 uppercase tracking-wide">원격 명령</p>
+            <TerminalCommandPanel terminalId={id} online={terminal.status === 'online'} />
           </div>
           <CloneTerminalButton configJson={configRow?.config ?? null} />
         </div>

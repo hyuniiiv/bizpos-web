@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Role } from '@/lib/roles/permissions'
+import TerminalCommandMenu from '@/components/dashboard/TerminalCommandMenu'
 
 type TerminalType = 'ticket_checker' | 'pos' | 'kiosk' | 'table_order'
 
@@ -97,6 +98,7 @@ export default function TerminalsClient({
               <th className="text-left px-4 py-3 font-medium hidden md:table-cell">매장</th>
               <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">타입</th>
               <th className="text-left px-4 py-3 font-medium">상태</th>
+              <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
@@ -143,6 +145,9 @@ export default function TerminalsClient({
                       }`} />
                       {terminal.status === 'online' ? '온라인' : '오프라인'}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
+                    <TerminalCommandMenu terminalId={terminal.id} online={terminal.status === 'online'} />
                   </td>
                 </tr>
               ))

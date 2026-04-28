@@ -1,12 +1,10 @@
 'use client'
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSettingsStore } from '@/lib/store/settingsStore'
 import { useMenuStore } from '@/lib/store/menuStore'
-import type { MenuConfig, MealType, PeriodConfig } from '@/types/menu'
+import type { MealType } from '@/types/menu'
 import type { Transaction } from '@/types/payment'
-import { MenuSettingForm } from '@/components/admin/MenuSettingForm'
-import PosMenuSetting from '@/components/admin/PosMenuSetting'
 import { SummaryBar } from '@/components/admin/SummaryBar'
 import { RealtimeTable } from '@/components/admin/RealtimeTable'
 import { TransactionRow } from '@/components/admin/TransactionRow'
@@ -31,7 +29,7 @@ const readOnlyStyle = { background: 'rgba(255,255,255,0.03)', border: '1px solid
 export default function PosAdminPage() {
   const router = useRouter()
   const { config, updateConfig, verifyPin, clearDeviceToken, terminalType, deviceToken, deviceTerminalId } = useSettingsStore()
-  const { menus, periods, serviceCodes, resetCount, decrementCount, incrementCount, clearAll, addMenu, updateMenu, deleteMenu, setPeriods, addServiceCode, deleteServiceCode } = useMenuStore()
+  const { menus, resetCount, decrementCount, incrementCount, clearAll } = useMenuStore()
 
   // PIN
   const [pin, setPin] = useState('')
@@ -45,14 +43,6 @@ export default function PosAdminPage() {
   // 현황
   const [confirmReset, setConfirmReset] = useState<string | null>(null)
   const totalCount = menus.reduce((sum, m) => sum + m.count, 0)
-
-  // 메뉴
-  const [editingMenu, setEditingMenu] = useState<MenuConfig | null>(null)
-  const [menuForm, setMenuForm] = useState<Partial<MenuConfig>>({})
-  const [showMenuForm, setShowMenuForm] = useState(false)
-  const [editingPeriods, setEditingPeriods] = useState(false)
-  const [periodDraft, setPeriodDraft] = useState<PeriodConfig[]>([])
-  const [newSvcCode, setNewSvcCode] = useState({ code: '', menuName: '', amount: '' })
 
   // 거래
   const [txView, setTxView] = useState<TxView>('realtime')
@@ -282,25 +272,6 @@ export default function PosAdminPage() {
     setPinInput(''); setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
-  const syncMenusToServer = useCallback(() => {
-    if (!deviceToken || deviceToken === 'manual') return
-    const { menus: m, periods: p, serviceCodes: s } = useMenuStore.getState()
-    fetch(getServerUrl() + '/api/device/config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken}` },
-      body: JSON.stringify({ ...config, menus: m, periods: p, serviceCodes: s }),
-    }).catch(() => {})
-  }, [deviceToken, config])
-
-  const openAddMenu = () => { setEditingMenu(null); setMenuForm({ mealType: 'lunch', name: '', displayAmount: 8000, paymentAmount: 8000, startTime: '11:30', endTime: '13:00', soundFile: 'success.mp3', isActive: true }); setShowMenuForm(true) }
-  const openEditMenu = (m: MenuConfig) => { setEditingMenu(m); setMenuForm({ ...m }); setShowMenuForm(true) }
-  const handleMenuSave = () => {
-    if (!menuForm.name || !menuForm.startTime || !menuForm.endTime) return
-    if (editingMenu) updateMenu(editingMenu.id, menuForm); else addMenu(menuForm as Omit<MenuConfig, 'id' | 'count'>)
-    setShowMenuForm(false); setMenuForm({})
-    syncMenusToServer()
-  }
-
   const groupedMenus = (Object.keys(MEAL_LABELS) as MealType[]).map(mt => ({ mealType: mt, label: MEAL_LABELS[mt], menus: menus.filter(m => m.mealType === mt) }))
 
   // PIN gate
@@ -402,115 +373,84 @@ export default function PosAdminPage() {
           </div>
         )}
 
-        {/* 메뉴 */}
-        {tab === 'menus' && terminalType !== 'ticket_checker' && (
-          <div>
-            <h2 className="text-xl font-bold text-white mb-4">메뉴 설정</h2>
-            <PosMenuSetting />
-          </div>
-        )}
-
-        {tab === 'menus' && terminalType === 'ticket_checker' && (
+        {/* 메뉴 — 읽기 전용 (수정은 웹 admin에서) */}
+        {tab === 'menus' && (
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">메뉴 설정</h2>
-              <button onClick={openAddMenu} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: 'rgba(96,165,250,0.25)', border: '1px solid rgba(96,165,250,0.40)' }}>+ 메뉴 추가</button>
+              <span className="text-xs text-white/40 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                웹 admin에서 수정
+              </span>
             </div>
-            <div className="glass-card rounded-xl p-4 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-white/80">식사시간대 기본 설정</h3>
-                {!editingPeriods
-                  ? <button onClick={() => { setPeriodDraft([...periods]); setEditingPeriods(true) }} className="text-sm text-blue-400 hover:text-blue-300">수정</button>
-                  : <div className="flex gap-3"><button onClick={() => setEditingPeriods(false)} className="text-sm text-white/50">취소</button><button onClick={() => { setPeriods(periodDraft); setEditingPeriods(false); syncMenusToServer() }} className="text-sm text-blue-400 font-semibold">저장</button></div>
-                }
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                {(Object.keys(MEAL_LABELS) as MealType[]).map(mt => {
-                  const p = (editingPeriods ? periodDraft : periods).find(x => x.mealType === mt)
-                  return (
-                    <div key={mt} className="space-y-1">
-                      <p className="text-sm font-semibold text-white/50">{MEAL_LABELS[mt]}</p>
-                      {editingPeriods && p ? (
-                        <div className="flex items-center gap-1">
-                          <input type="time" value={p.startTime} onChange={e => setPeriodDraft(d => d.map(x => x.mealType === mt ? { ...x, startTime: e.target.value } : x))} className="rounded px-2 py-1.5 text-xs w-full text-white focus:outline-none" style={inputStyle} />
-                          <span className="text-white/40 text-xs">~</span>
-                          <input type="time" value={p.endTime} onChange={e => setPeriodDraft(d => d.map(x => x.mealType === mt ? { ...x, endTime: e.target.value } : x))} className="rounded px-2 py-1.5 text-xs w-full text-white focus:outline-none" style={inputStyle} />
-                        </div>
-                      ) : <p className="text-sm text-white font-mono">{p ? `${p.startTime}~${p.endTime}` : '미설정'}</p>}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-            {groupedMenus.map(({ mealType, label, menus: mealMenus }) => (
-              <div key={mealType} className="mb-4">
-                <h3 className="text-sm font-semibold text-white/50 mb-2">{label}</h3>
-                <div className="glass-card rounded-xl overflow-hidden">
-                  {mealMenus.length === 0 ? <p className="px-4 py-5 text-center text-white/40 text-sm">메뉴가 없습니다</p> : (
-                    <table className="w-full text-sm">
-                      <thead className="border-b border-white/10" style={{ background: 'rgba(255,255,255,0.03)' }}><tr>
-                        <th className="px-4 py-3 text-left text-white/50">메뉴명</th>
-                        <th className="px-4 py-3 text-right text-white/50">화면금액</th>
-                        <th className="px-4 py-3 text-right text-white/50">결제금액</th>
-                        <th className="px-4 py-3 text-center text-white/50">판매시간</th>
-                        <th className="px-4 py-3 text-center text-white/50">활성</th>
-                        <th className="px-4 py-3 text-center text-white/50">관리</th>
-                      </tr></thead>
-                      <tbody className="divide-y divide-white/5">
-                        {mealMenus.map(m => (
-                          <tr key={m.id} className="hover:bg-white/5 transition-colors">
-                            <td className="px-4 py-3 font-medium text-white">{m.name}</td>
-                            <td className="px-4 py-3 text-right text-white/80">{m.displayAmount.toLocaleString()}</td>
-                            <td className="px-4 py-3 text-right text-white/80">{m.paymentAmount.toLocaleString()}</td>
-                            <td className="px-4 py-3 text-center text-white/60">{m.startTime}~{m.endTime}</td>
-                            <td className="px-4 py-3 text-center">
-                              <button onClick={() => { updateMenu(m.id, { isActive: !m.isActive }); syncMenusToServer() }}>
-                                <span className={`w-10 h-5 rounded-full inline-flex relative transition-colors ${m.isActive ? 'bg-green-500' : 'bg-white/20'}`}>
-                                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${m.isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                                </span>
-                              </button>
-                            </td>
-                            <td className="px-4 py-3 text-center space-x-2">
-                              <button onClick={() => openEditMenu(m)} className="text-blue-400 hover:text-blue-300 text-xs">수정</button>
-                              <button onClick={() => { deleteMenu(m.id); syncMenusToServer() }} className="text-red-400 hover:text-red-300 text-xs">삭제</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-            ))}
-            {showMenuForm && <MenuSettingForm editing={editingMenu} form={menuForm} onChange={u => setMenuForm(f => ({ ...f, ...u }))} onSave={handleMenuSave} onClose={() => { setShowMenuForm(false); setMenuForm({}) }} />}
 
-            {/* 서비스 구분코드 */}
-            <div className="glass-card rounded-xl p-4 mt-4">
-              <h3 className="text-sm font-bold text-white mb-1">서비스 구분코드 설정</h3>
-              <p className="text-xs text-white/40 mb-3">바코드 특정 자리 값(2자리)에 따른 차등 가격 운영</p>
-              <div className="space-y-2 mb-3">
-                {serviceCodes.length === 0 && <p className="text-xs text-white/30 text-center py-1">등록된 코드 없음</p>}
-                {serviceCodes.map(sc => (
-                  <div key={sc.id} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    <span className="font-mono text-sm bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">{sc.code}</span>
-                    {sc.menuName && <span className="text-sm text-white/60 flex-1">{sc.menuName}</span>}
-                    {!sc.menuName && <span className="flex-1" />}
-                    <span className="text-sm font-semibold text-white">{sc.amount.toLocaleString()}원</span>
-                    <button onClick={() => deleteServiceCode(sc.id)} className="text-red-400 text-xs hover:text-red-300 transition-colors">삭제</button>
+            {terminalType === 'ticket_checker' ? (
+              <>
+                {/* 메뉴 목록 */}
+                {groupedMenus.map(({ mealType, label, menus: mealMenus }) => (
+                  <div key={mealType} className="mb-4">
+                    <h3 className="text-sm font-semibold text-white/50 mb-2">{label}</h3>
+                    <div className="glass-card rounded-xl overflow-hidden">
+                      {mealMenus.length === 0 ? (
+                        <p className="px-4 py-5 text-center text-white/30 text-sm">메뉴가 없습니다</p>
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead className="border-b border-white/10" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                            <tr>
+                              <th className="px-4 py-3 text-left text-white/40">메뉴명</th>
+                              <th className="px-4 py-3 text-right text-white/40">화면금액</th>
+                              <th className="px-4 py-3 text-right text-white/40">결제금액</th>
+                              <th className="px-4 py-3 text-center text-white/40">판매시간</th>
+                              <th className="px-4 py-3 text-center text-white/40">사운드</th>
+                              <th className="px-4 py-3 text-center text-white/40">활성</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5">
+                            {mealMenus.map(m => (
+                              <React.Fragment key={m.id}>
+                                <tr>
+                                  <td className="px-4 py-3 font-medium text-white">{m.name}</td>
+                                  <td className="px-4 py-3 text-right text-white/70">{m.displayAmount.toLocaleString()}</td>
+                                  <td className="px-4 py-3 text-right text-white/70">{m.paymentAmount.toLocaleString()}</td>
+                                  <td className="px-4 py-3 text-center text-white/60">{m.startTime}~{m.endTime}</td>
+                                  <td className="px-4 py-3 text-center text-white/50 text-xs">{m.soundFile || '—'}</td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${m.isActive ? 'text-green-400 bg-green-500/15' : 'text-white/30 bg-white/5'}`}>
+                                      {m.isActive ? '활성' : '비활성'}
+                                    </span>
+                                  </td>
+                                </tr>
+                                {m.serviceCodes && m.serviceCodes.length > 0 && (
+                                  <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                    <td colSpan={6} className="px-4 py-2">
+                                      <div className="flex flex-wrap gap-2">
+                                        {m.serviceCodes.map(sc => (
+                                          <span key={sc.id} className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs" style={{ background: 'rgba(96,165,250,0.10)', border: '1px solid rgba(96,165,250,0.25)' }}>
+                                            <span className="font-mono text-blue-300">{sc.code}</span>
+                                            {sc.description && <span className="text-white/50">{sc.description}</span>}
+                                            <span className="text-white/70">{sc.amount.toLocaleString()}원</span>
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
                   </div>
                 ))}
+
+              </>
+            ) : (
+              /* POS/Kiosk 모드: 메뉴 목록 요약 */
+              <div className="glass-card rounded-xl p-6 text-center" style={{ border: '1px solid rgba(255,255,255,0.10)' }}>
+                <p className="text-white/50 text-sm">메뉴 수정은 웹 admin에서 관리하세요.</p>
+                <p className="text-white/30 text-xs mt-1">현재 {menus.length > 0 ? `${menus.length}개 메뉴 설정됨` : '설정된 메뉴 없음'}</p>
               </div>
-              <div className="flex gap-2">
-                <input className="w-16 rounded-lg px-3 py-2.5 text-sm font-mono text-white focus:outline-none shrink-0" style={inputStyle} placeholder="코드" maxLength={2} value={newSvcCode.code} onChange={e => setNewSvcCode(n => ({ ...n, code: e.target.value }))} />
-                <input className="flex-1 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none" style={inputStyle} placeholder="설명 (선택)" value={newSvcCode.menuName} onChange={e => setNewSvcCode(n => ({ ...n, menuName: e.target.value }))} />
-                <input type="number" className="w-24 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none shrink-0" style={inputStyle} placeholder="금액" value={newSvcCode.amount} onChange={e => setNewSvcCode(n => ({ ...n, amount: e.target.value }))} />
-                <button onClick={() => {
-                  if (!newSvcCode.code) return
-                  addServiceCode({ code: newSvcCode.code, menuName: newSvcCode.menuName, amount: Number(newSvcCode.amount) || 0 })
-                  setNewSvcCode({ code: '', menuName: '', amount: '' })
-                }} className="px-4 py-2.5 rounded-lg text-sm font-medium text-white whitespace-nowrap shrink-0" style={{ background: 'rgba(96,165,250,0.25)', border: '1px solid rgba(96,165,250,0.40)' }}>+ 추가</button>
-              </div>
-            </div>
+            )}
           </div>
         )}
 

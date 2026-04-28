@@ -483,6 +483,11 @@ export default function PosConfigForm({
                         onChange={e => { const u = [...menus]; u[i] = { ...menu, endTime: e.target.value }; setMenus(u) }} />
                     </div>
                   </div>
+                  <div className="col-span-2">
+                    <label className={labelCls}>사운드 파일</label>
+                    <input className={inputCls} style={inputStyle} value={menu.soundFile ?? ''} placeholder="success.mp3"
+                      onChange={e => { const u = [...menus]; u[i] = { ...menu, soundFile: e.target.value }; setMenus(u) }} />
+                  </div>
                 </div>
 
                 {/* 서비스 구분코드 (메뉴별) */}
