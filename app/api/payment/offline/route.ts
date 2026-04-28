@@ -44,19 +44,24 @@ export async function POST(req: NextRequest) {
       barcodeType: rec.barcodeType,
     }))
 
-    const result = await client.syncOffline(bizplayRecords)
+    // 건별 순차 처리 — 부분 성공 시 성공한 건만 syncedIds에 포함
     const syncedIds: string[] = []
+    const supabase = createAdminClient()
 
-    if (result.code === '0000') {
-      const supabase = createAdminClient()
+    const { data: terminalRow } = await supabase
+      .from('terminals')
+      .select('id, merchant_id')
+      .eq('term_id', termId)
+      .single()
 
-      const { data: terminalRow } = await supabase
-        .from('terminals')
-        .select('id, merchant_id')
-        .eq('term_id', termId)
-        .single()
+    for (let i = 0; i < records.length; i++) {
+      const rec = records[i]
+      const bizplayRec = bizplayRecords[i]
 
-      for (const rec of records) {
+      try {
+        const result = await client.syncOffline([bizplayRec])
+        if (result.code !== '0000') continue  // 실패한 건은 큐에 유지
+
         const paymentType =
           rec.barcodeType === '3' ? 'rfcard' : rec.barcodeType === '2' ? 'qr' : 'barcode'
         const approvedAt = new Date().toISOString()
@@ -101,10 +106,12 @@ export async function POST(req: NextRequest) {
         addTransaction(tx)
         emitTransaction(tx)
         syncedIds.push(rec.merchantOrderID)
+      } catch (recErr) {
+        console.error(`[offline] record ${rec.merchantOrderID} failed:`, recErr)
       }
     }
 
-    return NextResponse.json({ ...result, synced: syncedIds.length, syncedIds })
+    return NextResponse.json({ code: '0000', synced: syncedIds.length, syncedIds })
   } catch (err) {
     console.error('[offline sync] Error:', err)
     return NextResponse.json(
