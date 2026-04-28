@@ -43,9 +43,10 @@ export default function StoresClient({
     return map
   }, [terminals])
 
-  const canAddStore = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN].includes(myRole as any)
-  const canEditStore = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN, ROLES.STORE_ADMIN].includes(myRole as any)
-  const canDeleteStore = [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN].includes(myRole as any)
+  const isTerminalAdmin = myRole === ROLES.TERMINAL_ADMIN
+  const canAddStore = !isTerminalAdmin && [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN].includes(myRole as any)
+  const canEditStore = !isTerminalAdmin && [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN, ROLES.STORE_ADMIN].includes(myRole as any)
+  const canDeleteStore = !isTerminalAdmin && [ROLES.PLATFORM_ADMIN, ROLES.MERCHANT_ADMIN].includes(myRole as any)
 
   const [storeModal, setStoreModal] = useState<{ mode: 'add' | 'edit'; target?: Store } | null>(null)
   const [storeForm, setStoreForm] = useState<StoreForm>(EMPTY_STORE)

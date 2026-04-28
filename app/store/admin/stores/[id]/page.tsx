@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import StoreDetailClient from './StoreDetailClient'
 import { getEmailMapByIds } from '@/lib/supabase/emailMap'
 
@@ -88,25 +89,30 @@ export default async function StoreDetailPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  const isTerminalAdmin = user?.app_metadata?.role === 'terminal_admin'
+  const adminDb = createAdminClient()
+
   const [store, terminals] = await Promise.all([
-    getStore(supabase, id),
-    getTerminals(supabase, id),
+    getStore(adminDb, id),
+    getTerminals(adminDb, id),
   ])
 
   if (!store) {
     notFound()
   }
 
-  const managers = await getStoreManagers(supabase, id)
+  const managers = await getStoreManagers(adminDb, id)
 
-  const { data: membership } = await supabase
-    .from('merchant_users')
-    .select('role')
-    .eq('user_id', user?.id || '')
-    .single()
+  const { data: membership } = isTerminalAdmin
+    ? { data: null }
+    : await adminDb
+        .from('merchant_users')
+        .select('role')
+        .eq('user_id', user?.id || '')
+        .single()
 
-  const canEdit = membership?.role === 'platform_admin' || membership?.role === 'merchant_admin'
-  const canDelete = membership?.role === 'platform_admin'
+  const canEdit = !isTerminalAdmin && (membership?.role === 'platform_admin' || membership?.role === 'merchant_admin')
+  const canDelete = !isTerminalAdmin && membership?.role === 'platform_admin'
 
   return (
     <StoreDetailClient

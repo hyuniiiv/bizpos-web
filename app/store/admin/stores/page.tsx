@@ -46,12 +46,22 @@ export default async function StoresPage() {
 
   const { data: stores } = await q
 
+  // 매장별 단말기 수 표시용
+  const storeIds = (stores ?? []).map((s: any) => s.id)
+  const { data: terminals } = storeIds.length > 0
+    ? await adminDb
+        .from('terminals')
+        .select('id, store_id, term_id, name, status')
+        .in('store_id', storeIds)
+    : { data: [] }
+
   return (
     <StoresClient
       stores={(stores ?? []) as Store[]}
       myRole={role}
       merchantId={membership?.merchant_id ?? ''}
       merchantName={undefined}
+      terminals={terminals ?? []}
     />
   )
 }
