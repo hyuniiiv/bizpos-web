@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { Merchant, Store } from '@/lib/context/MerchantStoreContext'
 import MerchantDetailClient from './MerchantDetailClient'
 
@@ -58,9 +59,10 @@ async function getMembers(supabase: any, merchantId: string): Promise<MerchantMe
   }
 }
 
-async function getAllUsers(supabase: any, currentMemberUserIds: string[]): Promise<AvailableUser[]> {
+async function getAllUsers(_supabase: any, currentMemberUserIds: string[]): Promise<AvailableUser[]> {
   try {
-    const { data: users, error } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+    const admin = createAdminClient()
+    const { data: users, error } = await admin.auth.admin.listUsers({ perPage: 1000 })
     if (error || !users) return []
     return users.users
       .filter((u: any) => !currentMemberUserIds.includes(u.id))
