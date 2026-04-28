@@ -760,8 +760,11 @@ const handleAddStore = async () => {
                     className="w-full px-3 py-2 rounded-lg text-sm"
                     style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)', color: 'white' }}
                   >
-                    <option value="merchant_admin">관리자</option>
-                    <option value="merchant_manager">매니저</option>
+                    <option value="merchant_admin">관리자 (merchant_admin)</option>
+                    <option value="merchant_manager">매니저 (merchant_manager)</option>
+                    <option value="store_admin">매장 관리자 (store_admin)</option>
+                    <option value="store_manager">매장 매니저 (store_manager)</option>
+                    <option value="terminal_admin">단말기 관리자 (terminal_admin)</option>
                   </select>
                 </div>
               </div>
@@ -773,8 +776,8 @@ const handleAddStore = async () => {
                 <div>
                   <label className="block text-xs font-medium text-white mb-1">ID (이메일)</label>
                   <input
-                    type="email"
-                    placeholder="member@example.com"
+                    type="text"
+                    placeholder="member@example.com 또는 사용자명"
                     value={addFormData.email}
                     onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg text-sm"
@@ -800,8 +803,11 @@ const handleAddStore = async () => {
                     className="w-full px-3 py-2 rounded-lg text-sm"
                     style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)', color: 'white' }}
                   >
-                    <option value="merchant_admin">관리자</option>
-                    <option value="merchant_manager">매니저</option>
+                    <option value="merchant_admin">관리자 (merchant_admin)</option>
+                    <option value="merchant_manager">매니저 (merchant_manager)</option>
+                    <option value="store_admin">매장 관리자 (store_admin)</option>
+                    <option value="store_manager">매장 매니저 (store_manager)</option>
+                    <option value="terminal_admin">단말기 관리자 (terminal_admin)</option>
                   </select>
                 </div>
               </div>
