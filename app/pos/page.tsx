@@ -115,8 +115,15 @@ export default function PosPage() {
   const scanLogTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    loadDefaults()
     bridgeRef.current = createDeviceBridge()
+    // IDB 비동기 hydration 완료 후에만 loadDefaults 실행
+    // (hydration 전 실행 시 menus=[] 로 판단해 사용자 데이터를 기본값으로 덮어쓰는 버그 방지)
+    if (useMenuStore.persist.hasHydrated()) {
+      loadDefaults()
+    } else {
+      const unsub = useMenuStore.persist.onFinishHydration(() => loadDefaults())
+      return () => unsub()
+    }
   }, [])
 
   useEffect(() => {
