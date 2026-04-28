@@ -12,8 +12,9 @@ interface Props {
 export default function ScanWaitScreen({ refreshTrigger }: Props) {
   const { selectedMenu, setScreen, clearMenu } = usePosStore()
   const { config } = useSettingsStore()
-  const { getCurrentMode } = useMenuStore()
+  const { getCurrentMode, getActiveMenus } = useMenuStore()
   const isMultiMode = getCurrentMode() === 'multi'
+  const activeMenus = getActiveMenus()
   const showStatBar = !config.showPaymentList
   const [barWidths, setBarWidths] = useState<number[]>([])
   const [time, setTime] = useState('')
@@ -107,6 +108,48 @@ export default function ScanWaitScreen({ refreshTrigger }: Props) {
         ) : (
           /* ── Scan viewfinder ── */
           <div className="flex flex-col items-center gap-7 w-full pos-rise">
+
+            {/* 활성 메뉴 카드 (1개 이상일 때만 표시) */}
+            {activeMenus.length > 0 && (
+              <div className="w-full">
+                {activeMenus.length === 1 ? (
+                  <div className="rounded-2xl px-6 py-4 text-center pos-card-accent"
+                    style={{ border: '1px solid rgba(6,214,160,0.25)' }}>
+                    <p className="text-[10px] font-mono tracking-[0.22em] text-white/30 uppercase mb-1">
+                      Today&apos;s Menu
+                    </p>
+                    <p className="font-black text-white leading-none mb-1.5"
+                      style={{ fontSize: 'clamp(1.8rem, 7vmin, 2.8rem)' }}>
+                      {activeMenus[0].displayAmount.toLocaleString()}
+                      <span className="text-base font-normal ml-1.5 text-white/40">원</span>
+                    </p>
+                    <p className="font-semibold text-white/60" style={{ fontSize: 'clamp(0.9rem, 3vmin, 1.1rem)' }}>
+                      {activeMenus[0].name}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl px-4 py-3 w-full"
+                    style={{ background: 'rgba(6,214,160,0.07)', border: '1px solid rgba(6,214,160,0.18)' }}>
+                    <p className="text-[10px] font-mono tracking-[0.22em] text-white/30 uppercase mb-2 text-center">
+                      Today&apos;s Menu
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {activeMenus.map(m => (
+                        <div key={m.id} className="rounded-xl px-4 py-2 text-center"
+                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          <p className="font-bold text-white text-lg leading-none">
+                            {m.displayAmount.toLocaleString()}
+                            <span className="text-xs font-normal ml-1 text-white/40">원</span>
+                          </p>
+                          <p className="text-xs text-white/50 mt-0.5">{m.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Viewfinder frame */}
             <div
               className="relative flex items-center justify-center"
