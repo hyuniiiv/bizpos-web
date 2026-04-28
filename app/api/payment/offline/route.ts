@@ -18,8 +18,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: '0000', msg: '동기화 항목 없음', synced: 0, syncedIds: [] })
     }
 
-    const termId = records[0]?.termId
-    const client = await getBizplayClientForTerminal(termId ?? '')
+    // JWT에서 검증된 termId 사용 (records 바디 값 신뢰 금지)
+    const termId = auth.payload.termId
+
+    // 모든 레코드가 인증된 단말기 소속인지 검증
+    const invalidRecords = records.filter(r => r.termId && r.termId !== termId)
+    if (invalidRecords.length > 0) {
+      return NextResponse.json(
+        { code: 'E403', msg: `허용되지 않은 단말기 레코드 포함: ${invalidRecords.map(r => r.termId).join(', ')}` },
+        { status: 403 }
+      )
+    }
+
+    const client = await getBizplayClientForTerminal(termId)
 
     // OfflineRecord → Bizplay API 형식 변환
     const bizplayRecords = records.map(rec => ({

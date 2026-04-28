@@ -11,12 +11,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json() as {
-      termId: string
       merchantOrderID: string
       tid: string
     }
 
-    const client = await getBizplayClientForTerminal(body.termId)
+    // JWT에서 검증된 termId 사용 (바디 값 신뢰 금지)
+    const client = await getBizplayClientForTerminal(auth.payload.termId)
     const result = await client.getTransactionResult({
       merchantOrderID: body.merchantOrderID,
       tid: body.tid,
