@@ -55,7 +55,17 @@ create policy "terminal can update own commands" on public.terminal_commands
 -- ──────────────────────────────────────────────────────
 -- Realtime 활성화 (INSERT 이벤트 수신용)
 -- ──────────────────────────────────────────────────────
-alter publication supabase_realtime add table public.terminal_commands;
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'terminal_commands'
+  ) then
+    alter publication supabase_realtime add table public.terminal_commands;
+  end if;
+end $$;
 
 -- ──────────────────────────────────────────────────────
 -- Storage 버킷 (로그 / 스크린샷)

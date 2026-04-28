@@ -110,39 +110,70 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  // 단말기 JWT 인증
   const { requireTerminalAuth } = await import('@/lib/terminal/auth')
   const auth = await requireTerminalAuth(req)
   if ('error' in auth) return auth.error
 
+  const { terminalId } = auth.payload
   const { searchParams } = new URL(req.url)
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '200'), 1000)
   const offset = parseInt(searchParams.get('offset') ?? '0')
-  const date = searchParams.get('date')           // YYYY-MM-DD (단일 날짜, 하위 호환)
-  const dateStart = searchParams.get('dateStart') // YYYY-MM-DD
-  const dateEnd = searchParams.get('dateEnd')     // YYYY-MM-DD
+  const date = searchParams.get('date')
+  const dateStart = searchParams.get('dateStart')
+  const dateEnd = searchParams.get('dateEnd')
 
-  const transactions = loadFromFile()
-  let filtered = [...transactions]
-  if (dateStart && dateEnd) {
-    filtered = filtered.filter((tx: StoredTransaction) => {
-      const at: string = (tx.approvedAt ?? tx.createdAt ?? '').substring(0, 10)
-      return at >= dateStart && at <= dateEnd
-    })
-  } else if (date) {
-    filtered = filtered.filter((tx: StoredTransaction) => {
-      const at: string = tx.approvedAt ?? tx.createdAt ?? ''
-      return at.startsWith(date)
-    })
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const supabase = createAdminClient()
+
+    let query = supabase
+      .from('transactions')
+      .select('*', { count: 'exact' })
+      .eq('terminal_id', terminalId)
+      .order('approved_at', { ascending: false })
+
+    if (dateStart && dateEnd) {
+      query = query
+        .gte('approved_at', `${dateStart}T00:00:00.000Z`)
+        .lte('approved_at', `${dateEnd}T23:59:59.999Z`)
+    } else if (date) {
+      query = query
+        .gte('approved_at', `${date}T00:00:00.000Z`)
+        .lte('approved_at', `${date}T23:59:59.999Z`)
+    }
+
+    const { data, error, count } = await query.range(offset, offset + limit - 1)
+
+    if (error) {
+      console.error('[transactions GET] supabase error:', error)
+      return NextResponse.json({ error: 'DB_ERROR' }, { status: 500 })
+    }
+
+    const items = (data ?? []).map(tx => ({
+      id: tx.id,
+      merchantOrderID: tx.merchant_order_id,
+      tid: tx.tid ?? '',
+      menuId: '',
+      menuName: tx.menu_name ?? '',
+      userName: tx.user_name ?? '',
+      amount: tx.amount,
+      paymentType: tx.payment_type,
+      status: tx.status,
+      approvedAt: tx.approved_at,
+      cancelledAt: tx.cancelled_at ?? undefined,
+      barcodeInfo: tx.barcode_info ?? '',
+      synced: tx.synced,
+      createdAt: tx.created_at,
+      termId: terminalId,
+    }))
+
+    const totalAmount = items
+      .filter(tx => tx.status === 'success')
+      .reduce((sum, tx) => sum + (tx.amount ?? 0), 0)
+
+    return NextResponse.json({ total: count ?? 0, totalAmount, items })
+  } catch (e) {
+    console.error('[transactions GET] error:', e)
+    return NextResponse.json({ error: 'SERVER_ERROR' }, { status: 500 })
   }
-
-  const validFiltered = filtered.filter((tx: StoredTransaction) => (tx.status === 'success' || tx.status === 'offline'))
-  const total = validFiltered.length
-  const totalAmount = validFiltered.reduce((sum: number, tx: StoredTransaction) => sum + (tx.amount ?? 0), 0)
-
-  return NextResponse.json({
-    total,
-    totalAmount,
-    items: validFiltered.slice(offset, offset + limit),
-  })
 }
