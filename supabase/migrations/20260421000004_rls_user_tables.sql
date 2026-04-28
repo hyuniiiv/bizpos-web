@@ -19,6 +19,12 @@ $$ LANGUAGE sql SECURITY DEFINER;
 
 ALTER TABLE merchant_users ENABLE ROW LEVEL SECURITY;
 
+-- SELECT: 본인 행 직접 허용 (포털 부트스트랩 — get_my_merchant_id 순환참조 방지)
+DROP POLICY IF EXISTS mu_self_select ON merchant_users;
+CREATE POLICY mu_self_select ON merchant_users FOR SELECT USING (
+  user_id = auth.uid()
+);
+
 -- SELECT: platform admin 전체, 그 외 같은 merchant 소속
 DROP POLICY IF EXISTS mu_select ON merchant_users;
 CREATE POLICY mu_select ON merchant_users FOR SELECT USING (
