@@ -101,24 +101,28 @@ export async function POST(req: Request) {
     }
     targetUserId = existing.id
   } else {
-    if (!body.password) return NextResponse.json({ error: '비밀번호를 입력하세요.' }, { status: 400 })
-    // @ 없는 식별자는 내부 도메인 자동 부여 (Supabase 이메일 형식 요구)
     const loginEmail: string = body.email.includes('@') ? body.email : `${body.email}@bizpos.internal`
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email: loginEmail,
-      password: body.password,
-      email_confirm: true,
-    })
-    if (createErr) {
-      const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 1000 })
-      const existing = users.find(u => u.email === loginEmail)
-      if (!existing) {
-        console.error('[merchant/members POST createUser]', createErr)
-        return NextResponse.json({ error: `계정 생성 실패: ${createErr.message}` }, { status: 500 })
-      }
-      targetUserId = existing.id
+
+    // 먼저 기존 유저 조회
+    const { data: { users: allUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 })
+    const existingUser = allUsers.find(u => u.email === loginEmail)
+
+    if (existingUser) {
+      // 기존 계정 연결 — 비밀번호 불필요
+      targetUserId = existingUser.id
     } else {
-      targetUserId = created.user!.id
+      // 신규 생성 — 비밀번호 필수
+      if (!body.password) return NextResponse.json({ error: '비밀번호를 입력하세요.' }, { status: 400 })
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+        email: loginEmail,
+        password: body.password,
+        email_confirm: true,
+      })
+      if (createErr || !created.user) {
+        console.error('[merchant/members POST createUser]', createErr)
+        return NextResponse.json({ error: `계정 생성 실패: ${createErr?.message}` }, { status: 500 })
+      }
+      targetUserId = created.user.id
     }
 
     // app_metadata.role 설정 (ProtectedRoute에서 'merchant' 확인용)
