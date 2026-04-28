@@ -661,7 +661,13 @@ const handleAddStore = async () => {
                           <div>
                             <p className="text-white text-sm">{member.email}</p>
                             <p className="text-xs" style={{ color: 'var(--bp-text-3)' }}>
-                              {member.role === 'merchant_admin' ? '관리자' : '매니저'}
+                              {{
+                                merchant_admin: '관리자',
+                                merchant_manager: '매니저',
+                                store_admin: '매장 관리자',
+                                store_manager: '매장 매니저',
+                                terminal_admin: '단말기 관리자',
+                              }[member.role] ?? member.role}
                             </p>
                           </div>
                           {canDelete && (
