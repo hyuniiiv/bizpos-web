@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { SideNav, MobileNav } from './NavItem'
@@ -12,7 +13,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   if (!user) redirect('/login')
 
-  const { data: membership } = await supabase
+  const admin = createAdminClient()
+  const { data: membership } = await admin
     .from('merchant_users')
     .select('merchant_id, role')
     .eq('user_id', user.id)
