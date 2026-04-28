@@ -102,17 +102,19 @@ export async function POST(req: Request) {
     targetUserId = existing.id
   } else {
     if (!body.password) return NextResponse.json({ error: '비밀번호를 입력하세요.' }, { status: 400 })
+    // @ 없는 식별자는 내부 도메인 자동 부여 (Supabase 이메일 형식 요구)
+    const loginEmail: string = body.email.includes('@') ? body.email : `${body.email}@bizpos.internal`
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email: body.email,
+      email: loginEmail,
       password: body.password,
       email_confirm: true,
     })
     if (createErr) {
       const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 1000 })
-      const existing = users.find(u => u.email === body.email)
+      const existing = users.find(u => u.email === loginEmail)
       if (!existing) {
         console.error('[merchant/members POST createUser]', createErr)
-        return NextResponse.json({ error: '멤버 추가 중 오류가 발생했습니다.' }, { status: 500 })
+        return NextResponse.json({ error: `계정 생성 실패: ${createErr.message}` }, { status: 500 })
       }
       targetUserId = existing.id
     } else {
@@ -120,7 +122,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from('merchant_users')
     .insert({ merchant_id: merchantId, user_id: targetUserId, role: body.role })
     .select()
@@ -131,7 +133,10 @@ export async function POST(req: Request) {
     console.error('[merchant/members POST insert]', error)
     return NextResponse.json({ error: '멤버 추가 중 오류가 발생했습니다.' }, { status: 500 })
   }
-  return NextResponse.json({ data: { ...data, email: body.email } })
+  const displayEmail = PLATFORM_ROLES.has(body.role)
+    ? body.email
+    : (body.email.includes('@') ? body.email : `${body.email}@bizpos.internal`)
+  return NextResponse.json({ data: { ...data, email: displayEmail } })
 }
 
 export async function PATCH(req: Request) {
