@@ -219,6 +219,16 @@ function setupPermissions() {
         }
       }
 
+      // Rule 3: C:/any/path/file.ext (RSC tree 파일 등) → resources/nextjs/any/path/file.ext
+      const anyMatch = filePath.match(/^[A-Za-z]:\/(.+)/)
+      if (anyMatch && !fs.existsSync(filePath)) {
+        const candidate = path.join(process.resourcesPath, 'nextjs', anyMatch[1])
+        if (fs.existsSync(candidate)) {
+          callback(path.normalize(candidate))
+          return
+        }
+      }
+
       callback(path.normalize(filePath))
     })
   }
