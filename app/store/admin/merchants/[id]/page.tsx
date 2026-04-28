@@ -30,9 +30,10 @@ interface MerchantMember {
   created_at: string
 }
 
-async function getMembers(supabase: any, merchantId: string): Promise<MerchantMember[]> {
+async function getMembers(_supabase: any, merchantId: string): Promise<MerchantMember[]> {
   try {
-    const { data: members } = await supabase
+    const admin = createAdminClient()
+    const { data: members } = await admin
       .from('merchant_users')
       .select('id, user_id, role, created_at')
       .eq('merchant_id', merchantId)
@@ -41,11 +42,11 @@ async function getMembers(supabase: any, merchantId: string): Promise<MerchantMe
     if (!members || members.length === 0) return []
 
     const userIds = members.map((m: any) => m.user_id)
-    const { data: users, error } = await supabase.auth.admin.listUsers()
+    const { data: usersData, error } = await admin.auth.admin.listUsers({ perPage: 1000 })
 
-    if (error || !users) return []
+    if (error || !usersData) return []
 
-    const userMap = new Map(users.users.map((u: any) => [u.id, u.email || '']))
+    const userMap = new Map(usersData.users.map((u: any) => [u.id, u.email || '']))
 
     return members.map((m: any) => ({
       id: m.id,
