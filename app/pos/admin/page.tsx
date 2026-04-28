@@ -31,7 +31,7 @@ const readOnlyStyle = { background: 'rgba(255,255,255,0.03)', border: '1px solid
 export default function PosAdminPage() {
   const router = useRouter()
   const { config, updateConfig, verifyPin, clearDeviceToken, terminalType, deviceToken, deviceTerminalId } = useSettingsStore()
-  const { menus, periods, resetCount, clearAll, addMenu, updateMenu, deleteMenu, setPeriods } = useMenuStore()
+  const { menus, periods, serviceCodes, resetCount, decrementCount, incrementCount, clearAll, addMenu, updateMenu, deleteMenu, setPeriods, addServiceCode, deleteServiceCode } = useMenuStore()
 
   // PIN
   const [pin, setPin] = useState('')
@@ -52,6 +52,7 @@ export default function PosAdminPage() {
   const [showMenuForm, setShowMenuForm] = useState(false)
   const [editingPeriods, setEditingPeriods] = useState(false)
   const [periodDraft, setPeriodDraft] = useState<PeriodConfig[]>([])
+  const [newSvcCode, setNewSvcCode] = useState({ code: '', menuName: '', amount: '' })
 
   // 거래
   const [txView, setTxView] = useState<TxView>('realtime')
@@ -225,7 +226,12 @@ export default function PosAdminPage() {
   const handleCancel = async (tx: Transaction) => {
     if (!confirm(`거래번호 ${tx.merchantOrderID} 를 취소하시겠습니까?`)) return
     const res = await fetch(getServerUrl() + '/api/payment/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` }, body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName, termId: tx.termId }) }).then(r => r.json())
-    if (res.code === '0000') { alert('취소 완료'); loadHistTxs() } else alert(`취소 실패: ${res.msg}`)
+    if (res.code === '0000') {
+      const menu = menus.find(m => m.id === tx.menuId)
+      if (menu) decrementCount(menu.id)
+      alert('취소 완료')
+      loadHistTxs()
+    } else alert(`취소 실패: ${res.msg}`)
   }
 
   const handleBatchCancel = async () => {
@@ -235,7 +241,10 @@ export default function PosAdminPage() {
     for (const tx of targets) {
       try {
         const res = await fetch(getServerUrl() + '/api/payment/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` }, body: JSON.stringify({ merchantOrderDt: tx.merchantOrderID.substring(0, 8), merchantOrderID: tx.merchantOrderID, tid: tx.tid, totalAmount: tx.amount, menuName: tx.menuName, termId: tx.termId }) }).then(r => r.json())
-        if (res.code !== '0000') failed++
+        if (res.code === '0000') {
+          const menu = menus.find(m => m.id === tx.menuId)
+          if (menu) decrementCount(menu.id)
+        } else failed++
       } catch { failed++ }
     }
     alert(failed === 0 ? `${targets.length}건 취소 완료` : `${targets.length - failed}건 성공, ${failed}건 실패`)
@@ -351,7 +360,7 @@ export default function PosAdminPage() {
                   <thead className="border-b border-white/10"><tr>
                     <th className="px-4 py-3 text-left text-white/50">구분</th>
                     <th className="px-4 py-3 text-left text-white/50">메뉴명</th>
-                    <th className="px-4 py-3 text-right text-white/50">카운트</th>
+                    <th className="px-4 py-3 text-center text-white/50">카운트</th>
                     <th className="px-4 py-3 text-center text-white/50">초기화</th>
                   </tr></thead>
                   <tbody className="divide-y divide-white/5">
@@ -359,7 +368,13 @@ export default function PosAdminPage() {
                       <tr key={m.id} className="hover:bg-white/5 transition-colors">
                         <td className="px-4 py-3"><span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">{MEAL_LABELS[m.mealType]}</span></td>
                         <td className="px-4 py-3 font-medium text-white">{m.name}<p className="text-xs text-white/40">{m.startTime}~{m.endTime}</p></td>
-                        <td className="px-4 py-3 text-right font-black text-2xl text-white">{m.count}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <button onClick={() => decrementCount(m.id)} className="w-8 h-8 rounded-lg text-lg font-bold text-white/70 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center" style={{ border: '1px solid rgba(255,255,255,0.18)' }}>−</button>
+                            <span className="font-black text-2xl text-white w-10 text-center">{m.count}</span>
+                            <button onClick={() => incrementCount(m.id)} className="w-8 h-8 rounded-lg text-lg font-bold text-white/70 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center" style={{ border: '1px solid rgba(255,255,255,0.18)' }}>+</button>
+                          </div>
+                        </td>
                         <td className="px-4 py-3 text-center"><button onClick={() => setConfirmReset(m.id)} className="text-sm text-red-400 border border-red-400/30 px-3 py-1.5 rounded-lg hover:bg-red-400/10 transition-colors">초기화</button></td>
                       </tr>
                     ))}
@@ -468,6 +483,34 @@ export default function PosAdminPage() {
               </div>
             ))}
             {showMenuForm && <MenuSettingForm editing={editingMenu} form={menuForm} onChange={u => setMenuForm(f => ({ ...f, ...u }))} onSave={handleMenuSave} onClose={() => { setShowMenuForm(false); setMenuForm({}) }} />}
+
+            {/* 서비스 구분코드 */}
+            <div className="glass-card rounded-xl p-4 mt-4">
+              <h3 className="text-sm font-bold text-white mb-1">서비스 구분코드 설정</h3>
+              <p className="text-xs text-white/40 mb-3">바코드 특정 자리 값(2자리)에 따른 차등 가격 운영</p>
+              <div className="space-y-2 mb-3">
+                {serviceCodes.length === 0 && <p className="text-xs text-white/30 text-center py-1">등록된 코드 없음</p>}
+                {serviceCodes.map(sc => (
+                  <div key={sc.id} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    <span className="font-mono text-sm bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">{sc.code}</span>
+                    {sc.menuName && <span className="text-sm text-white/60 flex-1">{sc.menuName}</span>}
+                    {!sc.menuName && <span className="flex-1" />}
+                    <span className="text-sm font-semibold text-white">{sc.amount.toLocaleString()}원</span>
+                    <button onClick={() => deleteServiceCode(sc.id)} className="text-red-400 text-xs hover:text-red-300 transition-colors">삭제</button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input className="w-16 rounded-lg px-3 py-2.5 text-sm font-mono text-white focus:outline-none shrink-0" style={inputStyle} placeholder="코드" maxLength={2} value={newSvcCode.code} onChange={e => setNewSvcCode(n => ({ ...n, code: e.target.value }))} />
+                <input className="flex-1 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none" style={inputStyle} placeholder="설명 (선택)" value={newSvcCode.menuName} onChange={e => setNewSvcCode(n => ({ ...n, menuName: e.target.value }))} />
+                <input type="number" className="w-24 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none shrink-0" style={inputStyle} placeholder="금액" value={newSvcCode.amount} onChange={e => setNewSvcCode(n => ({ ...n, amount: e.target.value }))} />
+                <button onClick={() => {
+                  if (!newSvcCode.code) return
+                  addServiceCode({ code: newSvcCode.code, menuName: newSvcCode.menuName, amount: Number(newSvcCode.amount) || 0 })
+                  setNewSvcCode({ code: '', menuName: '', amount: '' })
+                }} className="px-4 py-2.5 rounded-lg text-sm font-medium text-white whitespace-nowrap shrink-0" style={{ background: 'rgba(96,165,250,0.25)', border: '1px solid rgba(96,165,250,0.40)' }}>+ 추가</button>
+              </div>
+            </div>
           </div>
         )}
 

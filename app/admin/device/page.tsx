@@ -224,7 +224,7 @@ export default function DevicePage() {
             />
           </div>
           <div>
-            <label className="text-base font-semibold text-white/60 mb-1.5 block">자동 초기화 시간</label>
+            <label className="text-base font-semibold text-white/60 mb-1.5 block">식수 카운트 자동 초기화 시각</label>
             <input
               type="time"
               className={inputCls}
@@ -232,6 +232,7 @@ export default function DevicePage() {
               value={form.autoResetTime}
               onChange={(e) => setForm((f) => ({ ...f, autoResetTime: e.target.value }))}
             />
+            <p className="mt-1.5 text-xs text-white/40">매일 이 시각에 식수 카운트가 자동으로 0으로 초기화됩니다</p>
           </div>
         </div>
 
@@ -326,7 +327,7 @@ export default function DevicePage() {
           <input
             className="flex-1 rounded-lg px-3 py-3 text-base text-white focus:outline-none"
             style={inputStyle}
-            placeholder="메뉴명"
+            placeholder="설명 (선택)"
             value={newCode.menuName}
             onChange={(e) => setNewCode((n) => ({ ...n, menuName: e.target.value }))}
           />

@@ -20,6 +20,7 @@ interface MenuStore {
 
   // 카운트
   incrementCount: (menuId: string) => void
+  decrementCount: (menuId: string) => void
   resetCount: (menuId?: string) => void
 
   // 서비스 구분코드
@@ -115,6 +116,10 @@ export const useMenuStore = create<MenuStore>()(
 
       incrementCount: (menuId) => set(s => ({
         menus: s.menus.map(m => m.id === menuId ? { ...m, count: m.count + 1 } : m)
+      })),
+
+      decrementCount: (menuId) => set(s => ({
+        menus: s.menus.map(m => m.id === menuId ? { ...m, count: Math.max(0, m.count - 1) } : m)
       })),
 
       resetCount: (menuId) => set(s => ({

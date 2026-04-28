@@ -301,8 +301,9 @@ export default function PosConfigForm({
               <input type="password" className={inputCls} style={inputStyle} placeholder="변경하지 않으려면 비워두세요" onChange={e => d('adminPin', e.target.value)} />
             </div>
             <div>
-              <label className={labelCls}>자동 초기화 시각</label>
+              <label className={labelCls}>식수 카운트 자동 초기화 시각</label>
               <input type="time" className={inputCls} style={inputStyle} value={device.autoResetTime ?? '00:00'} onChange={e => d('autoResetTime', e.target.value)} />
+              <p className="mt-1.5 text-xs text-white/40">매일 이 시각에 식수 카운트가 자동으로 0으로 초기화됩니다</p>
             </div>
             <div>
               <label className={labelCls}>시리얼 포트</label>
@@ -550,12 +551,12 @@ export default function PosConfigForm({
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white/50">메뉴 #{i + 1}</span>
                   <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-1.5 text-sm text-white/60 cursor-pointer">
-                      <input type="checkbox" checked={menu.isActive} onChange={e => {
-                        const u = [...generalMenus]; u[i] = { ...menu, isActive: e.target.checked }; setGeneralMenus(u)
-                      }} />
+                    <button type="button" onClick={() => { const u = [...generalMenus]; u[i] = { ...menu, isActive: !menu.isActive }; setGeneralMenus(u) }} className="flex items-center gap-2 text-sm text-white/60">
+                      <span className={`w-10 h-5 rounded-full inline-flex relative transition-colors ${menu.isActive ? 'bg-green-500' : 'bg-white/20'}`}>
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${menu.isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      </span>
                       활성
-                    </label>
+                    </button>
                     <button onClick={() => setGeneralMenus(generalMenus.filter((_, j) => j !== i))}
                       className="text-sm text-red-400 hover:text-red-300 transition-colors">삭제</button>
                   </div>

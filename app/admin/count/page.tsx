@@ -1,12 +1,15 @@
 'use client'
 import { useState } from 'react'
 import { useMenuStore } from '@/lib/store/menuStore'
+import { useSettingsStore } from '@/lib/store/settingsStore'
 
 const MEAL_LABELS: Record<string, string> = { breakfast: '조식', lunch: '중식', dinner: '석식' }
 
 export default function CountPage() {
   const { menus, resetCount } = useMenuStore()
+  const { config } = useSettingsStore()
   const [confirmReset, setConfirmReset] = useState<string | null>(null)
+  const autoResetTime = config.autoResetTime ?? '00:00'
 
   const totalCount = menus.reduce((sum, m) => sum + m.count, 0)
 
@@ -91,8 +94,8 @@ export default function CountPage() {
       {/* 설정 안내 */}
       <div className="mt-4 p-4 rounded-xl text-sm text-blue-300" style={{ background: 'rgba(96,165,250,0.10)', border: '1px solid rgba(96,165,250,0.25)' }}>
         <p className="font-semibold mb-1">자동 초기화 설정</p>
-        <p>· 매일 00:00에 전체 카운트 자동 초기화</p>
-        <p>· 자동 초기화 시간은 단말기 설정에서 변경 가능</p>
+        <p>· 매일 <span className="font-semibold text-blue-300">{autoResetTime}</span>에 전체 카운트 자동 초기화</p>
+        <p>· 자동 초기화 시각은 단말기 설정 → 기기설정에서 변경 가능</p>
       </div>
 
       {/* 확인 모달 */}

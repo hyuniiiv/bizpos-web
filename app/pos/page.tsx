@@ -193,12 +193,13 @@ export default function PosPage() {
   useEffect(() => {
     const checkReset = setInterval(() => {
       const now = new Date()
-      if (now.getHours() === 0 && now.getMinutes() === 0) {
+      const [resetHour, resetMinute] = (config.autoResetTime ?? '00:00').split(':').map(Number)
+      if (now.getHours() === resetHour && now.getMinutes() === resetMinute) {
         useMenuStore.getState().resetCount()
       }
     }, 60_000)
     return () => clearInterval(checkReset)
-  }, [])
+  }, [config.autoResetTime])
 
   const handleScan = useCallback(async (input: string) => {
     if (screen === 'processing') return
@@ -252,9 +253,13 @@ export default function PosPage() {
     }
 
     let amount = menu.paymentAmount
+    let effectiveMenuName = menu.name
     if (identity.serviceCode) {
-      const scAmount = useMenuStore.getState().getAmountByServiceCode(identity.serviceCode)
-      if (scAmount !== null) amount = scAmount
+      const sc = useMenuStore.getState().serviceCodes.find(c => c.code === identity.serviceCode)
+      if (sc !== undefined) {
+        amount = sc.amount
+        if (sc.menuName) effectiveMenuName = `${menu.name}(${sc.menuName})`
+      }
     }
 
     setScreen('processing')
@@ -276,7 +281,7 @@ export default function PosPage() {
         barcodeType: identity.barcodeType,
         barcodeInfo: identity.raw,
         totalAmount: amount,
-        productName: menu.name,
+        productName: effectiveMenuName,
         termId: config.termId,
         savedAt: new Date().toISOString(),
         synced: false,
@@ -293,7 +298,7 @@ export default function PosPage() {
           merchantOrderID,
           tid: '',
           menuId: menu.id,
-          menuName: menu.name,
+          menuName: effectiveMenuName,
           userName: '(오프라인)',
           amount,
           paymentType: identity.type,
@@ -317,14 +322,14 @@ export default function PosPage() {
         body: JSON.stringify({
           merchantOrderDt,
           merchantOrderID,
-          productName: menu.name,
+          productName: effectiveMenuName,
           quantity: 1,
           totalAmount: amount,
           taxFreeAmount: amount,
           productItems: [{
             seq: '1', category: 'F',
             biz_no: config.merchantId || '0000000000',
-            name: menu.name, count: 1, amount,
+            name: effectiveMenuName, count: 1, amount,
           }],
           complexYn: 'N',
           barcodeType: identity.barcodeType,
@@ -352,7 +357,7 @@ export default function PosPage() {
           totalAmount: amount,
           token: reserveRes.data.token,
           menuId: menu.id,
-          menuName: menu.name,
+          menuName: effectiveMenuName,
           barcodeInfo: identity.raw,
           termId: config.termId,
         }),
