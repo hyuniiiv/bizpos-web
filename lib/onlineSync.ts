@@ -117,6 +117,9 @@ function startHeartbeat() {
             await refreshToken(token)
           }
         }
+      } else if (res.status === 401) {
+        // 토큰 만료 → 즉시 갱신 시도 (refresh 엔드포인트는 만료 토큰도 수락)
+        await refreshToken(token)
       }
     } catch {
       // heartbeat 실패 무시
