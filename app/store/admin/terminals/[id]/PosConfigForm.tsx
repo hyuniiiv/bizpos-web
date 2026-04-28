@@ -17,6 +17,7 @@ type Terminal = {
   status: string; terminal_type: TerminalType | null
   last_seen_at: string | null; activation_code: string | null; access_token: string | null
   merchant_key_id?: string | null; store_id?: string | null
+  current_app_version?: string | null
 }
 
 type FullConfig = Partial<DeviceConfig> & { menus?: MenuConfig[]; generalMenus?: GeneralMenuItem[] }
@@ -168,9 +169,17 @@ export default function PosConfigForm({
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
         <div>
           <h2 className="font-semibold text-white text-base">단말기 설정</h2>
-          {currentVersion > 0 && (
-            <p className="text-sm text-white/40 mt-0.5">현재 버전 v{currentVersion} — 배포 시 POS가 30초 내 자동 수신</p>
-          )}
+          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+            {currentVersion > 0 && (
+              <p className="text-sm text-white/40">설정 v{currentVersion} — 배포 시 POS가 30초 내 자동 수신</p>
+            )}
+            {terminal.current_app_version && (
+              <span className="text-xs px-2 py-0.5 rounded font-mono"
+                style={{ background: 'rgba(96,165,250,0.15)', color: 'rgba(147,197,253,0.8)', border: '1px solid rgba(96,165,250,0.25)' }}>
+                앱 v{terminal.current_app_version}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

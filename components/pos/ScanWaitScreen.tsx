@@ -3,12 +3,18 @@ import { useEffect, useState } from 'react'
 import { usePosStore } from '@/lib/store/posStore'
 import { useSettingsStore } from '@/lib/store/settingsStore'
 import { useMenuStore } from '@/lib/store/menuStore'
+import TodayStatBar from './TodayStatBar'
 
-export default function ScanWaitScreen() {
+interface Props {
+  refreshTrigger?: number
+}
+
+export default function ScanWaitScreen({ refreshTrigger }: Props) {
   const { selectedMenu, setScreen, clearMenu } = usePosStore()
   const { config } = useSettingsStore()
   const { getCurrentMode } = useMenuStore()
   const isMultiMode = getCurrentMode() === 'multi'
+  const showStatBar = !config.showPaymentList
   const [barWidths, setBarWidths] = useState<number[]>([])
   const [time, setTime] = useState('')
 
@@ -30,6 +36,9 @@ export default function ScanWaitScreen() {
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden select-none">
+      {/* 거래내역 패널 숨김 시 상단에 오늘 통계 표시 */}
+      {showStatBar && <TodayStatBar refreshTrigger={refreshTrigger} />}
+
       {/* Background grid texture */}
       <div
         className="absolute inset-0 opacity-[0.035] pointer-events-none"
