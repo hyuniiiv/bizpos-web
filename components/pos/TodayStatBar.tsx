@@ -48,20 +48,19 @@ export default function TodayStatBar({ refreshTrigger }: Props) {
   }, [refreshTrigger, fetchStats])
 
   return (
-    <div className="flex items-center gap-4 px-5 py-2.5 border-b"
-      style={{ background: 'rgba(5,14,31,0.35)', borderColor: 'rgba(255,255,255,0.07)' }}>
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-white/40">총 거래건</span>
-        <span className="text-lg font-bold text-white tabular-nums">
-          {totalCount}<span className="text-xs font-normal text-white/50 ml-0.5">건</span>
-        </span>
+    <div className="grid grid-cols-2 gap-3 px-4 py-3">
+      <div className="glass-card rounded-xl p-3 text-center">
+        <p className="text-sm text-blue-300 mb-1">총 거래건</p>
+        <p className="text-3xl font-bold text-white">
+          {totalCount}<span className="text-base font-normal ml-1 text-white/60">건</span>
+        </p>
       </div>
-      <span className="text-white/15">|</span>
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-white/40">총 매출액</span>
-        <span className="text-lg font-bold tabular-nums" style={{ color: '#4ade80' }}>
-          {totalAmount.toLocaleString()}<span className="text-xs font-normal text-white/50 ml-0.5">원</span>
-        </span>
+      <div className="glass-card rounded-xl p-3 text-center">
+        <p className="text-sm text-blue-300 mb-1">총 매출액</p>
+        <p className="text-2xl font-bold" style={{ color: '#4ade80' }}>
+          {totalAmount > 0 ? totalAmount.toLocaleString('ko-KR') : '0'}
+          <span className="text-base font-normal ml-1 text-white/60">원</span>
+        </p>
       </div>
     </div>
   )
