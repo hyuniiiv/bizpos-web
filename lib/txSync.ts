@@ -2,23 +2,25 @@ import { PaymentRepository } from '@/lib/repository/payment.repository'
 import { getServerUrl } from '@/lib/serverUrl'
 import { useSettingsStore } from '@/lib/store/settingsStore'
 
-const ACCESS_TOKEN_KEY = 'terminal_access_token'
-
-function getAccessToken(): string | null {
-  if (typeof localStorage === 'undefined') return null
-  return localStorage.getItem(ACCESS_TOKEN_KEY)
-}
+// 동시 flush 방지 — online 이벤트와 mount effect가 동시에 트리거될 수 있음
+let isFlushing = false
 
 /**
  * 오프라인 큐를 /api/payment/offline으로 전송해 실제 결제 처리
  * 온라인 복귀 또는 관리자 수동 동기화 시 호출
  */
 export async function flushOfflineQueue(): Promise<{ synced: number; failed: number }> {
-  const token = getAccessToken()
+  if (isFlushing) return { synced: 0, failed: 0 }
+  isFlushing = true
+
+  // localStorage가 아닌 IndexedDB 기반 Zustand store에서 토큰 읽기
+  // (활성화 흐름이 setDeviceToken → IndexedDB만 저장하므로 localStorage는 항상 null)
+  const token = useSettingsStore.getState().deviceToken
   const queue = await PaymentRepository.getPendingPayments()
 
   if (!token || queue.length === 0) {
-    useSettingsStore.getState().setPendingCount(0)
+    useSettingsStore.getState().setPendingCount(queue.length)
+    isFlushing = false
     return { synced: 0, failed: 0 }
   }
 
@@ -66,5 +68,6 @@ export async function flushOfflineQueue(): Promise<{ synced: number; failed: num
   const remaining = await PaymentRepository.getPendingPayments()
   useSettingsStore.getState().setPendingCount(remaining.length)
 
+  isFlushing = false
   return { synced: totalSynced, failed: totalFailed }
 }

@@ -326,6 +326,10 @@ export default function PosPage() {
       }).then(r => r.json())
 
       if (reserveRes.code !== '0000') {
+        // BizPlay가 reserve 단계에서 거절 → 재시도 불필요한 영구 실패
+        // pending 큐에서 제거하지 않으면 온라인 복귀 시 syncOffline으로 무한 재시도됨
+        await PaymentRepository.markPaymentSynced(merchantOrderID)
+        PaymentRepository.getPendingPayments().then(p => setPendingCount(p.length))
         setLastError(reserveRes.msg)
         setScreen('fail')
         return

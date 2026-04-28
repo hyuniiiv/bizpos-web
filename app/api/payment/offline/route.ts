@@ -59,6 +59,20 @@ export async function POST(req: NextRequest) {
       const bizplayRec = bizplayRecords[i]
 
       try {
+        // PG 호출 전 이미 처리된 건인지 확인 (이중 청구 방지)
+        // 온라인 결제 성공 후 네트워크 끊겨 markPaymentSynced 미호출된 경우 대비
+        const { data: existing } = await supabase
+          .from('transactions')
+          .select('merchant_order_id')
+          .eq('merchant_order_id', rec.merchantOrderID)
+          .maybeSingle()
+
+        if (existing) {
+          // 이미 처리됨 → PG 재호출 없이 클라이언트 큐에서만 제거
+          syncedIds.push(rec.merchantOrderID)
+          continue
+        }
+
         const result = await client.syncOffline([bizplayRec])
         if (result.code !== '0000') continue  // 실패한 건은 큐에 유지
 
