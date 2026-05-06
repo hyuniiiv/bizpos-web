@@ -6,9 +6,17 @@
 
 ### 단계별 가이드
 
+#### 0️⃣ ⚠️ 버전 동기화 원칙 (반드시 준수)
+
+**git tag와 package.json version은 항상 일치해야 합니다.**
+
+- `git tag v0.2.4`를 생성했다면 `package.json`의 `version`도 반드시 `"0.2.4"`로 맞춰야 함
+- Electron 앱 내에서 `app.getVersion()`이 `package.json`의 version을 읽으므로, 둘이 다르면 앱에 표시되는 버전과 GitHub Release 버전이 불일치함
+- 커밋 → push → tag 생성 → tag push 순서로 진행
+
 #### 1️⃣ package.json 버전 업데이트
 ```bash
-# package.json에서 version 필드 수정
+# package.json에서 version 필드 수정 (git tag와 동일하게)
 "version": "0.1.XX"  →  "version": "0.1.YY"
 ```
 
