@@ -317,17 +317,21 @@ function setupPermissions() {
 // ---------------------------------------------------------------------------
 // 자동 업데이트 초기화 (프로덕션 전용)
 // ---------------------------------------------------------------------------
-function setupAutoUpdater() {
-  if (isDev) return
 
+// 매 체크 시 once 리스너를 교체해 중복 다이얼로그 / 캐시 문제 방지
+function triggerUpdateCheck() {
   try {
     const { autoUpdater } = require('electron-updater')
 
-    autoUpdater.logger = { info: console.log, warn: console.warn, error: console.error }
-    autoUpdater.autoDownload = false
+    // 이전 체크 리스너 제거 후 새 once 리스너 등록
+    autoUpdater.removeAllListeners('update-available')
+    autoUpdater.removeAllListeners('update-not-available')
 
-    autoUpdater.on('update-available', (info) => {
-      dialog.showMessageBox(mainWindow, {
+    autoUpdater.once('update-available', (info) => {
+      console.log('[updater] 새 버전 감지:', info.version)
+      const win = mainWindow || BrowserWindow.getAllWindows()[0]
+      if (!win) return
+      dialog.showMessageBox(win, {
         type: 'info',
         title: '업데이트 알림',
         message: `새 버전 ${info.version}이 있습니다. 지금 다운로드하시겠습니까?`,
@@ -337,6 +341,29 @@ function setupAutoUpdater() {
         if (response === 0) autoUpdater.downloadUpdate()
       })
     })
+
+    autoUpdater.once('update-not-available', () => {
+      console.log('[updater] 최신 버전입니다.')
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win) win.webContents.send('app:noUpdate')
+    })
+
+    autoUpdater.checkForUpdates().catch(err =>
+      console.error('[updater] checkForUpdates rejected:', err.message)
+    )
+  } catch (err) {
+    console.warn('[updater] triggerUpdateCheck 실패:', err.message)
+  }
+}
+
+function setupAutoUpdater() {
+  if (isDev) return
+
+  try {
+    const { autoUpdater } = require('electron-updater')
+
+    autoUpdater.logger = { info: console.log, warn: console.warn, error: console.error }
+    autoUpdater.autoDownload = false
 
     autoUpdater.on('download-progress', (progress) => {
       const percent = Math.round(progress.percent)
@@ -351,7 +378,9 @@ function setupAutoUpdater() {
         mainWindow.setProgressBar(-1)
         mainWindow.setTitle('BIZPOS')
       }
-      dialog.showMessageBox(mainWindow, {
+      const win = mainWindow || BrowserWindow.getAllWindows()[0]
+      if (!win) return
+      dialog.showMessageBox(win, {
         type: 'info',
         title: '업데이트 준비 완료',
         message: '업데이트가 다운로드되었습니다. 지금 재시작하시겠습니까?',
@@ -362,23 +391,14 @@ function setupAutoUpdater() {
       })
     })
 
-    autoUpdater.on('update-not-available', () => {
-      console.log('[updater] 최신 버전입니다.')
-      const win = BrowserWindow.getAllWindows()[0]
-      if (win) win.webContents.send('app:noUpdate')
-    })
-
     autoUpdater.on('error', (err) => {
       console.error('[updater] 오류:', err.message)
     })
 
     // 앱 시작 시 즉시 확인 + 이후 4시간마다 주기적 확인
-    autoUpdater.checkForUpdates().catch(err => console.error('[updater] checkForUpdates rejected:', err.message))
-    setInterval(() => {
-      autoUpdater.checkForUpdates().catch(err => console.error('[updater] checkForUpdates rejected:', err.message))
-    }, 4 * 60 * 60 * 1000)
+    triggerUpdateCheck()
+    setInterval(triggerUpdateCheck, 4 * 60 * 60 * 1000)
   } catch (err) {
-    // electron-updater 미설치 환경에서는 무시
     console.warn('[updater] electron-updater를 찾을 수 없습니다:', err.message)
   }
 }
@@ -527,12 +547,7 @@ ipcMain.handle('app:quit', () => {
 })
 
 ipcMain.handle('app:checkUpdate', () => {
-  try {
-    const { autoUpdater } = require('electron-updater')
-    autoUpdater.checkForUpdates().catch(err => console.error('[updater] checkForUpdates rejected:', err.message))
-  } catch (err) {
-    console.warn('[updater] checkForUpdates 실패:', err.message)
-  }
+  triggerUpdateCheck()
 })
 
 ipcMain.handle('app:getVersion', () => app.getVersion())

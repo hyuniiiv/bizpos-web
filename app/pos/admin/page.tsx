@@ -693,6 +693,8 @@ function UpdateButton() {
     setChecking(true)
     setStatus('idle')
     api?.checkUpdate?.()
+    // 업데이트 있을 때는 app:noUpdate가 오지 않으므로 30초 후 자동 해제
+    setTimeout(() => setChecking(false), 30_000)
   }
 
   return (
