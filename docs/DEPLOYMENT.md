@@ -95,10 +95,9 @@ pnpm lint
 ## 📋 완전한 배포 체크리스트
 
 - [ ] 코드 변경 완료
-- [ ] 로컬 빌드 테스트 (`pnpm build`)
-- [ ] package.json 버전 수정
-- [ ] pnpm-lock.yaml 최신화 (`pnpm install`)
-- [ ] 커밋 (`git commit -m "chore: bump version to X.X.X"`)
+- [ ] 로컬 빌드 테스트 (`npm run build`)
+- [ ] **package.json `version` 수정 (git tag와 반드시 동일하게)**
+- [ ] 버전 범프 커밋 (`git commit -m "chore: bump version to X.X.X"`)
 - [ ] 푸시 (`git push`)
 - [ ] **Tag 생성 (`git tag vX.X.X`)**
 - [ ] **Tag 푸시 (`git push origin vX.X.X`)**
@@ -108,6 +107,11 @@ pnpm lint
 ---
 
 ## 🚨 일반적인 실수
+
+### 실수 0: package.json 버전 bump 누락
+**증상**: 앱 내 버전 표시(`app.getVersion()`)가 이전 버전 그대로
+**원인**: git tag만 생성하고 package.json `version` 필드를 올리지 않음
+**해결**: `package.json`의 `version`을 git tag와 동일하게 수정 후 커밋/푸시
 
 ### 실수 1: Tag 없이 배포
 **증상**: package.json은 0.1.55인데 Latest는 0.1.52
