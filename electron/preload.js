@@ -124,4 +124,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('serial:error', handler)
     return () => ipcRenderer.removeListener('serial:error', handler)
   },
+
+  // ------------------------------------------------------------------
+  // 외부 디스플레이 API
+  // ------------------------------------------------------------------
+  openDisplay: () => ipcRenderer.invoke('display:open'),
+  closeDisplay: () => ipcRenderer.invoke('display:close'),
+  sendToDisplay: (data) => ipcRenderer.send('display:send', data),
+  onDisplayUpdate: (callback) => {
+    const handler = (_event, data) => callback(data)
+    ipcRenderer.on('display:update', handler)
+    return () => ipcRenderer.removeListener('display:update', handler)
+  },
 })

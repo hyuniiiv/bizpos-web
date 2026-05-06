@@ -120,7 +120,7 @@ export async function PATCH(req: NextRequest) {
   if (!mu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
-  const { id, store_name, biz_no, is_active } = body
+  const { id, store_name, biz_no, is_active, logo_url } = body
 
   if (!id) return NextResponse.json({ error: 'id가 필요합니다' }, { status: 400 })
 
@@ -139,6 +139,7 @@ export async function PATCH(req: NextRequest) {
   if (store_name !== undefined) updates.store_name = store_name.trim()
   if (biz_no !== undefined) updates.biz_no = biz_no?.trim() || null
   if (is_active !== undefined) updates.is_active = is_active
+  if (logo_url !== undefined) updates.logo_url = logo_url?.trim() || null
 
   const adminDb = createAdminClient()
   const { data, error } = await adminDb

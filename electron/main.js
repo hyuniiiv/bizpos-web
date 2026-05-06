@@ -141,6 +141,44 @@ ipcMain.handle('db:getPendingMenuCount', () => {
 const isKiosk = process.argv.includes('--kiosk')
 
 let mainWindow = null
+let displayWindow = null
+
+function getDisplayURL() {
+  if (isDev) return 'http://localhost:3000/pos/display'
+  const displayPath = path.join(process.resourcesPath, 'nextjs', 'pos', 'display', 'index.html')
+  if (fs.existsSync(displayPath)) return `file://${displayPath.replace(/\\/g, '/')}`
+  const indexPath = path.join(process.resourcesPath, 'nextjs', 'index.html')
+  return `file://${indexPath.replace(/\\/g, '/')}`
+}
+
+function createDisplayWindow() {
+  const { screen } = require('electron')
+  const displays = screen.getAllDisplays()
+  const primary = screen.getPrimaryDisplay()
+  const external = displays.find(d => d.id !== primary.id) || primary
+
+  displayWindow = new BrowserWindow({
+    x: external.bounds.x,
+    y: external.bounds.y,
+    width: external.bounds.width,
+    height: external.bounds.height,
+    fullscreen: external.id !== primary.id,
+    frame: false,
+    alwaysOnTop: false,
+    title: 'BIZPOS Display',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+
+  displayWindow.loadURL(getDisplayURL())
+
+  displayWindow.on('closed', () => {
+    displayWindow = null
+  })
+}
 
 // ---------------------------------------------------------------------------
 // 앱 진입 URL 결정
@@ -432,6 +470,26 @@ app.on('activate', () => {
 // ============================================================
 // App Control IPC Handlers
 // ============================================================
+// ============================================================
+// 외부 디스플레이 IPC Handlers
+// ============================================================
+ipcMain.handle('display:open', () => {
+  if (displayWindow && !displayWindow.isDestroyed()) return { success: true }
+  createDisplayWindow()
+  return { success: true }
+})
+
+ipcMain.handle('display:close', () => {
+  if (displayWindow && !displayWindow.isDestroyed()) displayWindow.close()
+  return { success: true }
+})
+
+ipcMain.on('display:send', (_event, data) => {
+  if (displayWindow && !displayWindow.isDestroyed()) {
+    displayWindow.webContents.send('display:update', data)
+  }
+})
+
 ipcMain.handle('app:relaunch', () => {
   app.relaunch();
   app.exit(0);

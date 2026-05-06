@@ -19,6 +19,7 @@ interface StoreData {
   address: string
   is_active: boolean
   description: string | null
+  logo_url: string | null
   created_at: string
 }
 

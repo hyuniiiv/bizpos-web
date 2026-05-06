@@ -19,6 +19,7 @@ interface StoreData {
   address: string
   is_active: boolean
   description: string | null
+  logo_url: string | null
   created_at: string
 }
 
@@ -38,7 +39,7 @@ interface StoreDetailClientProps {
   canDelete: boolean
 }
 
-type EditForm = { store_name: string; address: string; is_active: boolean; description: string }
+type EditForm = { store_name: string; address: string; is_active: boolean; description: string; logo_url: string }
 
 export default function StoreDetailClient({
   store,
@@ -59,6 +60,7 @@ export default function StoreDetailClient({
     address: store.address ?? '',
     is_active: store.is_active,
     description: store.description ?? '',
+    logo_url: store.logo_url ?? '',
   })
 
   async function handleSave() {
@@ -84,7 +86,7 @@ export default function StoreDetailClient({
 
   function cancelEdit() {
     setEditing(false)
-    setForm({ store_name: store.store_name, address: store.address ?? '', is_active: store.is_active, description: store.description ?? '' })
+    setForm({ store_name: store.store_name, address: store.address ?? '', is_active: store.is_active, description: store.description ?? '', logo_url: store.logo_url ?? '' })
   }
 
   const handleDelete = () => {
@@ -268,6 +270,22 @@ export default function StoreDetailClient({
                     style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)' }} />
                 ) : (
                   <p className="text-white font-medium">{store.address || '-'}</p>
+                )}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-2" style={{ color: 'var(--bp-text-3)' }}>외부 디스플레이 로고 URL</label>
+                {editing ? (
+                  <input
+                    type="url"
+                    placeholder="https://example.com/logo.png"
+                    value={form.logo_url}
+                    onChange={e => setForm(p => ({ ...p, logo_url: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                    style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)' }}
+                  />
+                ) : (
+                  <p className="text-white font-medium text-sm break-all">{store.logo_url || '-'}</p>
                 )}
               </div>
 

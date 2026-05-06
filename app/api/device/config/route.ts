@@ -23,18 +23,30 @@ export async function GET(request: NextRequest) {
     .from('terminals')
     .update({ status: 'online', last_seen_at: new Date().toISOString() })
     .eq('id', terminalId)
-    .select('name')
+    .select('name, store_id')
     .single()
 
   const termName = terminal?.name ?? null
+
+  // 매장 로고 URL (store 속성 → 소속 단말기 전체 공통 적용)
+  let logoUrl: string | null = null
+  if (terminal?.store_id) {
+    const { data: store } = await supabase
+      .from('stores')
+      .select('logo_url')
+      .eq('id', terminal.store_id)
+      .single()
+    logoUrl = store?.logo_url ?? null
+  }
 
   if (!configRow || configRow.version <= currentVersion) {
     return NextResponse.json({ version: currentVersion, changed: false, termName })
   }
 
+  const config = configRow.config as Record<string, unknown>
   return NextResponse.json({
     version: configRow.version,
-    config: configRow.config,
+    config: logoUrl ? { ...config, logoUrl } : config,
     changed: true,
     termName,
   })

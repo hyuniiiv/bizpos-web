@@ -129,6 +129,78 @@ export default function PosPage() {
     }
   }, [screen])
 
+  // ── 외부 디스플레이 ──────────────────────────────────────
+  useEffect(() => {
+    const api = (window as any).electronAPI
+    if (!api?.openDisplay) return
+    if (config.externalDisplay) {
+      api.openDisplay()
+    } else {
+      api.closeDisplay?.()
+    }
+  }, [config.externalDisplay])
+
+  // 식권체크기: badgeResult 변화 → 경광봉 트리거 + 카운트 전송
+  useEffect(() => {
+    if (terminalType !== 'ticket_checker') return
+    const api = (window as any).electronAPI
+    if (!api?.sendToDisplay) return
+    const count = getActiveMenus().reduce((s, m) => s + m.count, 0)
+    if (badgeResult) {
+      api.sendToDisplay({
+        terminalType: 'ticket_checker',
+        status: badgeResult.variant === 'success' ? 'success' : 'fail',
+        count,
+        storeName: config.name,
+      })
+    } else {
+      api.sendToDisplay({
+        terminalType: 'ticket_checker',
+        status: 'idle',
+        count,
+        storeName: config.name,
+      })
+    }
+  }, [badgeResult, terminalType, menus, config.name, getActiveMenus])
+
+  // POS: success/fail 화면 전환 시 결과 전송
+  useEffect(() => {
+    if (terminalType !== 'pos') return
+    const api = (window as any).electronAPI
+    if (!api?.sendToDisplay) return
+    if (screen === 'success') {
+      api.sendToDisplay({
+        terminalType: 'pos',
+        status: 'success',
+        total: lastTransaction?.amount,
+        storeName: config.name,
+      })
+    } else if (screen === 'fail') {
+      api.sendToDisplay({
+        terminalType: 'pos',
+        status: 'fail',
+        storeName: config.name,
+      })
+    }
+  }, [screen, terminalType, lastTransaction, config.name])
+
+  // POS: 카트 변화 시 품목/합계 전송
+  const handlePosCartUpdate = useCallback(
+    (cart: { name: string; price: number; qty: number }[], total: number) => {
+      const api = (window as any).electronAPI
+      if (!api?.sendToDisplay) return
+      api.sendToDisplay({
+        terminalType: 'pos',
+        status: cart.length > 0 ? 'order' : 'idle',
+        cart,
+        total,
+        logoUrl: config.logoUrl,
+        storeName: config.name,
+      })
+    },
+    [config.logoUrl, config.name]
+  )
+
   useEffect(() => {
     const handleOnline = () => {
       setOnline(true)
@@ -421,7 +493,7 @@ export default function PosPage() {
       <ActivationScreen />
     </div>
   )
-  if (terminalType === 'pos') return <PosScreen />
+  if (terminalType === 'pos') return <PosScreen onCartUpdate={handlePosCartUpdate} />
   if (terminalType === 'kiosk') return <KioskScreen />
   if (terminalType === 'table_order') return <TableOrderScreen />
 

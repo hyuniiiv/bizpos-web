@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import AlertsClient from './AlertsClient'
 
@@ -13,6 +14,33 @@ export default async function AlertsPage({ searchParams }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const isTerminalAdmin = user.app_metadata?.role === 'terminal_admin'
+  const params = await searchParams
+  const showAll = params?.show === 'all'
+
+  if (isTerminalAdmin) {
+    const admin = createAdminClient()
+    const query = admin
+      .from('anomaly_alerts')
+      .select('*, terminals(name, term_id)')
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (!showAll) query.eq('resolved', false)
+
+    const { data: alerts } = await query
+
+    return (
+      <div>
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-white">이상 알림</h1>
+          <p className="text-sm text-white/50 mt-1">이상 거래 감지 알림을 확인하고 처리하세요.</p>
+        </div>
+        <AlertsClient alerts={alerts ?? []} showAll={showAll} readOnly />
+      </div>
+    )
+  }
+
   const { data: membership } = await supabase
     .from('merchant_users')
     .select('merchant_id')
@@ -21,9 +49,6 @@ export default async function AlertsPage({ searchParams }: PageProps) {
 
   if (!membership) redirect('/setup')
 
-  const params = await searchParams
-  const showAll = params?.show === 'all'
-
   const query = supabase
     .from('anomaly_alerts')
     .select('*, terminals(name, term_id)')
@@ -31,9 +56,7 @@ export default async function AlertsPage({ searchParams }: PageProps) {
     .order('created_at', { ascending: false })
     .limit(100)
 
-  if (!showAll) {
-    query.eq('resolved', false)
-  }
+  if (!showAll) query.eq('resolved', false)
 
   const { data: alerts } = await query
 

@@ -23,9 +23,10 @@ const SEVERITY_STYLES: Record<AnomalyAlert['severity'], string> = {
 interface Props {
   alerts: AlertWithTerminal[]
   showAll: boolean
+  readOnly?: boolean
 }
 
-export default function AlertsClient({ alerts, showAll }: Props) {
+export default function AlertsClient({ alerts, showAll, readOnly = false }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [resolving, setResolving] = useState<string | null>(null)
@@ -105,7 +106,7 @@ export default function AlertsClient({ alerts, showAll }: Props) {
                   )}
                 </p>
               </div>
-              {!alert.resolved && (
+              {!alert.resolved && !readOnly && (
                 <button
                   onClick={() => handleResolve(alert.id)}
                   disabled={resolving === alert.id || pending}

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useMenuStore } from '@/lib/store/menuStore'
 import { useSettingsStore } from '@/lib/store/settingsStore'
 import ProcessingScreen from '@/components/pos/ProcessingScreen'
@@ -14,7 +14,11 @@ import { getServerUrl } from '@/lib/serverUrl'
 type CartItem = { menuId: string; name: string; price: number; qty: number; soundFile?: string }
 type PosPhase = 'order' | 'processing' | 'success' | 'fail'
 
-export default function PosScreen() {
+interface PosScreenProps {
+  onCartUpdate?: (cart: { name: string; price: number; qty: number }[], total: number) => void
+}
+
+export default function PosScreen({ onCartUpdate }: PosScreenProps = {}) {
   const { posMenuItems, posCategories } = useMenuStore()
   const { config, deviceToken } = useSettingsStore()
   const availableItems = posMenuItems.filter(m => m.isAvailable)
@@ -27,6 +31,13 @@ export default function PosScreen() {
   const [waitingBarcode, setWaitingBarcode] = useState(false)
 
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0)
+
+  useEffect(() => {
+    onCartUpdate?.(
+      cart.map(c => ({ name: c.name, price: c.price, qty: c.qty })),
+      total
+    )
+  }, [cart, total, onCartUpdate])
 
   const addToCart = (item: (typeof posMenuItems)[0]) => {
     setCart(prev => {
