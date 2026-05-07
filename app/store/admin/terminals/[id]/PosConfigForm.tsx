@@ -75,7 +75,6 @@ export default function PosConfigForm({
   const [infoSaving, setInfoSaving] = useState(false)
   const [infoSuccess, setInfoSuccess] = useState(false)
   const [infoError, setInfoError] = useState('')
-  const [deleting, setDeleting] = useState(false)
 
   // 매장 매핑
   const [selectedStoreId, setSelectedStoreId] = useState(terminal.store_id ?? '')
@@ -132,14 +131,6 @@ export default function PosConfigForm({
       body: JSON.stringify({ activation_code: newCode }),
     })
     if (res.ok) router.refresh()
-  }
-
-  const handleDelete = async () => {
-    if (!confirm('단말기를 삭제하면 관련 거래내역도 모두 삭제됩니다. 계속하시겠습니까?')) return
-    setDeleting(true)
-    const res = await fetch(`/api/terminals/${terminal.id}`, { method: 'DELETE' })
-    if (res.ok) { router.push('/store/admin/terminals'); router.refresh() }
-    else { const data = await res.json(); setInfoError(data.error ?? '삭제 실패'); setDeleting(false) }
   }
 
   const handleSaveConfig = async () => {
@@ -281,15 +272,38 @@ export default function PosConfigForm({
               </button>
             </form>
 
-            {/* 위험 구역 */}
-            <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
-              <h3 className="text-sm font-semibold text-red-400">위험 구역</h3>
-              <button onClick={handleDelete} disabled={deleting}
-                className="px-4 py-2.5 rounded-lg text-base text-red-300 hover:text-red-200 disabled:opacity-50 transition-colors"
-                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)' }}>
-                {deleting ? '삭제 중...' : '단말기 삭제'}
-              </button>
+            {/* 단말기 활성/비활성 토글 */}
+            <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <p className="text-sm font-semibold text-white/60 mb-2">단말기 활성 상태</p>
+              <div className="flex items-center gap-3">
+                <span className={`text-sm font-medium px-3 py-1 rounded ${terminal.status === 'inactive' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                  {terminal.status === 'inactive' ? '비활성' : '활성'}
+                </span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const newStatus = terminal.status === 'inactive' ? 'offline' : 'inactive'
+                    const res = await fetch(`/api/terminals/${terminal.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ status: newStatus }),
+                    })
+                    if (res.ok) router.refresh()
+                    else { const d = await res.json(); setInfoError(d.error ?? '상태 변경 실패') }
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                  style={terminal.status === 'inactive'
+                    ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: 'rgb(74,222,128)' }
+                    : { background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.30)', color: 'rgb(252,165,165)' }
+                  }>
+                  {terminal.status === 'inactive' ? '활성화' : '비활성화'}
+                </button>
+                {terminal.status === 'inactive' && (
+                  <p className="text-xs text-red-400/70">⚠ 비활성 상태에서는 결제가 차단됩니다</p>
+                )}
+              </div>
             </div>
+
           </div>
         )}
 

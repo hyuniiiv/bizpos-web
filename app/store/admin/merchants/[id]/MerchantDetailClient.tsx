@@ -397,6 +397,37 @@ const handleAddStore = async () => {
                 <label className="block text-xs font-medium mb-2" style={{ color: 'var(--bp-text-3)' }}>등록일</label>
                 <p className="text-white font-medium">{new Date(merchant.created_at).toLocaleDateString('ko-KR')}</p>
               </div>
+
+              {canDelete && (
+                <div>
+                  <label className="block text-xs font-medium mb-2" style={{ color: 'var(--bp-text-3)' }}>가맹점 상태</label>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm font-medium px-3 py-1 rounded ${(merchant as any).is_active === false ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                      {(merchant as any).is_active === false ? '비활성' : '활성'}
+                    </span>
+                    {!editing && (
+                      <button
+                        onClick={async () => {
+                          const newVal = (merchant as any).is_active !== false ? false : true
+                          const res = await fetch('/api/merchant/merchants', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: merchant.id, is_active: newVal }),
+                          })
+                          if (res.ok) router.refresh()
+                          else { const d = await res.json(); alert(d.error ?? '상태 변경 실패') }
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                        style={(merchant as any).is_active === false
+                          ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: 'rgb(74,222,128)' }
+                          : { background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.30)', color: 'rgb(252,165,165)' }
+                        }>
+                        {(merchant as any).is_active === false ? '활성화' : '비활성화'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--bp-border)' }}>

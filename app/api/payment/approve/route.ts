@@ -34,10 +34,26 @@ export async function POST(req: NextRequest) {
     const supabaseForName = createAdminClient()
     const { data: terminalRow } = await supabaseForName
       .from('terminals')
-      .select('name')
+      .select('name, status, store_id')
       .eq('id', terminalId)
       .single()
     const terminalName = terminalRow?.name ?? ''
+
+    if (terminalRow?.status === 'inactive')
+      return NextResponse.json({ error: 'TERMINAL_INACTIVE', message: '비활성화된 단말기입니다' }, { status: 403 })
+
+    if (terminalRow?.store_id) {
+      const { data: store } = await supabaseForName
+        .from('stores').select('is_active, merchant_id').eq('id', terminalRow.store_id).single()
+      if (store && !store.is_active)
+        return NextResponse.json({ error: 'STORE_INACTIVE', message: '비활성화된 매장입니다' }, { status: 403 })
+      if (store?.merchant_id) {
+        const { data: merchant } = await supabaseForName
+          .from('merchants').select('is_active').eq('id', store.merchant_id).single()
+        if (merchant && merchant.is_active === false)
+          return NextResponse.json({ error: 'MERCHANT_INACTIVE', message: '비활성화된 가맹점입니다' }, { status: 403 })
+      }
+    }
 
     const client = await getBizplayClientForTerminal(termId)
     const result = await client.approve(body)

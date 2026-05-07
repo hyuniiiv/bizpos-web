@@ -5,6 +5,7 @@ import PosConfigForm from './PosConfigForm'
 import CloneTerminalButton from './CloneTerminalButton'
 import { UpdateCommandButton } from './UpdateCommandButton'
 import TerminalCommandPanel from '@/components/dashboard/TerminalCommandPanel'
+import TerminalDeleteButton from './TerminalDeleteButton'
 
 export const revalidate = 0
 
@@ -63,7 +64,10 @@ export default async function TerminalDetailPage({
         <span>/</span>
         <span className="text-white/80 font-medium">{displayName}</span>
       </div>
-      <h1 className="text-2xl font-bold text-white">{displayName} 설정</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">{displayName} 설정</h1>
+        <TerminalDeleteButton terminalId={id} terminalName={displayName} />
+      </div>
 
       {/* 단말기 설정 섹션 */}
       <div className="flex gap-6 items-start">

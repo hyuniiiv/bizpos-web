@@ -16,7 +16,7 @@ export async function PATCH(
   if (!mu) return NextResponse.json({ error: 'MERCHANT_NOT_FOUND' }, { status: 403 })
 
   const body = await req.json()
-  const allowed = ['name', 'corner', 'term_id', 'activation_code', 'terminal_type']
+  const allowed = ['name', 'corner', 'term_id', 'activation_code', 'terminal_type', 'status']
   const updates: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) updates[key] = body[key]

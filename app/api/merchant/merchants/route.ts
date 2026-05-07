@@ -106,22 +106,24 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { id, name, biz_no, address, admin_id, manager_id, description } = body
+    const { id, name, biz_no, address, admin_id, manager_id, description, is_active } = body
 
     if (!id) {
       return NextResponse.json({ error: '가맹점 ID가 필요합니다' }, { status: 400 })
     }
 
+    const updates: Record<string, unknown> = {}
+    if (name !== undefined) updates.name = name
+    if (biz_no !== undefined) updates.biz_no = biz_no
+    if (address !== undefined) updates.address = address
+    if (admin_id !== undefined) updates.admin_id = admin_id || null
+    if (manager_id !== undefined) updates.manager_id = manager_id || null
+    if (description !== undefined) updates.description = description || null
+    if (is_active !== undefined) updates.is_active = is_active
+
     const { data, error } = await supabase
       .from('merchants')
-      .update({
-        name,
-        biz_no,
-        address,
-        admin_id: admin_id || null,
-        manager_id: manager_id || null,
-        description: description || null,
-      })
+      .update(updates)
       .eq('id', id)
       .select()
       .single()
