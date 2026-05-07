@@ -32,7 +32,7 @@ async function getAdmins(supabase: any): Promise<Admin[]> {
     const { data: adminUsers } = await supabase
       .from('merchant_users')
       .select('user_id')
-      .eq('role', 'admin')
+      .eq('role', 'merchant_admin')
 
     if (!adminUsers || adminUsers.length === 0) return []
 
@@ -57,7 +57,7 @@ async function getManagers(supabase: any): Promise<Manager[]> {
     const { data: managerUsers } = await supabase
       .from('merchant_users')
       .select('user_id')
-      .eq('role', 'manager')
+      .eq('role', 'merchant_manager')
 
     if (!managerUsers || managerUsers.length === 0) return []
 

@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
           name,
           biz_no,
           address,
-          admin_id,
+          admin_id: admin_id || null,
           manager_id: manager_id || null,
           description: description || null,
         },
