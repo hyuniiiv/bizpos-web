@@ -24,10 +24,21 @@ export async function POST(req: NextRequest) {
       menuName: string
       barcodeInfo: string
       termId: string
+      paymentType?: string
     }
 
     // JWT에서 검증된 termId 사용 (바디 값 신뢰 금지)
     const termId = auth.payload.termId
+    const terminalId = auth.payload.terminalId
+
+    const supabaseForName = createAdminClient()
+    const { data: terminalRow } = await supabaseForName
+      .from('terminals')
+      .select('name')
+      .eq('id', terminalId)
+      .single()
+    const terminalName = terminalRow?.name ?? ''
+
     const client = await getBizplayClientForTerminal(termId)
     const result = await client.approve(body)
 
@@ -45,12 +56,13 @@ export async function POST(req: NextRequest) {
         menuName: body.menuName,
         userName: result.data.userName ?? '',
         amount: result.data.usedAmount ?? body.totalAmount,
-        paymentType: 'barcode',
+        paymentType: body.paymentType ?? 'barcode',
         voucherType: 'voucher1',
         status: 'success',
         approvedAt: result.data.approvedAt,
         barcodeInfo: body.barcodeInfo,
         termId,
+        terminalName,
         synced: true,
         createdAt: new Date().toISOString(),
       }
@@ -65,11 +77,12 @@ export async function POST(req: NextRequest) {
           const supabase = createAdminClient()
           const { error } = await supabase.from('transactions').insert({
             terminal_id: termId,
+            terminal_name: terminalName,
             merchant_order_id: body.merchantOrderID,
             tid: approvedData.tid ?? '',
             menu_name: body.menuName ?? '',
             amount: approvedData.usedAmount ?? body.totalAmount,
-            payment_type: 'barcode',
+            payment_type: body.paymentType ?? 'barcode',
             status: 'approved',
             approved_at: approvedData.approvedAt ?? new Date().toISOString(),
             user_name: approvedData.userName ?? '',

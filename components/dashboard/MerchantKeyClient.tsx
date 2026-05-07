@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useMerchantKeys } from '@/lib/hooks/useMerchantKeys'
 import type { MerchantKey, MerchantKeyCreateInput, MerchantKeyUpdateInput, KeyEnv } from '@/types/merchant-key'
+import { DataTable, DataTableRow } from '@/components/ui/DataTable'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
 
-type Props = { initialKeys: MerchantKey[]; merchantId?: string }
+type Props = { initialKeys: MerchantKey[]; merchantId?: string; merchantName?: string; keyCount?: number }
 type EnvFilter = 'all' | KeyEnv
 
 const emptyForm: MerchantKeyCreateInput = { name: '', mid: '', enc_key: '', online_ak: '', description: '', env: 'production' }
@@ -21,7 +23,7 @@ function EnvBadge({ env }: { env: KeyEnv }) {
   )
 }
 
-export default function MerchantKeyClient({ initialKeys }: Props) {
+export default function MerchantKeyClient({ initialKeys, merchantName = '', keyCount = 0 }: Props) {
   const router = useRouter()
   const { keys, loading: saving, createKey, updateKey, deleteKey } = useMerchantKeys(initialKeys)
   const [showForm, setShowForm] = useState(false)
@@ -80,14 +82,15 @@ export default function MerchantKeyClient({ initialKeys }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">키 관리</h1>
-        <button
-          onClick={openAdd}
-          className="px-4 py-2 rounded-lg text-sm text-white transition-all"
-          style={{ background: 'rgba(96,165,250,0.25)', border: '1px solid rgba(96,165,250,0.40)' }}
-        >
+        <div>
+          <h1 className="text-2xl font-bold text-white">키 관리</h1>
+          <p className="text-sm text-white/40 mt-0.5">
+            {merchantName ? `${merchantName} · ` : ''}{keyCount}개 키
+          </p>
+        </div>
+        <PrimaryButton onClick={openAdd}>
           + 키 등록
-        </button>
+        </PrimaryButton>
       </div>
 
       {showForm && (
@@ -175,54 +178,46 @@ export default function MerchantKeyClient({ initialKeys }: Props) {
       </div>
 
       <div className="glass-card rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="border-b border-white/10" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <tr>
-              <th className="text-left px-4 py-3 text-white/50">이름</th>
-              <th className="text-left px-4 py-3 text-white/50">환경</th>
-              <th className="text-left px-4 py-3 text-white/50">MID</th>
-              <th className="text-left px-4 py-3 text-white/50">암복호화 KEY</th>
-              <th className="text-left px-4 py-3 text-white/50">HEADER 인증키</th>
-              <th className="text-center px-4 py-3 text-white/50">상태</th>
-              <th className="text-right px-4 py-3 text-white/50">관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(k => (
-              <tr key={k.id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
-                <td className="px-4 py-3 font-medium text-white cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => router.push(`/store/admin/keys/${k.id}`)}>
-                  {k.name}
-                  {k.description && <p className="text-xs text-white/35 mt-0.5">{k.description}</p>}
-                </td>
-                <td className="px-4 py-3"><EnvBadge env={k.env ?? 'production'} /></td>
-                <td className="px-4 py-3 font-mono text-xs text-white/80">{k.mid}</td>
-                <td className="px-4 py-3 font-mono text-xs text-white/40">{k.enc_key.substring(0, 8)}••••••••</td>
-                <td className="px-4 py-3 font-mono text-xs text-white/40">{k.online_ak.substring(0, 8)}••••••••</td>
-                <td className="px-4 py-3 text-center">
-                  <button onClick={() => handleToggle(k)}
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                      k.is_active ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/40'
-                    }`}>
-                    {k.is_active ? '활성' : '비활성'}
-                  </button>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button onClick={() => handleDelete(k.id)} className="text-red-400 hover:text-red-300 text-xs transition-colors">삭제</button>
-                </td>
-              </tr>
-            ))}
-            {!filtered.length && (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-white/40">
-                  {envFilter === 'all'
-                    ? '등록된 키가 없습니다. 키 등록 버튼을 눌러 3종 키를 등록하세요.'
-                    : `${envFilter === 'production' ? '운영' : '개발'} 환경 키가 없습니다.`}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <DataTable
+          columns={[
+            { label: '이름' },
+            { label: '환경' },
+            { label: 'MID' },
+            { label: '암복호화 KEY' },
+            { label: 'HEADER 인증키' },
+            { label: '상태', align: 'center' },
+            { label: '관리', align: 'right' },
+          ]}
+          isEmpty={!filtered.length}
+          empty={envFilter === 'all'
+            ? '등록된 키가 없습니다. 키 등록 버튼을 눌러 3종 키를 등록하세요.'
+            : `${envFilter === 'production' ? '운영' : '개발'} 환경 키가 없습니다.`}
+        >
+          {filtered.map(k => (
+            <DataTableRow key={k.id}>
+              <td className="px-4 py-3 font-medium text-white cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => router.push(`/store/admin/keys/${k.id}`)}>
+                {k.name}
+                {k.description && <p className="text-xs text-white/35 mt-0.5">{k.description}</p>}
+              </td>
+              <td className="px-4 py-3"><EnvBadge env={k.env ?? 'production'} /></td>
+              <td className="px-4 py-3 font-mono text-xs text-white/80">{k.mid}</td>
+              <td className="px-4 py-3 font-mono text-xs text-white/40">{k.enc_key.substring(0, 8)}••••••••</td>
+              <td className="px-4 py-3 font-mono text-xs text-white/40">{k.online_ak.substring(0, 8)}••••••••</td>
+              <td className="px-4 py-3 text-center">
+                <button onClick={() => handleToggle(k)}
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                    k.is_active ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/40'
+                  }`}>
+                  {k.is_active ? '활성' : '비활성'}
+                </button>
+              </td>
+              <td className="px-4 py-3 text-right">
+                <button onClick={() => handleDelete(k.id)} className="text-red-400 hover:text-red-300 text-xs transition-colors">삭제</button>
+              </td>
+            </DataTableRow>
+          ))}
+        </DataTable>
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import MerchantStoreFilter from '@/components/analytics/MerchantStoreFilter'
 import DateRangeFilter from '@/components/analytics/DateRangeFilter'
+import { DataTable, DataTableRow } from '@/components/ui/DataTable'
 
 export const revalidate = 0
 
@@ -149,63 +150,55 @@ export default async function TransactionsPage({
       </div>
 
       <div className="glass-card rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="border-b border-white/10" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <tr>
-              <th className="text-left px-4 py-3 text-white/50">일시</th>
-              <th className="text-left px-4 py-3 text-white/50">단말기</th>
-              <th className="text-left px-4 py-3 text-white/50">메뉴</th>
-              <th className="text-right px-4 py-3 text-white/50">금액</th>
-              <th className="text-center px-4 py-3 text-white/50">결제방식</th>
-              <th className="text-left px-4 py-3 text-white/50">바코드/QR</th>
-              <th className="text-center px-4 py-3 text-white/50">상태</th>
-              <th className="text-center px-4 py-3 text-white/50">관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions?.map(tx => (
-              <tr key={tx.id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
-                <td className="px-4 py-2 text-white/60 whitespace-nowrap">
-                  {new Date(tx.approved_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                </td>
-                <td className="px-4 py-2 text-xs text-white/50">
-                  {(tx.terminals as unknown as { name: string; term_id: string } | null)?.name || (tx.terminals as unknown as { name: string; term_id: string } | null)?.term_id}
-                </td>
-                <td className="px-4 py-2 text-white">{tx.menu_name}</td>
-                <td className="px-4 py-2 text-right font-medium text-white">₩{tx.amount.toLocaleString()}</td>
-                <td className="px-4 py-2 text-center text-white/50">{tx.payment_type}</td>
-                <td className="px-4 py-2 font-mono text-xs text-white/50 max-w-[200px] truncate">
-                  {tx.barcode_info || '-'}
-                </td>
-                <td className="px-4 py-2 text-center">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    tx.status === 'success' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
-                  }`}>
-                    {tx.status === 'success' ? '승인' : '취소'}
-                  </span>
-                </td>
-                <td className="px-4 py-2 text-center">
-                  {tx.status === 'success' && tx.merchant_order_id && tx.tid && (
-                    <CancelButton
-                      merchantOrderID={tx.merchant_order_id}
-                      tid={tx.tid}
-                      amount={tx.amount}
-                      menuName={tx.menu_name}
-                      termId={(tx.terminals as unknown as { term_id: string } | null)?.term_id ?? ''}
-                    />
-                  )}
-                </td>
-              </tr>
-            ))}
-            {!transactions?.length && (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-white/40">
-                  {from === to ? from : `${from} ~ ${to}`} 거래내역이 없습니다.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <DataTable
+          columns={[
+            { label: '일시' },
+            { label: '단말기' },
+            { label: '메뉴' },
+            { label: '금액', align: 'right' },
+            { label: '결제방식', align: 'center' },
+            { label: '바코드/QR' },
+            { label: '상태', align: 'center' },
+            { label: '관리', align: 'center' },
+          ]}
+          isEmpty={!transactions?.length}
+          empty={`${from === to ? from : `${from} ~ ${to}`} 거래내역이 없습니다.`}
+        >
+          {transactions?.map(tx => (
+            <DataTableRow key={tx.id}>
+              <td className="px-4 py-2 text-white/60 whitespace-nowrap">
+                {new Date(tx.approved_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+              </td>
+              <td className="px-4 py-2 text-xs text-white/50">
+                {(tx.terminals as unknown as { name: string; term_id: string } | null)?.name || (tx.terminals as unknown as { name: string; term_id: string } | null)?.term_id}
+              </td>
+              <td className="px-4 py-2 text-white">{tx.menu_name}</td>
+              <td className="px-4 py-2 text-right font-medium text-white">₩{tx.amount.toLocaleString()}</td>
+              <td className="px-4 py-2 text-center text-white/50">{tx.payment_type}</td>
+              <td className="px-4 py-2 font-mono text-xs text-white/50 max-w-[200px] truncate">
+                {tx.barcode_info || '-'}
+              </td>
+              <td className="px-4 py-2 text-center">
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  tx.status === 'success' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                }`}>
+                  {tx.status === 'success' ? '승인' : '취소'}
+                </span>
+              </td>
+              <td className="px-4 py-2 text-center">
+                {tx.status === 'success' && tx.merchant_order_id && tx.tid && (
+                  <CancelButton
+                    merchantOrderID={tx.merchant_order_id}
+                    tid={tx.tid}
+                    amount={tx.amount}
+                    menuName={tx.menu_name}
+                    termId={(tx.terminals as unknown as { term_id: string } | null)?.term_id ?? ''}
+                  />
+                )}
+              </td>
+            </DataTableRow>
+          ))}
+        </DataTable>
       </div>
     </div>
   )

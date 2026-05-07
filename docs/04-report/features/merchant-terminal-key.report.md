@@ -138,9 +138,9 @@ Gap 분석 100% Match Rate 기반으로 3개 이슈 수정 완료.
 ## 6. 다음 단계
 
 ### 잔여 Open 이슈
-- [ ] `public/sounds/success.mp3` 파일 추가 (404 오류)
-- [ ] 관리자 PIN 초기 설정 온보딩 플로우 (`adminPin` placeholder 문제)
-- [ ] API 에러 핸들링 레이어 표준화
+- [x] `public/sounds/success.mp3` 파일 추가 (404 오류)
+- [x] 관리자 PIN 초기 설정 온보딩 플로우 (`adminPin` placeholder 문제)
+- [~] API 에러 핸들링 레이어 표준화 (보류 — 36개 파일, 리스크 대비 이득 낮음)
 
 ---
 

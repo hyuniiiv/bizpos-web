@@ -84,6 +84,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @param {number} baudRate  - 보드레이트 (예: 9600, 115200)
    * @returns {Promise<{ success: boolean, error?: string }>}
    */
+  setBarcodePort: (portName) =>
+    ipcRenderer.invoke('serial:setBarcodePort', portName),
+
   openSerialPort: (portName, baudRate) =>
     ipcRenderer.invoke('serial:open', portName, baudRate),
 

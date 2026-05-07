@@ -269,6 +269,16 @@ export default function PosPage() {
 
     const identity = identifyInput(input)
 
+    // 허용 prefix 체크 (barcode/qr만 적용, 설정된 경우에만)
+    if (identity.type !== 'rfcard' && config.allowedBarcodePrefix && config.allowedBarcodePrefix.length > 0) {
+      const allowed = config.allowedBarcodePrefix.some(p => identity.raw.startsWith(p))
+      if (!allowed) {
+        setLastError('허용되지 않은 바코드입니다.')
+        setScreen('fail')
+        return
+      }
+    }
+
     // inputPolicy 분기
     const inputType = identity.type as 'barcode' | 'qr' | 'rfcard'
     const action = config.inputPolicy?.[inputType] ?? 'bizplay_payment'
@@ -393,7 +403,7 @@ export default function PosPage() {
           complexYn: 'N',
           barcodeType: identity.barcodeType,
           barcodeInfo: identity.raw,
-          termId: config.termId,
+          termId: config.name || config.termId,
         }),
       }).then(r => r.json())
 
@@ -423,6 +433,7 @@ export default function PosPage() {
           menuName: effectiveMenuName,
           barcodeInfo: identity.raw,
           termId: config.termId,
+          paymentType: identity.type,
         }),
       }).then(r => r.json())
 

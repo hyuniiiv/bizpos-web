@@ -165,6 +165,7 @@ export async function GET(req: NextRequest) {
       synced: tx.synced,
       createdAt: tx.created_at,
       termId: terminalId,
+      terminalName: tx.terminal_name ?? '',
     }))
 
     const totalAmount = items

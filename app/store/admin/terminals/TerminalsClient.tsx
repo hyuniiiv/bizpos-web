@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Role } from '@/lib/roles/permissions'
 import TerminalCommandMenu from '@/components/dashboard/TerminalCommandMenu'
+import { DataTable, DataTableRow } from '@/components/ui/DataTable'
 
 type TerminalType = 'ticket_checker' | 'pos' | 'kiosk' | 'table_order'
 
@@ -90,70 +91,58 @@ export default function TerminalsClient({
   return (
     <div>
       <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--bp-border)', color: 'var(--bp-text-3)' }}>
-              <th className="text-left px-4 py-3 font-medium">단말기 ID</th>
-              <th className="text-left px-4 py-3 font-medium">이름</th>
-              <th className="text-left px-4 py-3 font-medium hidden md:table-cell">매장</th>
-              <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">타입</th>
-              <th className="text-left px-4 py-3 font-medium">상태</th>
-              <th className="px-4 py-3 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleTerminals.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center py-12" style={{ color: 'var(--bp-text-3)' }}>
-                  등록된 단말기가 없습니다.
-                </td>
-              </tr>
-            ) : (
-              visibleTerminals.map(terminal => (
-                <tr
-                  key={terminal.id}
-                  style={{ borderBottom: '1px solid var(--bp-border)' }}
+        <DataTable
+          columns={[
+            { label: '단말기 ID' },
+            { label: '이름' },
+            { label: '매장', className: 'hidden md:table-cell' },
+            { label: '타입', className: 'hidden lg:table-cell' },
+            { label: '상태' },
+            { label: '' },
+          ]}
+          isEmpty={visibleTerminals.length === 0}
+          empty="등록된 단말기가 없습니다."
+        >
+          {visibleTerminals.map(terminal => (
+            <DataTableRow key={terminal.id}>
+              <td className="px-4 py-3 font-mono font-medium text-white">
+                {terminal.term_id}
+              </td>
+              <td
+                className="px-4 py-3 text-white font-medium cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => router.push(`/store/admin/terminals/${terminal.id}`)}
+              >
+                {terminal.name || terminal.term_id}
+              </td>
+              <td className="px-4 py-3 hidden md:table-cell" style={{ color: 'var(--bp-text-3)' }}>
+                {storeMap.get(terminal.store_id || '') ?? '-'}
+              </td>
+              <td className="px-4 py-3 hidden lg:table-cell">
+                <span
+                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                  style={{ background: 'var(--bp-surface-2)', color: 'var(--bp-text-3)' }}
                 >
-                  <td className="px-4 py-3 font-mono font-medium text-white">
-                    {terminal.term_id}
-                  </td>
-                  <td
-                    className="px-4 py-3 text-white font-medium cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => router.push(`/store/admin/terminals/${terminal.id}`)}
-                  >
-                    {terminal.name || terminal.term_id}
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell" style={{ color: 'var(--bp-text-3)' }}>
-                    {storeMap.get(terminal.store_id || '') ?? '-'}
-                  </td>
-                  <td className="px-4 py-3 hidden lg:table-cell">
-                    <span
-                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                      style={{ background: 'var(--bp-surface-2)', color: 'var(--bp-text-3)' }}
-                    >
-                      {TYPE_LABELS[terminal.terminal_type as TerminalType] ?? 'POS'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      terminal.status === 'online'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-gray-500/20 text-gray-400'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        terminal.status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-400'
-                      }`} />
-                      {terminal.status === 'online' ? '온라인' : '오프라인'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                    <TerminalCommandMenu terminalId={terminal.id} online={terminal.status === 'online'} />
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  {TYPE_LABELS[terminal.terminal_type as TerminalType] ?? 'POS'}
+                </span>
+              </td>
+              <td className="px-4 py-3">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  terminal.status === 'online'
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-gray-500/20 text-gray-400'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    terminal.status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-400'
+                  }`} />
+                  {terminal.status === 'online' ? '온라인' : '오프라인'}
+                </span>
+              </td>
+              <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
+                <TerminalCommandMenu terminalId={terminal.id} online={terminal.status === 'online'} />
+              </td>
+            </DataTableRow>
+          ))}
+        </DataTable>
       </div>
     </div>
   )

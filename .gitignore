@@ -53,3 +53,6 @@ next-env.d.ts
 .impeccable.md
 .omc/
 .claude/
+
+# graphify output
+graphify-out/

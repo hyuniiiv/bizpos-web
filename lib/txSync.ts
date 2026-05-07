@@ -24,50 +24,40 @@ export async function flushOfflineQueue(): Promise<{ synced: number; failed: num
     return { synced: 0, failed: 0 }
   }
 
-  let totalSynced = 0;
-  let totalFailed = 0;
-  
-  // Batch processing (50 records per chunk)
-  const BATCH_SIZE = 50;
-  for (let i = 0; i < queue.length; i += BATCH_SIZE) {
-    const chunk = queue.slice(i, i + BATCH_SIZE);
-    
-    try {
-      const res = await fetch(getServerUrl() + '/api/payment/offline', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ records: chunk }),
-      })
+  let synced = 0
+  let failed = 0
 
-      if (res.ok) {
-        const result = await res.json()
-        // 서버가 명시적으로 확인한 ID만 처리 (폴백 시 빈 배열 → 재시도 보장)
-        const syncedIds: string[] = result.syncedIds ?? []
-        
-        // Only mark records confirmed by the server as synced
-        for (const id of syncedIds) {
-          await PaymentRepository.markPaymentSynced(id)
-        }
-        
-        totalSynced += syncedIds.length;
-        totalFailed += (chunk.length - syncedIds.length);
-      } else {
-        totalFailed += chunk.length;
-        console.error(`[txSync] Failed to sync chunk, status: ${res.status}`);
+  try {
+    const res = await fetch(getServerUrl() + '/api/payment/offline', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ records: queue }),
+    })
+
+    if (res.ok) {
+      const result = await res.json()
+      // 서버가 명시적으로 확인한 ID만 처리 (폴백 시 빈 배열 → 재시도 보장)
+      const syncedIds: string[] = result.syncedIds ?? []
+      for (const id of syncedIds) {
+        await PaymentRepository.markPaymentSynced(id)
       }
-    } catch (err) {
-      totalFailed += chunk.length;
-      console.error('[txSync] Network or sync error:', err);
+      synced = syncedIds.length
+      failed = queue.length - syncedIds.length
+    } else {
+      failed = queue.length
+      console.error(`[txSync] Failed to sync, status: ${res.status}`)
     }
+  } catch (err) {
+    failed = queue.length
+    console.error('[txSync] Network or sync error:', err)
   }
 
-  // 동기화 완료 후 남은 건수로 UI 스토어 갱신
   const remaining = await PaymentRepository.getPendingPayments()
   useSettingsStore.getState().setPendingCount(remaining.length)
 
   isFlushing = false
-  return { synced: totalSynced, failed: totalFailed }
+  return { synced, failed }
 }

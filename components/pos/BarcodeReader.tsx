@@ -34,7 +34,7 @@ export default function BarcodeReader({
   onScan,
   enabled = true,
   readerType = 'keyboard',
-  serialPort: _serialPort,
+  serialPort,
 }: Props) {
   // -------------------------------------------------------------------------
   // Keyboard 모드 refs
@@ -142,6 +142,10 @@ export default function BarcodeReader({
     if (!serialSupported) return
 
     try {
+      // Electron 환경에서 select-serial-port 이벤트가 이 값으로 포트를 자동 선택
+      if (serialPort) {
+        await (window as any).electronAPI?.setBarcodePort(serialPort)
+      }
       const port = await navigator.serial.requestPort()
       await port.open({ baudRate: 9600 })
       portRef.current = port

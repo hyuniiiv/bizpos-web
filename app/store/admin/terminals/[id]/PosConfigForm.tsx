@@ -312,6 +312,7 @@ export default function PosConfigForm({
             <div>
               <label className={labelCls}>바코드 리더 포트</label>
               <input className={inputCls} style={inputStyle} value={device.barcodePort ?? 'COM4'} onChange={e => d('barcodePort', e.target.value)} placeholder="COM4" />
+              <p className="mt-1.5 text-xs text-white/40">시리얼 방식 사용 시 적용. 스캐너 baud rate는 9600으로 맞춰야 합니다 (스캐너 설정 바코드로 변경)</p>
             </div>
             <div>
               <label className={labelCls}>바코드 입력 방식</label>
@@ -418,6 +419,21 @@ export default function PosConfigForm({
                 ))}
               </div>
             )}
+
+            <div className="col-span-2 space-y-2 pt-4 border-t border-white/10">
+              <h3 className="text-sm font-semibold text-white/50">허용 바코드/QR Prefix</h3>
+              <input
+                className={inputCls}
+                style={inputStyle}
+                placeholder="예: 800088668039, 3-BP-39 (쉼표로 구분, 비워두면 전체 허용)"
+                value={(device.allowedBarcodePrefix ?? []).join(', ')}
+                onChange={e => {
+                  const prefixes = e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                  setDevice((prev: Partial<DeviceConfig>) => ({ ...prev, allowedBarcodePrefix: prefixes.length > 0 ? prefixes : undefined }))
+                }}
+              />
+              <p className="text-xs text-white/40">설정 시 해당 prefix로 시작하는 바코드/QR만 허용. RF카드는 적용 안 됨.</p>
+            </div>
 
           <div className="col-span-2 pt-2">
             <button onClick={handleSaveConfig} disabled={saving}

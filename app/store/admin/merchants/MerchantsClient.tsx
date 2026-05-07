@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import type { Merchant } from '@/lib/context/MerchantStoreContext'
 import { ROLES } from '@/lib/roles/permissions'
 import MerchantForm from './MerchantForm'
+import { DataTable, DataTableRow } from '@/components/ui/DataTable'
 
 interface Admin {
   id: string
@@ -217,76 +218,51 @@ export default function MerchantsClient({
           border: '1px solid var(--bp-border)',
         }}
       >
-        <table className="w-full text-sm">
-          <thead>
-            <tr
-              style={{
-                borderBottom: '1px solid var(--bp-border)',
-                color: 'var(--bp-text-3)',
-              }}
-            >
-              <th className="text-left px-4 py-3 font-medium">가맹점명</th>
-              <th className="text-left px-4 py-3 font-medium">사업자번호</th>
-              <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
-                주소
-              </th>
-              <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">
-                관리자
-              </th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMerchants.length === 0 ? (
-              <tr>
+        <DataTable
+          columns={[
+            { label: '가맹점명' },
+            { label: '사업자번호' },
+            { label: '주소', className: 'hidden md:table-cell' },
+            { label: '관리자', className: 'hidden lg:table-cell' },
+            { label: '' },
+          ]}
+          isEmpty={filteredMerchants.length === 0}
+          empty="등록된 가맹점이 없습니다."
+        >
+          {filteredMerchants.map(merchant => {
+            const adminName =
+              admins.find(a => a.id === merchant.admin_id)?.email || '미지정'
+            return (
+              <DataTableRow key={merchant.id}>
                 <td
-                  colSpan={5}
-                  className="text-center py-12"
+                  className="px-4 py-3 text-white font-medium cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => router.push(`/store/admin/merchants/${merchant.id}`)}
+                >
+                  {merchant.name}
+                </td>
+                <td
+                  className="px-4 py-3 text-sm"
                   style={{ color: 'var(--bp-text-3)' }}
                 >
-                  등록된 가맹점이 없습니다.
+                  {merchant.biz_no}
                 </td>
-              </tr>
-            ) : (
-              filteredMerchants.map(merchant => {
-                const adminName =
-                  admins.find(a => a.id === merchant.admin_id)?.email || '미지정'
-                return (
-                  <tr
-                    key={merchant.id}
-                    style={{ borderBottom: '1px solid var(--bp-border)' }}
-                  >
-                    <td
-                      className="px-4 py-3 text-white font-medium cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => router.push(`/store/admin/merchants/${merchant.id}`)}
-                    >
-                      {merchant.name}
-                    </td>
-                    <td
-                      className="px-4 py-3 text-sm"
-                      style={{ color: 'var(--bp-text-3)' }}
-                    >
-                      {merchant.biz_no}
-                    </td>
-                    <td
-                      className="px-4 py-3 text-sm hidden md:table-cell"
-                      style={{ color: 'var(--bp-text-3)' }}
-                    >
-                      {merchant.address}
-                    </td>
-                    <td
-                      className="px-4 py-3 text-sm hidden lg:table-cell"
-                      style={{ color: 'var(--bp-text-3)' }}
-                    >
-                      {adminName}
-                    </td>
-                    <td className="px-4 py-3" />
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
+                <td
+                  className="px-4 py-3 text-sm hidden md:table-cell"
+                  style={{ color: 'var(--bp-text-3)' }}
+                >
+                  {merchant.address}
+                </td>
+                <td
+                  className="px-4 py-3 text-sm hidden lg:table-cell"
+                  style={{ color: 'var(--bp-text-3)' }}
+                >
+                  {adminName}
+                </td>
+                <td className="px-4 py-3" />
+              </DataTableRow>
+            )
+          })}
+        </DataTable>
       </div>
 
       {/* 생성/수정 모달 */}

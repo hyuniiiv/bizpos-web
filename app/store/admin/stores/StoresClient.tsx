@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import type { Store } from './page'
 import { ROLES } from '@/lib/roles/permissions'
+import { DataTable, DataTableRow } from '@/components/ui/DataTable'
 
 interface Terminal {
   id: string
@@ -144,82 +145,68 @@ export default function StoresClient({
       </div>
 
       <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--bp-border)', color: 'var(--bp-text-3)' }}>
-              <th className="text-left px-4 py-3 font-medium">매장명</th>
-              <th className="text-left px-4 py-3 font-medium hidden md:table-cell">주소</th>
-              <th className="text-left px-4 py-3 font-medium">단말기</th>
-              <th className="text-left px-4 py-3 font-medium">상태</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {stores.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center py-12" style={{ color: 'var(--bp-text-3)' }}>
-                  등록된 매장이 없습니다.
+        <DataTable
+          columns={[
+            { label: '매장명' },
+            { label: '주소', className: 'hidden md:table-cell' },
+            { label: '단말기' },
+            { label: '상태' },
+            { label: '' },
+          ]}
+          isEmpty={stores.length === 0}
+          empty="등록된 매장이 없습니다."
+        >
+          {stores.map(store => {
+            const storeTerminals = terminalsByStore.get(store.id) ?? []
+            const onlineCount = storeTerminals.filter(t => t.status === 'online').length
+            return (
+              <DataTableRow key={store.id} onClick={() => router.push(`/store/admin/stores/${store.id}`)}>
+                <td className="px-4 py-3 font-medium text-white">
+                  {store.store_name}
                 </td>
-              </tr>
-            ) : (
-              stores.map(store => {
-                const storeTerminals = terminalsByStore.get(store.id) ?? []
-                const onlineCount = storeTerminals.filter(t => t.status === 'online').length
-                return (
-                  <tr
-                    key={store.id}
-                    onClick={() => router.push(`/store/admin/stores/${store.id}`)}
-                    className="cursor-pointer hover:bg-white/5 transition-colors"
-                    style={{ borderBottom: '1px solid var(--bp-border)' }}
-                  >
-                    <td className="px-4 py-3 font-medium text-white">
-                      {store.store_name}
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell" style={{ color: 'var(--bp-text-3)' }}>
-                      {store.address || '-'}
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--bp-text-3)' }}>
-                      {storeTerminals.length > 0
-                        ? `${onlineCount}/${storeTerminals.length}개`
-                        : '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
-                        store.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
-                      }`}>
-                        {store.is_active ? '활성' : '비활성'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 justify-end" onClick={e => e.stopPropagation()}>
-                        {canEditStore && (
-                          <button
-                            onClick={e => openEditStore(e, store)}
-                            className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
-                            style={{ color: 'var(--bp-text-3)' }}
-                            title="수정"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {canDeleteStore && (
-                          <button
-                            onClick={e => deleteStore(e, store.id, store.store_name)}
-                            className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20 hover:text-red-400"
-                            style={{ color: 'var(--bp-text-3)' }}
-                            title="삭제"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
+                <td className="px-4 py-3 hidden md:table-cell" style={{ color: 'var(--bp-text-3)' }}>
+                  {store.address || '-'}
+                </td>
+                <td className="px-4 py-3" style={{ color: 'var(--bp-text-3)' }}>
+                  {storeTerminals.length > 0
+                    ? `${onlineCount}/${storeTerminals.length}개`
+                    : '-'}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
+                    store.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                  }`}>
+                    {store.is_active ? '활성' : '비활성'}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-1 justify-end" onClick={e => e.stopPropagation()}>
+                    {canEditStore && (
+                      <button
+                        onClick={e => openEditStore(e, store)}
+                        className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+                        style={{ color: 'var(--bp-text-3)' }}
+                        title="수정"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {canDeleteStore && (
+                      <button
+                        onClick={e => deleteStore(e, store.id, store.store_name)}
+                        className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20 hover:text-red-400"
+                        style={{ color: 'var(--bp-text-3)' }}
+                        title="삭제"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </DataTableRow>
+            )
+          })}
+        </DataTable>
       </div>
 
       {/* 매장 추가/수정 모달 */}

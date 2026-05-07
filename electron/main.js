@@ -296,12 +296,15 @@ function setupPermissions() {
   )
 
   // Web Serial API: 포트 선택 자동 처리
+  // preferredBarcodePort가 설정된 경우 해당 포트명으로 매칭, 없으면 첫 번째 포트 선택
   session.defaultSession.on('select-serial-port', (event, portList, _webContents, callback) => {
     event.preventDefault()
-    if (portList.length > 0) {
-      callback(portList[0].portId)
+    if (portList.length === 0) { callback(''); return }
+    if (preferredBarcodePort) {
+      const match = portList.find(p => p.portName === preferredBarcodePort)
+      callback(match ? match.portId : portList[0].portId)
     } else {
-      callback('')
+      callback(portList[0].portId)
     }
   })
 
@@ -561,6 +564,12 @@ ipcMain.handle('app:openLogs', () => {
 // Serial Port IPC Handlers (경광봉 / 외부 디스플레이 제어)
 // ============================================================
 let activePort = null;
+let preferredBarcodePort = null;
+
+ipcMain.handle('serial:setBarcodePort', (_event, portName) => {
+  preferredBarcodePort = portName || null
+  return { success: true }
+})
 
 ipcMain.handle('serial:open', async (event, portName, baudRate = 9600) => {
   try {

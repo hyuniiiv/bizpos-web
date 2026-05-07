@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     const { data: terminalRow } = await supabase
       .from('terminals')
-      .select('id, merchant_id')
+      .select('id, merchant_id, name')
       .eq('term_id', termId)
       .single()
 
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        const result = await client.syncOffline([bizplayRec])
+        const result = await client.syncOffline([{ ...bizplayRec, termId: terminalRow?.name ?? bizplayRec.termId }])
         if (result.code !== '0000') continue  // 실패한 건은 큐에 유지
 
         const paymentType =
@@ -101,6 +101,7 @@ export async function POST(req: NextRequest) {
           await supabase.from('transactions').upsert(
             {
               terminal_id: terminalRow.id,
+              terminal_name: terminalRow.name ?? '',
               merchant_id: terminalRow.merchant_id,
               merchant_order_id: rec.merchantOrderID,
               menu_name: rec.productName,

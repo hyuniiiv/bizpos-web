@@ -55,29 +55,21 @@ export default async function MerchantKeysPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white">키 관리</h1>
-            {selectedMerchant && merchants.length > 1 && (
-              <p className="text-sm text-white/40 mt-0.5">{selectedMerchant.name}</p>
-            )}
-          </div>
-        </div>
-        <Suspense fallback={null}>
-          <MerchantStoreFilter
-            merchants={merchants}
-            stores={[]}
-            selectedMerchantId={selectedMerchantId}
-            selectedStoreId=""
-            basePath="/store/admin/keys"
-          />
-        </Suspense>
-      </div>
+      <Suspense fallback={null}>
+        <MerchantStoreFilter
+          merchants={merchants}
+          stores={[]}
+          selectedMerchantId={selectedMerchantId}
+          selectedStoreId=""
+          basePath="/store/admin/keys"
+        />
+      </Suspense>
 
       <MerchantKeyClient
         initialKeys={keys ?? []}
         merchantId={selectedMerchantId}
+        merchantName={selectedMerchant?.name ?? ''}
+        keyCount={(keys ?? []).length}
       />
     </div>
   )

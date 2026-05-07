@@ -88,6 +88,7 @@ export interface DeviceConfig {
   tableCount?: number                         // 테이블오더 테이블 수
   receiptPrint?: boolean                      // 영수증 출력 여부
   inputPolicy?: InputPolicy
+  allowedBarcodePrefix?: string[]
 }
 
 export interface Employee {

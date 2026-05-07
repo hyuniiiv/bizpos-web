@@ -104,6 +104,7 @@ export interface Transaction {
   synced: boolean
   createdAt: string
   termId?: string
+  terminalName?: string
 }
 
 export interface OfflineRecord {

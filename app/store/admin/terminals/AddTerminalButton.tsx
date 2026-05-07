@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
 
 const inputStyle = { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)' }
 const inputCls = 'w-full rounded-lg px-4 py-3 text-base text-white placeholder-white/25 focus:outline-none transition-all'
@@ -49,13 +50,9 @@ export default function AddTerminalButton({ merchantId: _ }: { merchantId: strin
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="px-4 py-3 rounded-lg text-base text-white transition-all"
-        style={{ background: 'rgba(96,165,250,0.25)', border: '1px solid rgba(96,165,250,0.40)' }}
-      >
+      <PrimaryButton onClick={() => setOpen(true)}>
         + 단말기 추가
-      </button>
+      </PrimaryButton>
 
       {open && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">

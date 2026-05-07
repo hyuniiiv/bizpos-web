@@ -7,6 +7,8 @@ import type { Member } from './page'
 import { MERCHANT_ASSIGNABLE as ASSIGNABLE, NEEDS_PASSWORD_ROLES as NEEDS_PASSWORD } from '@/lib/roles/assignable'
 import { filterMembersByRole } from '@/lib/roles/memberFilter'
 import CreateAccountForm, { type CreateAccountFormData } from './CreateAccountForm'
+import { DataTable, DataTableRow } from '@/components/ui/DataTable'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
 
 const ROLE_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
   platform_admin: { label: '시스템 관리자', bg: 'rgba(239,68,68,0.12)', color: '#ef4444' },
@@ -148,100 +150,91 @@ export default function MembersClient({
             </p>
           </div>
           {canManage && (
-            <button
-              onClick={openCreateForm}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black transition-opacity hover:opacity-80"
-              style={{ background: '#06D6A0' }}
-            >
+            <PrimaryButton onClick={openCreateForm}>
               <Plus className="w-4 h-4" />계정 생성
-            </button>
+            </PrimaryButton>
           )}
         </div>
       )}
 
       <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--bp-border)', color: 'var(--bp-text-3)' }}>
-              <th className="text-left px-4 py-3 font-medium">이메일 (ID)</th>
-              <th className="text-left px-4 py-3 font-medium">역할</th>
-              <th className="text-left px-4 py-3 font-medium hidden md:table-cell">등록일</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {members.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="text-center py-12" style={{ color: 'var(--bp-text-3)' }}>멤버가 없습니다.</td>
-              </tr>
-            ) : members.map(m => {
-              const rc = ROLE_COLOR[m.role] ?? ROLE_COLOR.store_manager
-              const canEdit = ASSIGNABLE[myRole]?.includes(m.role)
-              const isSelf = m.user_id === currentUserId
-              return (
-                <tr key={m.id} style={{ borderBottom: '1px solid var(--bp-border)' }}>
-                  <td className="px-4 py-3 text-white">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: rc.color }} />
-                      {m.email}
-                      {isSelf && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(6,214,160,0.12)', color: '#06D6A0' }}>나</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    {canEdit && !isSelf && assignable.length > 1 ? (
-                      <select
-                        value={m.role}
-                        onChange={e => handleRoleChange(m.id, e.target.value)}
-                        className="px-2 py-1 rounded-lg text-xs font-medium"
-                        style={{ background: rc.bg, color: rc.color, border: 'none', outline: 'none' }}
-                      >
-                        {assignable.map(r => (
-                          <option key={r} value={r} style={{ background: '#1e2533', color: '#fff' }}>
-                            {ROLE_LABEL[r]}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style={rc}>
-                        {ROLE_LABEL[m.role] ?? m.role}
-                        <span className="hidden">{m.role}</span>
-                      </span>
+        <DataTable
+          columns={[
+            { label: '이메일 (ID)' },
+            { label: '역할' },
+            { label: '등록일', className: 'hidden md:table-cell' },
+            { label: '' },
+          ]}
+          isEmpty={members.length === 0}
+          empty="멤버가 없습니다."
+        >
+          {members.map(m => {
+            const rc = ROLE_COLOR[m.role] ?? ROLE_COLOR.store_manager
+            const canEdit = ASSIGNABLE[myRole]?.includes(m.role)
+            const isSelf = m.user_id === currentUserId
+            return (
+              <DataTableRow key={m.id}>
+                <td className="px-4 py-3 text-white">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: rc.color }} />
+                    {m.email}
+                    {isSelf && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(6,214,160,0.12)', color: '#06D6A0' }}>나</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-xs" style={{ color: 'var(--bp-text-3)' }}>
-                    {new Date(m.created_at).toLocaleDateString('ko-KR')}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      {canEdit && !isSelf && NEEDS_PASSWORD.has(m.role) && (
-                        <button
-                          onClick={() => openPwModal(m.id)}
-                          className="p-1.5 rounded-lg transition-colors hover:bg-blue-500/20 hover:text-blue-400"
-                          style={{ color: 'var(--bp-text-3)' }}
-                          title="비밀번호 재설정"
-                        >
-                          <KeyRound className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {canEdit && !isSelf && (
-                        <button
-                          onClick={() => handleDelete(m.id, m.email)}
-                          className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20 hover:text-red-400"
-                          style={{ color: 'var(--bp-text-3)' }}
-                          title="제거"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  {canEdit && !isSelf && assignable.length > 1 ? (
+                    <select
+                      value={m.role}
+                      onChange={e => handleRoleChange(m.id, e.target.value)}
+                      className="px-2 py-1 rounded-lg text-xs font-medium"
+                      style={{ background: rc.bg, color: rc.color, border: 'none', outline: 'none' }}
+                    >
+                      {assignable.map(r => (
+                        <option key={r} value={r} style={{ background: '#1e2533', color: '#fff' }}>
+                          {ROLE_LABEL[r]}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style={rc}>
+                      {ROLE_LABEL[m.role] ?? m.role}
+                      <span className="hidden">{m.role}</span>
+                    </span>
+                  )}
+                </td>
+                <td className="px-4 py-3 hidden md:table-cell text-xs" style={{ color: 'var(--bp-text-3)' }}>
+                  {new Date(m.created_at).toLocaleDateString('ko-KR')}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-1">
+                    {canEdit && !isSelf && NEEDS_PASSWORD.has(m.role) && (
+                      <button
+                        onClick={() => openPwModal(m.id)}
+                        className="p-1.5 rounded-lg transition-colors hover:bg-blue-500/20 hover:text-blue-400"
+                        style={{ color: 'var(--bp-text-3)' }}
+                        title="비밀번호 재설정"
+                      >
+                        <KeyRound className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {canEdit && !isSelf && (
+                      <button
+                        onClick={() => handleDelete(m.id, m.email)}
+                        className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20 hover:text-red-400"
+                        style={{ color: 'var(--bp-text-3)' }}
+                        title="제거"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </DataTableRow>
+            )
+          })}
+        </DataTable>
       </div>
 
       {/* 계정 생성 폼 */}
