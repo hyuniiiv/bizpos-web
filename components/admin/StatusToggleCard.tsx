@@ -52,7 +52,7 @@ export default function StatusToggleCard({
           onClick={handleClick}
           className={`relative w-12 h-6 rounded-full transition-colors ${isActive ? 'bg-green-500' : 'bg-white/20'}`}
         >
-          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${isActive ? 'translate-x-6' : 'translate-x-0.5'}`} />
+          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${isActive ? 'translate-x-[26px]' : 'translate-x-0.5'}`} />
         </button>
       </div>
     </div>
