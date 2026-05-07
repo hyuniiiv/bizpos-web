@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { Trash2, Pencil, ArrowLeft, Plus } from 'lucide-react'
 import { useState } from 'react'
+import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 
 interface Terminal {
   id: string
@@ -54,6 +55,7 @@ export default function StoreDetailClient({
   const [addFormData, setAddFormData] = useState({ email: '', password: '', role: 'store_manager' })
   const [isLoading, setIsLoading] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<EditForm>({
     store_name: store.store_name,
@@ -89,24 +91,15 @@ export default function StoreDetailClient({
     setForm({ store_name: store.store_name, address: store.address ?? '', is_active: store.is_active, description: store.description ?? '', logo_url: store.logo_url ?? '' })
   }
 
-  const handleDelete = () => {
-    if (!confirm(`'${store.store_name}' 매장을 삭제하시겠습니까?`)) return
-
-    fetch('/api/merchant/stores', {
+  const handleDelete = async () => {
+    const res = await fetch('/api/merchant/stores', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: store.id }),
     })
-      .then(res => res.json())
-      .then(json => {
-        if (!json.error) {
-          alert('삭제되었습니다')
-          router.push('/store/admin/stores')
-        } else {
-          alert(json.error)
-        }
-      })
-      .catch(err => alert(err.message))
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error ?? '삭제 실패')
+    router.push('/store/admin/stores')
   }
 
   const handleAddManager = async () => {
@@ -198,7 +191,7 @@ export default function StoreDetailClient({
           )}
           {canDelete && (
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteModal(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-red-400 transition-opacity hover:opacity-80"
               style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}
             >
@@ -530,6 +523,14 @@ export default function StoreDetailClient({
         </div>
       )}
 
+      {showDeleteModal && (
+        <DeleteConfirmModal
+          title={`'${store.store_name}' 매장 삭제`}
+          description="삭제된 매장은 복구할 수 없습니다. 계속하려면 비밀번호를 입력하세요."
+          onConfirm={handleDelete}
+          onClose={() => setShowDeleteModal(false)}
+        />
+      )}
     </div>
   )
 }

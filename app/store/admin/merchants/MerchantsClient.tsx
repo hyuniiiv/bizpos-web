@@ -7,6 +7,7 @@ import type { Merchant } from '@/lib/context/MerchantStoreContext'
 import { ROLES } from '@/lib/roles/permissions'
 import MerchantForm from './MerchantForm'
 import { DataTable, DataTableRow } from '@/components/ui/DataTable'
+import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 
 interface Admin {
   id: string
@@ -49,6 +50,7 @@ export default function MerchantsClient({
 
   // 역할을 소문자로 정규화
   const normalizedRole = userRole?.toLowerCase()
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   // 권한 체크
   const isPlatform =
@@ -142,25 +144,19 @@ export default function MerchantsClient({
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`'${name}' 가맹점을 삭제하시겠습니까?`)) return
-
-    try {
-      const res = await fetch('/api/merchant/merchants', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      })
-
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? '삭제 실패')
-
-      setMerchants(prev => prev.filter(m => m.id !== id))
-      router.refresh()
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : '삭제 실패')
-    }
+  async function handleDelete(id: string) {
+    const res = await fetch('/api/merchant/merchants', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error ?? '삭제 실패')
+    setMerchants(prev => prev.filter(m => m.id !== id))
+    setDeleteTarget(null)
+    router.refresh()
   }
+
 
   if (!canAccess) {
     return (
@@ -245,7 +241,14 @@ export default function MerchantsClient({
                 >
                   {adminName}
                 </td>
-                <td className="px-4 py-3" />
+                <td className="px-4 py-3 text-right">
+                  {canDelete && (
+                    <button onClick={() => setDeleteTarget({ id: merchant.id, name: merchant.name })}
+                      className="p-1.5 rounded-lg text-red-400/60 hover:text-red-400 transition-colors hover:bg-red-400/10">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </td>
               </DataTableRow>
             )
           })}
@@ -306,6 +309,15 @@ export default function MerchantsClient({
             </div>
           </div>
         </div>
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={`'${deleteTarget.name}' 가맹점 삭제`}
+          description="삭제된 가맹점은 복구할 수 없습니다. 계속하려면 비밀번호를 입력하세요."
+          onConfirm={() => handleDelete(deleteTarget.id)}
+          onClose={() => setDeleteTarget(null)}
+        />
       )}
     </div>
   )

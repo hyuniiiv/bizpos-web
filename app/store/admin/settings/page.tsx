@@ -27,12 +27,6 @@ export default async function SettingsPage() {
           <span className="text-white">{user?.email}</span>
           <span className="text-white/50">권한</span>
           <span className="text-white capitalize">{merchantUser?.role ?? '-'}</span>
-          {merchant && (
-            <>
-              <span className="text-white/50">소속 가맹점</span>
-              <span className="text-white">{merchant.name}</span>
-            </>
-          )}
         </div>
       </section>
 

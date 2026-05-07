@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Pencil, Trash2, Key } from 'lucide-react'
 import { toast } from 'sonner'
+import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 
 interface KeyData {
   id: string
@@ -37,6 +38,7 @@ type EditForm = {
 export default function KeyDetailClient({ keyData, canEdit, canDelete }: Props) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<EditForm>({
     name: keyData.name,
@@ -69,18 +71,13 @@ export default function KeyDetailClient({ keyData, canEdit, canDelete }: Props) 
   }
 
   async function handleDelete() {
-    if (!confirm(`'${keyData.name}' 키를 삭제하시겠습니까?`)) return
-    try {
-      const res = await fetch(`/api/merchant/keys/${keyData.id}`, { method: 'DELETE' })
-      if (!res.ok) {
-        const d = await res.json()
-        throw new Error(d?.error?.message ?? '삭제 실패')
-      }
-      toast.success('키가 삭제되었습니다.')
-      router.push('/store/admin/keys')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : '삭제 실패')
+    const res = await fetch(`/api/merchant/keys/${keyData.id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const d = await res.json()
+      throw new Error(d?.error?.message ?? '삭제 실패')
     }
+    toast.success('키가 삭제되었습니다.')
+    router.push('/store/admin/keys')
   }
 
   function cancelEdit() {
@@ -125,7 +122,7 @@ export default function KeyDetailClient({ keyData, canEdit, canDelete }: Props) 
           )}
           {canDelete && (
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteModal(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-red-400 transition-opacity hover:opacity-80"
               style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}
             >
@@ -287,6 +284,14 @@ export default function KeyDetailClient({ keyData, canEdit, canDelete }: Props) 
           </div>
         )}
       </div>
+      {showDeleteModal && (
+        <DeleteConfirmModal
+          title={`'${keyData.name}' 키 삭제`}
+          description="삭제된 키는 복구할 수 없습니다. 계속하려면 비밀번호를 입력하세요."
+          onConfirm={handleDelete}
+          onClose={() => setShowDeleteModal(false)}
+        />
+      )}
     </div>
   )
 }
