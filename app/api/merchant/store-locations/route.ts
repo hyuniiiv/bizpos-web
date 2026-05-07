@@ -180,6 +180,12 @@ export async function DELETE(req: NextRequest) {
   }
 
   const adminDb = createAdminClient()
+
+  const { count: terminalCount } = await adminDb
+    .from('terminals').select('*', { count: 'exact', head: true }).eq('store_id', id)
+  if ((terminalCount ?? 0) > 0)
+    return NextResponse.json({ error: `단말기 ${terminalCount}개가 연결되어 있어 삭제할 수 없습니다` }, { status: 400 })
+
   const { error } = await adminDb.from('stores').delete().eq('id', id)
   
   if (error) {

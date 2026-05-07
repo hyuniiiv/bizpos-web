@@ -5,6 +5,7 @@ import { Trash2, Pencil, Plus, Key, ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 import type { Merchant, Store } from '@/lib/context/MerchantStoreContext'
 import type { MerchantKey } from './page'
+import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 
 type EditForm = { name: string; biz_no: string; address: string; description: string }
 
@@ -71,6 +72,7 @@ export default function MerchantDetailClient({
   const [existingForm, setExistingForm] = useState({ user_id: '', role: 'merchant_admin' })
   const [addFormData, setAddFormData] = useState({ email: '', password: '', role: 'merchant_admin' })
   const [isLoading, setIsLoading] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showAddStoreModal, setShowAddStoreModal] = useState(false)
   const [storeForm, setStoreForm] = useState({ store_name: '', address: '' })
   const [isStoreLoading, setIsStoreLoading] = useState(false)
@@ -275,24 +277,15 @@ const handleAddStore = async () => {
     }
   }
 
-  const handleDelete = () => {
-    if (!confirm(`'${merchant.name}' 가맹점을 삭제하시겠습니까?`)) return
-
-    fetch('/api/merchant/merchants', {
+  const handleDelete = async () => {
+    const res = await fetch('/api/merchant/merchants', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: merchant.id }),
     })
-      .then(res => res.json())
-      .then(json => {
-        if (!json.error) {
-          alert('삭제되었습니다')
-          router.push('/store/admin/merchants')
-        } else {
-          alert(json.error)
-        }
-      })
-      .catch(err => alert(err.message))
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error ?? '삭제 실패')
+    router.push('/store/admin/merchants')
   }
 
   return (
@@ -328,7 +321,7 @@ const handleAddStore = async () => {
           )}
           {canDelete && (
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteModal(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-red-400 transition-opacity hover:opacity-80"
               style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}
             >
@@ -994,6 +987,15 @@ const handleAddStore = async () => {
           돌아가기
         </a>
       </div>
+
+      {showDeleteModal && (
+        <DeleteConfirmModal
+          title={`'${merchant.name}' 가맹점 삭제`}
+          description="삭제된 가맹점은 복구할 수 없습니다. 계속하려면 비밀번호를 입력하세요."
+          onConfirm={handleDelete}
+          onClose={() => setShowDeleteModal(false)}
+        />
+      )}
     </div>
   )
 }

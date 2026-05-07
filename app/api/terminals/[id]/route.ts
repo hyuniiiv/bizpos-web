@@ -59,6 +59,11 @@ export async function DELETE(
     .from('merchant_users').select('merchant_id').eq('user_id', user.id).single()
   if (!mu) return NextResponse.json({ error: 'MERCHANT_NOT_FOUND' }, { status: 403 })
 
+  const { count: txCount } = await supabase
+    .from('transactions').select('*', { count: 'exact', head: true }).eq('terminal_id', id)
+  if ((txCount ?? 0) > 0)
+    return NextResponse.json({ error: `거래내역 ${txCount}건이 있어 삭제할 수 없습니다` }, { status: 400 })
+
   const { error } = await supabase
     .from('terminals')
     .delete()

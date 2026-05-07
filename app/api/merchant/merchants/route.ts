@@ -166,6 +166,18 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '가맹점 ID가 필요합니다' }, { status: 400 })
     }
 
+    const [{ count: storeCount }, { count: keyCount }, { count: memberCount }] = await Promise.all([
+      supabase.from('stores').select('*', { count: 'exact', head: true }).eq('merchant_id', id),
+      supabase.from('merchant_keys').select('*', { count: 'exact', head: true }).eq('merchant_id', id),
+      supabase.from('merchant_users').select('*', { count: 'exact', head: true }).eq('merchant_id', id),
+    ])
+    if ((storeCount ?? 0) > 0)
+      return NextResponse.json({ error: `매장 ${storeCount}개가 연결되어 있어 삭제할 수 없습니다` }, { status: 400 })
+    if ((keyCount ?? 0) > 0)
+      return NextResponse.json({ error: `가맹점 키 ${keyCount}개가 연결되어 있어 삭제할 수 없습니다` }, { status: 400 })
+    if ((memberCount ?? 0) > 0)
+      return NextResponse.json({ error: `계정 ${memberCount}개가 연결되어 있어 삭제할 수 없습니다` }, { status: 400 })
+
     const { error } = await supabase
       .from('merchants')
       .delete()

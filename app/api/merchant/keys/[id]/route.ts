@@ -65,6 +65,11 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return apiError('UNAUTHORIZED', '인증이 필요합니다', 401)
 
+  const { count: terminalCount } = await supabase
+    .from('terminals').select('*', { count: 'exact', head: true }).eq('merchant_key_id', id)
+  if ((terminalCount ?? 0) > 0)
+    return apiError('CONFLICT', `단말기 ${terminalCount}개가 이 키를 사용 중이어서 삭제할 수 없습니다`, 400)
+
   const { error } = await supabase
     .from('merchant_keys')
     .delete()
