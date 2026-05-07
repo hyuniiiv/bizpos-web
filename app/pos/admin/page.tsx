@@ -418,31 +418,34 @@ export default function PosAdminPage() {
                           </thead>
                           <tbody className="divide-y divide-white/5">
                             {mealMenus.map(m => (
-                              <tr key={m.id}>
-                                <td className="px-4 py-3">
-                                  <p className="font-medium text-white">{m.name}</p>
-                                  {m.serviceCodes && m.serviceCodes.length > 0 && (
-                                    <div className="mt-2 flex flex-col gap-1.5">
-                                      {m.serviceCodes.map(sc => (
-                                        <div key={sc.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm" style={{ background: 'rgba(96,165,250,0.10)', border: '1px solid rgba(96,165,250,0.25)' }}>
-                                          <span className="font-mono text-blue-300">{sc.code}</span>
-                                          {sc.description && <span className="text-white/50">{sc.description}</span>}
-                                          <span className="text-white/70 font-medium">{sc.amount.toLocaleString()}원</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-right text-white/70 align-top">{m.displayAmount.toLocaleString()}</td>
-                                <td className="px-4 py-3 text-right text-white/70 align-top">{m.paymentAmount.toLocaleString()}</td>
-                                <td className="px-4 py-3 text-center text-white/60 align-top">{m.startTime}~{m.endTime}</td>
-                                <td className="px-4 py-3 text-center text-white/50 text-xs align-top">{m.soundFile || '—'}</td>
-                                <td className="px-4 py-3 text-center align-top">
-                                  <span className={`text-xs px-2 py-0.5 rounded-full ${m.isActive ? 'text-green-400 bg-green-500/15' : 'text-white/30 bg-white/5'}`}>
-                                    {m.isActive ? '활성' : '비활성'}
-                                  </span>
-                                </td>
-                              </tr>
+                              <React.Fragment key={m.id}>
+                                <tr>
+                                  <td className="px-4 py-3 font-medium text-white">{m.name}</td>
+                                  <td className="px-4 py-3 text-right text-white/70">{m.displayAmount.toLocaleString()}</td>
+                                  <td className="px-4 py-3 text-right text-white/70">{m.paymentAmount.toLocaleString()}</td>
+                                  <td className="px-4 py-3 text-center text-white/60">{m.startTime}~{m.endTime}</td>
+                                  <td className="px-4 py-3 text-center text-white/50 text-xs">{m.soundFile || '—'}</td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${m.isActive ? 'text-green-400 bg-green-500/15' : 'text-white/30 bg-white/5'}`}>
+                                      {m.isActive ? '활성' : '비활성'}
+                                    </span>
+                                  </td>
+                                </tr>
+                                {m.serviceCodes && m.serviceCodes.map(sc => (
+                                  <tr key={sc.id} style={{ background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                                    <td className="py-2 pl-10 pr-4">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-white/20 text-xs select-none">└</span>
+                                        <span className="font-mono text-sm text-blue-300">{sc.code}</span>
+                                        {sc.description && <span className="text-xs text-white/40">{sc.description}</span>}
+                                      </div>
+                                    </td>
+                                    <td className="py-2 px-4 text-right text-white/30 text-sm">—</td>
+                                    <td className="py-2 px-4 text-right text-sm text-white/60 font-medium">{sc.amount.toLocaleString()}</td>
+                                    <td colSpan={3} />
+                                  </tr>
+                                ))}
+                              </React.Fragment>
                             ))}
                           </tbody>
                         </table>
