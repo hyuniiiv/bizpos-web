@@ -5,43 +5,25 @@ import type { Merchant } from '@/lib/context/MerchantStoreContext'
 import MerchantForm from '../../MerchantForm'
 import { useState } from 'react'
 
-interface Admin {
-  id: string
-  email: string
-}
-
-interface Manager {
-  id: string
-  email: string
-}
-
 type FormData = {
   name: string
   biz_no: string
   address: string
-  admin_id: string
-  manager_id: string | null
   description: string | null
 }
 
 interface MerchantEditClientProps {
   merchant: Merchant
-  admins: Admin[]
-  managers: Manager[]
 }
 
 export default function MerchantEditClient({
   merchant,
-  admins,
-  managers,
 }: MerchantEditClientProps) {
   const router = useRouter()
   const [form, setForm] = useState<FormData>({
     name: merchant.name,
     biz_no: merchant.biz_no,
     address: merchant.address,
-    admin_id: merchant.admin_id || '',
-    manager_id: merchant.manager_id || null,
     description: merchant.description,
   })
   const [saving, setSaving] = useState(false)
@@ -105,8 +87,6 @@ export default function MerchantEditClient({
         <MerchantForm
           form={form}
           setForm={setForm}
-          admins={admins}
-          managers={managers}
           error={error}
         />
 

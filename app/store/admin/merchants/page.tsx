@@ -52,30 +52,6 @@ async function getAdmins(supabase: any): Promise<Admin[]> {
   }
 }
 
-async function getManagers(supabase: any): Promise<Manager[]> {
-  try {
-    const { data: managerUsers } = await supabase
-      .from('merchant_users')
-      .select('user_id')
-      .eq('role', 'merchant_manager')
-
-    if (!managerUsers || managerUsers.length === 0) return []
-
-    const userIds = managerUsers.map((m: any) => m.user_id)
-    const { data: users, error } = await supabase.auth.admin.listUsers()
-
-    if (error || !users) return []
-
-    return users.users
-      .filter((u: any) => userIds.includes(u.id))
-      .map((u: any) => ({
-        id: u.id,
-        email: u.email || '',
-      }))
-  } catch {
-    return []
-  }
-}
 
 export default async function MerchantsPage() {
   const supabase = await createClient()
@@ -94,17 +70,15 @@ export default async function MerchantsPage() {
 
   const userRole = isTerminalAdmin ? 'terminal_admin' : (membership?.role || null)
 
-  const [merchants, admins, managers] = await Promise.all([
+  const [merchants, admins] = await Promise.all([
     getMerchants(),
     getAdmins(supabase),
-    getManagers(supabase),
   ])
 
   return (
     <MerchantsClient
       merchants={merchants}
       admins={admins}
-      managers={managers}
       userRole={userRole}
       userMerchantId={membership?.merchant_id || null}
     />

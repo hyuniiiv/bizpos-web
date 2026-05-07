@@ -201,8 +201,9 @@ export default async function MerchantDetailPage({
 
   const canEdit = membership?.role === 'platform_admin' || membership?.role === 'merchant_admin'
   const canDelete = membership?.role === 'platform_admin'
+  const canManagePermissions = membership?.role === 'platform_admin'
 
-  const availableUsers = canEdit
+  const availableUsers = canManagePermissions
     ? await getAllUsers(supabase, members.map(m => m.user_id))
     : []
 
@@ -216,6 +217,7 @@ export default async function MerchantDetailPage({
       merchantKeys={keys}
       canEdit={canEdit}
       canDelete={canDelete}
+      canManagePermissions={canManagePermissions}
     />
   )
 }

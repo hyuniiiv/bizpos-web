@@ -43,6 +43,7 @@ interface MerchantDetailClientProps {
   merchantKeys: MerchantKey[]
   canEdit: boolean
   canDelete: boolean
+  canManagePermissions: boolean
 }
 
 export default function MerchantDetailClient({
@@ -54,6 +55,7 @@ export default function MerchantDetailClient({
   merchantKeys: initialKeys,
   canEdit,
   canDelete,
+  canManagePermissions,
 }: MerchantDetailClientProps) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
@@ -339,7 +341,7 @@ const handleAddStore = async () => {
 
       {/* 탭 UI */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
-        {(['detail', 'permission'] as const).map(tab => (
+        {(['detail', ...(canManagePermissions ? ['permission'] : [])] as ('detail' | 'permission')[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -613,7 +615,7 @@ const handleAddStore = async () => {
       {/* 권한관리 탭 */}
       {activeTab === 'permission' && (
         <>
-          {canEdit && (
+          {canManagePermissions && (
             <div>
               <h2 className="text-xl font-bold text-white mb-4">관리자/매니저 관리</h2>
               <div

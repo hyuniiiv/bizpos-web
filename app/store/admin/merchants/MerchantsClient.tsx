@@ -13,17 +13,10 @@ interface Admin {
   email: string
 }
 
-interface Manager {
-  id: string
-  email: string
-}
-
 type FormData = {
   name: string
   biz_no: string
   address: string
-  admin_id: string
-  manager_id: string | null
   description: string | null
 }
 
@@ -31,21 +24,17 @@ const EMPTY_FORM: FormData = {
   name: '',
   biz_no: '',
   address: '',
-  admin_id: '',
-  manager_id: null,
   description: null,
 }
 
 export default function MerchantsClient({
   merchants: initialMerchants,
   admins,
-  managers,
   userRole,
   userMerchantId,
 }: {
   merchants: Merchant[]
   admins: Admin[]
-  managers: Manager[]
   userRole: string | null
   userMerchantId: string | null
 }) {
@@ -91,8 +80,6 @@ export default function MerchantsClient({
       name: merchant.name,
       biz_no: merchant.biz_no,
       address: merchant.address,
-      admin_id: merchant.admin_id || '',
-      manager_id: merchant.manager_id || null,
       description: merchant.description,
     })
     setError('')
@@ -294,8 +281,6 @@ export default function MerchantsClient({
             <MerchantForm
               form={form}
               setForm={setForm}
-              admins={admins}
-              managers={managers}
               error={error}
             />
 
