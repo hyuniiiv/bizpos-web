@@ -274,15 +274,22 @@ export default function PosConfigForm({
 
             {/* 단말기 활성/비활성 토글 */}
             <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-              <p className="text-sm font-semibold text-white/60 mb-2">단말기 활성 상태</p>
-              <div className="flex items-center gap-3">
-                <span className={`text-sm font-medium px-3 py-1 rounded ${terminal.status === 'inactive' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                  {terminal.status === 'inactive' ? '비활성' : '활성'}
-                </span>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white/70">결제 활성화</p>
+                  <p className="text-xs text-white/40 mt-0.5">
+                    {terminal.status === 'inactive' ? '⚠ 비활성 상태 — 결제가 차단됩니다' : '단말기에서 결제가 정상 처리됩니다'}
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={async () => {
-                    const newStatus = terminal.status === 'inactive' ? 'offline' : 'inactive'
+                    const willDeactivate = terminal.status !== 'inactive'
+                    const msg = willDeactivate
+                      ? '단말기를 비활성화하면 결제가 차단됩니다. 계속하시겠습니까?'
+                      : '단말기를 활성화합니다. 계속하시겠습니까?'
+                    if (!confirm(msg)) return
+                    const newStatus = willDeactivate ? 'inactive' : 'offline'
                     const res = await fetch(`/api/terminals/${terminal.id}`, {
                       method: 'PATCH',
                       headers: { 'Content-Type': 'application/json' },
@@ -291,16 +298,10 @@ export default function PosConfigForm({
                     if (res.ok) router.refresh()
                     else { const d = await res.json(); setInfoError(d.error ?? '상태 변경 실패') }
                   }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                  style={terminal.status === 'inactive'
-                    ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: 'rgb(74,222,128)' }
-                    : { background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.30)', color: 'rgb(252,165,165)' }
-                  }>
-                  {terminal.status === 'inactive' ? '활성화' : '비활성화'}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${terminal.status === 'inactive' ? 'bg-red-500/60' : 'bg-green-500'}`}
+                >
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${terminal.status === 'inactive' ? 'translate-x-0.5' : 'translate-x-6'}`} />
                 </button>
-                {terminal.status === 'inactive' && (
-                  <p className="text-xs text-red-400/70">⚠ 비활성 상태에서는 결제가 차단됩니다</p>
-                )}
               </div>
             </div>
 

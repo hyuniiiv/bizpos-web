@@ -398,33 +398,34 @@ const handleAddStore = async () => {
                 <p className="text-white font-medium">{new Date(merchant.created_at).toLocaleDateString('ko-KR')}</p>
               </div>
 
-              {canDelete && (
-                <div>
-                  <label className="block text-xs font-medium mb-2" style={{ color: 'var(--bp-text-3)' }}>가맹점 상태</label>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-sm font-medium px-3 py-1 rounded ${(merchant as any).is_active === false ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                      {(merchant as any).is_active === false ? '비활성' : '활성'}
-                    </span>
-                    {!editing && (
-                      <button
-                        onClick={async () => {
-                          const newVal = (merchant as any).is_active !== false ? false : true
-                          const res = await fetch('/api/merchant/merchants', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ id: merchant.id, is_active: newVal }),
-                          })
-                          if (res.ok) router.refresh()
-                          else { const d = await res.json(); alert(d.error ?? '상태 변경 실패') }
-                        }}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                        style={(merchant as any).is_active === false
-                          ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: 'rgb(74,222,128)' }
-                          : { background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.30)', color: 'rgb(252,165,165)' }
-                        }>
-                        {(merchant as any).is_active === false ? '활성화' : '비활성화'}
-                      </button>
-                    )}
+              {canDelete && !editing && (
+                <div className="md:col-span-2">
+                  <div className="flex items-center justify-between p-4 rounded-xl" style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)' }}>
+                    <div>
+                      <p className="text-sm font-semibold text-white/70">가맹점 결제 활성화</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--bp-text-3)' }}>
+                        {(merchant as any).is_active === false ? '⚠ 비활성 상태 — 모든 결제가 차단됩니다' : '정상 운영 중'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const willDeactivate = (merchant as any).is_active !== false
+                        const msg = willDeactivate
+                          ? `'${merchant.name}' 가맹점을 비활성화하면 모든 결제가 차단됩니다. 계속하시겠습니까?`
+                          : `'${merchant.name}' 가맹점을 활성화합니다. 계속하시겠습니까?`
+                        if (!confirm(msg)) return
+                        const res = await fetch('/api/merchant/merchants', {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ id: merchant.id, is_active: !willDeactivate }),
+                        })
+                        if (res.ok) router.refresh()
+                        else { const d = await res.json(); alert(d.error ?? '상태 변경 실패') }
+                      }}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${(merchant as any).is_active === false ? 'bg-red-500/60' : 'bg-green-500'}`}
+                    >
+                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${(merchant as any).is_active === false ? 'translate-x-0.5' : 'translate-x-6'}`} />
+                    </button>
                   </div>
                 </div>
               )}

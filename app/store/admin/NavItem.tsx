@@ -34,7 +34,7 @@ const NAV_ITEMS: NavEntry[] = [
   { href: '/store/admin/analytics',    label: '매출 분석',  mobileLabel: '매출분석', icon: BarChart3 },
   { href: '/store/admin/alerts',       label: '이상 알림',  mobileLabel: '알림',     icon: Bell, alertKey: true },
   { href: '/store/admin/members',      label: '권한 관리',  mobileLabel: '권한관리', icon: ShieldCheck },
-  { href: '/store/admin/settings',     label: '설정',       mobileLabel: '설정',     icon: Settings2 },
+  { href: '/store/admin/settings',     label: '내 계정',    mobileLabel: '내계정',   icon: Settings2 },
 ]
 
 function checkActive(href: string, pathname: string) {
