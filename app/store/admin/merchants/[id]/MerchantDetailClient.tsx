@@ -6,6 +6,7 @@ import { useState } from 'react'
 import type { Merchant, Store } from '@/lib/context/MerchantStoreContext'
 import type { MerchantKey } from './page'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
+import StatusToggleCard from '@/components/admin/StatusToggleCard'
 
 type EditForm = { name: string; biz_no: string; address: string; description: string }
 
@@ -332,6 +333,26 @@ const handleAddStore = async () => {
         </div>
       </div>
 
+      {/* 활성화 상태 카드 */}
+      {canDelete && (
+        <StatusToggleCard
+          isActive={(merchant as any).is_active !== false}
+          onToggle={async () => {
+            const newVal = (merchant as any).is_active !== false ? false : true
+            const res = await fetch('/api/merchant/merchants', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: merchant.id, is_active: newVal }),
+            })
+            if (!res.ok) { const d = await res.json(); alert(d.error ?? '상태 변경 실패') }
+            else router.refresh()
+          }}
+          confirmMessage={(merchant as any).is_active !== false
+            ? `'${merchant.name}' 가맹점을 비활성화하면 모든 결제가 차단됩니다. 계속하시겠습니까?`
+            : `'${merchant.name}' 가맹점을 활성화합니다. 계속하시겠습니까?`}
+        />
+      )}
+
       {/* 탭 UI */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
         {(['detail', ...(canManagePermissions ? ['permission'] : [])] as ('detail' | 'permission')[]).map(tab => (
@@ -398,37 +419,6 @@ const handleAddStore = async () => {
                 <p className="text-white font-medium">{new Date(merchant.created_at).toLocaleDateString('ko-KR')}</p>
               </div>
 
-              {canDelete && !editing && (
-                <div className="md:col-span-2">
-                  <div className="flex items-center justify-between p-4 rounded-xl" style={{ background: 'var(--bp-surface-2)', border: '1px solid var(--bp-border)' }}>
-                    <div>
-                      <p className="text-sm font-semibold text-white/70">가맹점 결제 활성화</p>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--bp-text-3)' }}>
-                        {(merchant as any).is_active === false ? '⚠ 비활성 상태 — 모든 결제가 차단됩니다' : '정상 운영 중'}
-                      </p>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        const willDeactivate = (merchant as any).is_active !== false
-                        const msg = willDeactivate
-                          ? `'${merchant.name}' 가맹점을 비활성화하면 모든 결제가 차단됩니다. 계속하시겠습니까?`
-                          : `'${merchant.name}' 가맹점을 활성화합니다. 계속하시겠습니까?`
-                        if (!confirm(msg)) return
-                        const res = await fetch('/api/merchant/merchants', {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ id: merchant.id, is_active: !willDeactivate }),
-                        })
-                        if (res.ok) router.refresh()
-                        else { const d = await res.json(); alert(d.error ?? '상태 변경 실패') }
-                      }}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${(merchant as any).is_active === false ? 'bg-red-500/60' : 'bg-green-500'}`}
-                    >
-                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${(merchant as any).is_active === false ? 'translate-x-0.5' : 'translate-x-6'}`} />
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--bp-border)' }}>

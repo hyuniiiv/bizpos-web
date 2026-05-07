@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { DeviceConfig, MenuConfig, MenuServiceCode } from '@/types/menu'
+import StatusToggleCard from '@/components/admin/StatusToggleCard'
 
 type TerminalType = 'ticket_checker' | 'pos' | 'kiosk' | 'table_order'
 const TYPE_LABELS: Record<TerminalType, string> = {
@@ -174,6 +175,26 @@ export default function PosConfigForm({
         </div>
       </div>
 
+      {/* 활성화 상태 카드 */}
+      <div className="px-5 pt-4">
+        <StatusToggleCard
+          isActive={terminal.status !== 'inactive'}
+          onToggle={async () => {
+            const newStatus = terminal.status !== 'inactive' ? 'inactive' : 'offline'
+            const res = await fetch(`/api/terminals/${terminal.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: newStatus }),
+            })
+            if (res.ok) router.refresh()
+            else { const d = await res.json(); setInfoError(d.error ?? '상태 변경 실패') }
+          }}
+          confirmMessage={terminal.status !== 'inactive'
+            ? '단말기를 비활성화하면 결제가 차단됩니다. 계속하시겠습니까?'
+            : '단말기를 활성화합니다. 계속하시겠습니까?'}
+        />
+      </div>
+
       {error && <p className="px-5 pt-3 text-sm text-red-400">{error}</p>}
       {success && <p className="px-5 pt-3 text-sm text-green-400">✓ 저장되었습니다. POS가 다음 폴링 시 수신합니다.</p>}
 
@@ -272,38 +293,6 @@ export default function PosConfigForm({
               </button>
             </form>
 
-            {/* 단말기 활성/비활성 토글 */}
-            <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white/70">결제 활성화</p>
-                  <p className="text-xs text-white/40 mt-0.5">
-                    {terminal.status === 'inactive' ? '⚠ 비활성 상태 — 결제가 차단됩니다' : '단말기에서 결제가 정상 처리됩니다'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const willDeactivate = terminal.status !== 'inactive'
-                    const msg = willDeactivate
-                      ? '단말기를 비활성화하면 결제가 차단됩니다. 계속하시겠습니까?'
-                      : '단말기를 활성화합니다. 계속하시겠습니까?'
-                    if (!confirm(msg)) return
-                    const newStatus = willDeactivate ? 'inactive' : 'offline'
-                    const res = await fetch(`/api/terminals/${terminal.id}`, {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ status: newStatus }),
-                    })
-                    if (res.ok) router.refresh()
-                    else { const d = await res.json(); setInfoError(d.error ?? '상태 변경 실패') }
-                  }}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${terminal.status === 'inactive' ? 'bg-red-500/60' : 'bg-green-500'}`}
-                >
-                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${terminal.status === 'inactive' ? 'translate-x-0.5' : 'translate-x-6'}`} />
-                </button>
-              </div>
-            </div>
 
           </div>
         )}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Pencil, Trash2, Key } from 'lucide-react'
 import { toast } from 'sonner'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
+import StatusToggleCard from '@/components/admin/StatusToggleCard'
 
 interface KeyData {
   id: string
@@ -132,6 +133,27 @@ export default function KeyDetailClient({ keyData, canEdit, canDelete }: Props) 
           )}
         </div>
       </div>
+
+      {/* 활성화 상태 카드 */}
+      {canEdit && (
+        <StatusToggleCard
+          isActive={keyData.is_active}
+          onToggle={async () => {
+            const res = await fetch(`/api/merchant/keys/${keyData.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ is_active: !keyData.is_active }),
+            })
+            if (!res.ok) { const d = await res.json(); toast.error(d.error ?? '상태 변경 실패') }
+            else router.refresh()
+          }}
+          activeText="결제에 사용 중"
+          inactiveText="비활성 상태 — 이 키로 결제 불가"
+          confirmMessage={keyData.is_active
+            ? `'${keyData.name}' 키를 비활성화합니다. 계속하시겠습니까?`
+            : `'${keyData.name}' 키를 활성화합니다. 계속하시겠습니까?`}
+        />
+      )}
 
       {/* 상세 카드 */}
       <div className="rounded-xl p-6 space-y-5" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>

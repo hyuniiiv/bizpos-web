@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Trash2, Pencil, ArrowLeft, Plus } from 'lucide-react'
 import { useState } from 'react'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
+import StatusToggleCard from '@/components/admin/StatusToggleCard'
 
 interface Terminal {
   id: string
@@ -201,6 +202,23 @@ export default function StoreDetailClient({
           )}
         </div>
       </div>
+
+      {/* 활성화 상태 카드 */}
+      <StatusToggleCard
+        isActive={store.is_active}
+        onToggle={async () => {
+          const res = await fetch('/api/merchant/store-locations', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: store.id, is_active: !store.is_active }),
+          })
+          if (!res.ok) { const d = await res.json(); alert(d.error ?? '상태 변경 실패') }
+          else router.refresh()
+        }}
+        confirmMessage={store.is_active
+          ? `'${store.store_name}' 매장을 비활성화합니다. 계속하시겠습니까?`
+          : `'${store.store_name}' 매장을 활성화합니다. 계속하시겠습니까?`}
+      />
 
       {/* 탭 UI */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
