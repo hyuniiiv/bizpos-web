@@ -59,10 +59,10 @@ export async function DELETE(
     .from('merchant_users').select('merchant_id').eq('user_id', user.id).single()
   if (!mu) return NextResponse.json({ error: 'MERCHANT_NOT_FOUND' }, { status: 403 })
 
-  const { count: txCount } = await supabase
-    .from('transactions').select('*', { count: 'exact', head: true }).eq('terminal_id', id)
-  if ((txCount ?? 0) > 0)
-    return NextResponse.json({ error: `거래내역 ${txCount}건이 있어 삭제할 수 없습니다` }, { status: 400 })
+  const { data: terminal } = await supabase
+    .from('terminals').select('merchant_key_id').eq('id', id).single()
+  if (terminal?.merchant_key_id)
+    return NextResponse.json({ error: '결제 키가 연결되어 있어 삭제할 수 없습니다. 키 연결을 먼저 해제하세요.' }, { status: 400 })
 
   const { error } = await supabase
     .from('terminals')
