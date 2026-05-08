@@ -6,14 +6,17 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: cu } = await supabase
-    .from('client_users')
-    .select('role')
-    .eq('user_id', user.id)
-    .single()
+  const isPlatformAdmin = user.app_metadata?.role === 'platform_admin'
 
-  if (!cu || cu.role !== 'platform_client_admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!isPlatformAdmin) {
+    const { data: cu } = await supabase
+      .from('client_users')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+    if (!cu || cu.role !== 'platform_admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
   }
 
   const { data: clients } = await supabase

@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { DataTable, DataTableRow } from '@/components/ui/DataTable'
 
 interface UsageRow {
   id: string
@@ -11,6 +12,12 @@ interface UsageRow {
 
 const MEAL_LABEL: Record<string, string> = {
   breakfast: '조식', lunch: '중식', dinner: '석식',
+}
+
+const MEAL_COLOR: Record<string, { bg: string; color: string }> = {
+  breakfast: { bg: 'rgba(251,191,36,0.12)', color: '#fbbf24' },
+  lunch:     { bg: 'rgba(6,214,160,0.12)',  color: '#06D6A0' },
+  dinner:    { bg: 'rgba(96,165,250,0.12)', color: '#60a5fa' },
 }
 
 export default function ClientUsagesPage() {
@@ -35,57 +42,87 @@ export default function ClientUsagesPage() {
   useEffect(() => { fetchUsages() }, [])
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">식수 이력</h1>
-      <div className="flex gap-2 mb-4 items-end">
+    <div>
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <label className="block text-xs text-gray-400 mb-1">시작일</label>
-          <input type="date" value={from} onChange={e => setFrom(e.target.value)}
-            className="px-2 py-1.5 bg-gray-800 rounded border border-gray-600 text-sm" />
+          <h1 className="text-xl font-bold text-white">식수 이력</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--bp-text-3)' }}>{usages.length}건</p>
+        </div>
+      </div>
+
+      <div className="flex gap-3 mb-4 items-end flex-wrap">
+        <div>
+          <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--bp-text-3)' }}>시작일</label>
+          <input
+            type="date"
+            value={from}
+            onChange={e => setFrom(e.target.value)}
+            className="px-3 py-2 rounded-lg text-sm text-white outline-none"
+            style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}
+          />
         </div>
         <div>
-          <label className="block text-xs text-gray-400 mb-1">종료일</label>
-          <input type="date" value={to} onChange={e => setTo(e.target.value)}
-            className="px-2 py-1.5 bg-gray-800 rounded border border-gray-600 text-sm" />
+          <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--bp-text-3)' }}>종료일</label>
+          <input
+            type="date"
+            value={to}
+            onChange={e => setTo(e.target.value)}
+            className="px-3 py-2 rounded-lg text-sm text-white outline-none"
+            style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}
+          />
         </div>
-        <button onClick={fetchUsages}
-          className="px-4 py-1.5 bg-blue-600 rounded text-sm hover:bg-blue-500 transition-colors">
+        <button
+          onClick={fetchUsages}
+          className="px-4 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-80"
+          style={{ background: 'var(--bp-primary)', color: 'var(--bp-primary-fg)' }}
+        >
           조회
         </button>
       </div>
-      {loading ? (
-        <div className="text-gray-400 py-8 text-center">로딩 중...</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-700 text-gray-400 text-left">
-                <th className="py-2 px-3">일시</th>
-                <th className="py-2 px-3">사원번호</th>
-                <th className="py-2 px-3">이름</th>
-                <th className="py-2 px-3">부서</th>
-                <th className="py-2 px-3">끼니</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usages.map(u => (
-                <tr key={u.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                  <td className="py-2 px-3 font-mono text-xs">
-                    {new Date(u.used_at).toLocaleString('ko-KR')}
-                  </td>
-                  <td className="py-2 px-3 font-mono">{u.employees?.employee_no ?? '-'}</td>
-                  <td className="py-2 px-3 font-medium">{u.employees?.name ?? '-'}</td>
-                  <td className="py-2 px-3 text-gray-400">{u.employees?.department ?? '-'}</td>
-                  <td className="py-2 px-3">{MEAL_LABEL[u.meal_type] ?? u.meal_type}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {usages.length === 0 && (
-            <p className="text-gray-500 text-sm text-center py-8">이력이 없습니다.</p>
-          )}
-        </div>
-      )}
+
+      <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
+        <DataTable
+          columns={[
+            { label: '일시' },
+            { label: '사원번호', className: 'hidden md:table-cell' },
+            { label: '이름' },
+            { label: '부서', className: 'hidden md:table-cell' },
+            { label: '끼니' },
+          ]}
+          isEmpty={!loading && usages.length === 0}
+          empty="이력이 없습니다."
+        >
+          {loading ? (
+            <tr>
+              <td colSpan={5} className="px-4 py-8 text-center text-white/40">로딩 중...</td>
+            </tr>
+          ) : usages.map(u => {
+            const mc = MEAL_COLOR[u.meal_type] ?? { bg: 'rgba(255,255,255,0.06)', color: 'var(--bp-text-3)' }
+            return (
+              <DataTableRow key={u.id}>
+                <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--bp-text-3)' }}>
+                  {new Date(u.used_at).toLocaleString('ko-KR')}
+                </td>
+                <td className="px-4 py-3 font-mono hidden md:table-cell" style={{ color: 'var(--bp-text-3)' }}>
+                  {u.employees?.employee_no ?? '-'}
+                </td>
+                <td className="px-4 py-3 font-medium text-white">{u.employees?.name ?? '-'}</td>
+                <td className="px-4 py-3 hidden md:table-cell" style={{ color: 'var(--bp-text-3)' }}>
+                  {u.employees?.department ?? '-'}
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={mc}
+                  >
+                    {MEAL_LABEL[u.meal_type] ?? u.meal_type}
+                  </span>
+                </td>
+              </DataTableRow>
+            )
+          })}
+        </DataTable>
+      </div>
     </div>
   )
 }

@@ -5,11 +5,16 @@ import { getClientId } from '@/lib/client/getClientId'
 import { CLIENT_ASSIGNABLE as ASSIGNABLE, CLIENT_PLATFORM_ROLES as PLATFORM_ROLES } from '@/lib/roles/assignable'
 import { getEmailMapByIds } from '@/lib/supabase/emailMap'
 
-async function getMembership(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+type UserLike = { id: string; app_metadata?: Record<string, unknown> }
+
+async function getMembership(supabase: Awaited<ReturnType<typeof createClient>>, user: UserLike) {
+  if (user.app_metadata?.role === 'platform_admin') {
+    return { role: 'platform_admin' as const, client_id: null as string | null }
+  }
   const { data } = await supabase
     .from('client_users')
     .select('role, client_id')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .single()
   return data
 }
@@ -19,12 +24,12 @@ export async function GET(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const cu = await getMembership(supabase, user.id)
+  const cu = await getMembership(supabase, user)
   if (!cu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const url = new URL(req.url)
   let clientId = url.searchParams.get('client_id')
-  if (cu.role !== 'platform_client_admin' || !clientId) {
+  if (cu.role !== 'platform_admin' || !clientId) {
     clientId = await getClientId(supabase) ?? cu.client_id
   }
 
@@ -48,7 +53,7 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const cu = await getMembership(supabase, user.id)
+  const cu = await getMembership(supabase, user)
   if (!cu || ASSIGNABLE[cu.role]?.length === 0) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
@@ -56,7 +61,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: '해당 역할을 부여할 권한이 없습니다.' }, { status: 403 })
   }
 
-  const clientId = cu.role === 'platform_client_admin'
+  const clientId = cu.role === 'platform_admin'
     ? (body.client_id ?? cu.client_id)
     : cu.client_id
 
@@ -76,6 +81,7 @@ export async function POST(req: Request) {
       email: body.email,
       password: body.password,
       email_confirm: true,
+      app_metadata: { role: 'client' },
     })
     if (createErr) {
       const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 1000 })
@@ -84,6 +90,8 @@ export async function POST(req: Request) {
         console.error('[client/members POST createUser]', createErr)
         return NextResponse.json({ error: '멤버 추가 중 오류가 발생했습니다.' }, { status: 500 })
       }
+      // 기존 계정에도 client role 설정
+      await admin.auth.admin.updateUserById(existing.id, { app_metadata: { role: 'client' } })
       targetUserId = existing.id
     } else {
       targetUserId = created.user!.id
@@ -109,7 +117,7 @@ export async function PATCH(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const cu = await getMembership(supabase, user.id)
+  const cu = await getMembership(supabase, user)
   if (!cu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id, role } = await req.json()
@@ -119,7 +127,7 @@ export async function PATCH(req: Request) {
 
   const { data: target } = await supabase.from('client_users').select('client_id, role').eq('id', id).single()
   if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (cu.role !== 'platform_client_admin' && target.client_id !== cu.client_id) {
+  if (cu.role !== 'platform_admin' && target.client_id !== cu.client_id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   if (!ASSIGNABLE[cu.role]?.includes(target.role)) {
@@ -147,13 +155,13 @@ export async function DELETE(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const cu = await getMembership(supabase, user.id)
+  const cu = await getMembership(supabase, user)
   if (!cu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await req.json()
   const { data: target } = await supabase.from('client_users').select('client_id, user_id, role').eq('id', id).single()
   if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (cu.role !== 'platform_client_admin' && target.client_id !== cu.client_id) {
+  if (cu.role !== 'platform_admin' && target.client_id !== cu.client_id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   if (!ASSIGNABLE[cu.role]?.includes(target.role)) {

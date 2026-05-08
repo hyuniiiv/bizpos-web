@@ -13,14 +13,19 @@ export default async function PortalPage() {
   if (user.app_metadata?.role === 'terminal_admin') redirect('/store/admin')
 
   const admin = createAdminClient()
-  const [{ data: mu }, { data: cu }] = await Promise.all([
-    admin.from('merchant_users').select('merchant_id').eq('user_id', user.id).single(),
-    admin.from('client_users').select('client_id').eq('user_id', user.id).single(),
-  ])
+  // platform_admin은 두 포털 모두 접근 가능 — 항상 선택 화면 표시
+  const isPlatformAdmin = user.app_metadata?.role === 'platform_admin'
 
-  if (!mu && !cu) redirect('/unauthorized')
-  if (mu && !cu) redirect('/store/admin')
-  if (!mu && cu) redirect('/client/admin')
+  if (!isPlatformAdmin) {
+    const [{ data: mu }, { data: cu }] = await Promise.all([
+      admin.from('merchant_users').select('merchant_id').eq('user_id', user.id).single(),
+      admin.from('client_users').select('client_id').eq('user_id', user.id).single(),
+    ])
+    if (!mu && !cu) redirect('/unauthorized')
+    if (mu && !cu) redirect('/store/admin')
+    if (!mu && cu) redirect('/client/admin')
+    // 둘 다 있으면 선택 화면 (fall through)
+  }
 
   // 양쪽 다 있는 경우 — 선택 화면
   return (

@@ -17,23 +17,29 @@ export default async function ClientsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: membership } = await supabase
-    .from('client_users')
-    .select('client_id, role')
-    .eq('user_id', user.id)
-    .single()
+  const isSitePlatformAdmin = user.app_metadata?.role === 'platform_admin'
 
-  if (!membership) redirect('/login')
+  let isPlatformAdmin = isSitePlatformAdmin
+  let clientId: string | null = null
 
-  const isPlatformAdmin = membership.role === 'platform_client_admin'
+  if (!isSitePlatformAdmin) {
+    const { data: membership } = await supabase
+      .from('client_users')
+      .select('client_id, role')
+      .eq('user_id', user.id)
+      .single()
+    if (!membership) redirect('/login')
+    isPlatformAdmin = membership.role === 'platform_admin'
+    clientId = membership.client_id
+  }
 
   let q = supabase
     .from('clients')
     .select('id, client_name, biz_no, is_active, created_at')
     .order('client_name')
 
-  if (!isPlatformAdmin) {
-    q = q.eq('id', membership.client_id)
+  if (!isPlatformAdmin && clientId) {
+    q = q.eq('id', clientId)
   }
 
   const { data: clients } = await q

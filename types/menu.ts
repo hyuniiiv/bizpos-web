@@ -162,6 +162,6 @@ export interface ClientUser {
   id: string
   user_id: string
   client_id: string
-  role: 'platform_client_admin' | 'client_admin'
+  role: 'platform_admin' | 'client_admin' | 'client_operator'
   created_at: string
 }

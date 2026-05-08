@@ -53,8 +53,9 @@ describe('memberFilter - role-based member filtering', () => {
     expect(filtered).toHaveLength(0)
   })
 
-  it('client_admin cannot see any members', () => {
+  it('client_admin can see only client members', () => {
     const filtered = filterMembersByRole(allMembers, 'client_admin')
-    expect(filtered).toHaveLength(0)
+    expect(filtered).toHaveLength(1)
+    expect(filtered[0].role).toBe('client_manager')
   })
 })

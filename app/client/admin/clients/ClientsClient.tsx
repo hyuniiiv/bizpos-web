@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2, X, Building, Users } from 'lucide-react'
 import type { ClientRow } from './page'
+import { DataTable, DataTableRow } from '@/components/ui/DataTable'
 
 type FormData = {
   client_name: string
@@ -133,63 +134,56 @@ export default function ClientsClient({
 
       {isPlatformAdmin ? (
         <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--bp-border)', color: 'var(--bp-text-3)' }}>
-                <th className="text-left px-4 py-3 font-medium">고객사명</th>
-                <th className="text-left px-4 py-3 font-medium hidden md:table-cell">사업자번호</th>
-                <th className="text-left px-4 py-3 font-medium hidden md:table-cell">상태</th>
-                <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">등록일</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {list.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-12" style={{ color: 'var(--bp-text-3)' }}>
-                    등록된 고객사가 없습니다.
-                  </td>
-                </tr>
-              ) : list.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid var(--bp-border)' }}>
-                  <td className="px-4 py-3 font-medium text-white">
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4 flex-shrink-0" style={{ color: '#06D6A0' }} />
-                      {c.client_name}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell" style={{ color: 'var(--bp-text-3)' }}>{c.biz_no}</td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <span
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                      style={{
-                        background: c.is_active ? 'rgba(6,214,160,0.12)' : 'rgba(255,255,255,0.06)',
-                        color: c.is_active ? '#06D6A0' : 'var(--bp-text-3)',
-                      }}
-                    >
-                      {c.is_active ? '활성' : '비활성'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-xs" style={{ color: 'var(--bp-text-3)' }}>
-                    {new Date(c.created_at).toLocaleDateString('ko-KR')}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => handleManageMembers(c.id)} className="p-1.5 rounded-lg transition-colors hover:bg-blue-500/20 hover:text-blue-400" style={{ color: 'var(--bp-text-3)' }} title="멤버 관리">
-                        <Users className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg transition-colors hover:bg-white/10" style={{ color: 'var(--bp-text-3)' }} title="수정">
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => handleDelete(c.id, c.client_name)} className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20 hover:text-red-400" style={{ color: 'var(--bp-text-3)' }} title="삭제">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            columns={[
+              { label: '고객사명' },
+              { label: '사업자번호', className: 'hidden md:table-cell' },
+              { label: '상태', className: 'hidden md:table-cell' },
+              { label: '등록일', className: 'hidden lg:table-cell' },
+              { label: '' },
+            ]}
+            isEmpty={list.length === 0}
+            empty="등록된 고객사가 없습니다."
+          >
+            {list.map(c => (
+              <DataTableRow key={c.id}>
+                <td className="px-4 py-3 font-medium text-white">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-4 h-4 flex-shrink-0" style={{ color: '#06D6A0' }} />
+                    {c.client_name}
+                  </div>
+                </td>
+                <td className="px-4 py-3 hidden md:table-cell" style={{ color: 'var(--bp-text-3)' }}>{c.biz_no}</td>
+                <td className="px-4 py-3 hidden md:table-cell">
+                  <span
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{
+                      background: c.is_active ? 'rgba(6,214,160,0.12)' : 'rgba(255,255,255,0.06)',
+                      color: c.is_active ? '#06D6A0' : 'var(--bp-text-3)',
+                    }}
+                  >
+                    {c.is_active ? '활성' : '비활성'}
+                  </span>
+                </td>
+                <td className="px-4 py-3 hidden lg:table-cell text-xs" style={{ color: 'var(--bp-text-3)' }}>
+                  {new Date(c.created_at).toLocaleDateString('ko-KR')}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-1 justify-end">
+                    <button onClick={() => handleManageMembers(c.id)} className="p-1.5 rounded-lg transition-colors hover:bg-blue-500/20 hover:text-blue-400" style={{ color: 'var(--bp-text-3)' }} title="멤버 관리">
+                      <Users className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg transition-colors hover:bg-white/10" style={{ color: 'var(--bp-text-3)' }} title="수정">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => handleDelete(c.id, c.client_name)} className="p-1.5 rounded-lg transition-colors hover:bg-red-500/20 hover:text-red-400" style={{ color: 'var(--bp-text-3)' }} title="삭제">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </td>
+              </DataTableRow>
+            ))}
+          </DataTable>
         </div>
       ) : (
         <div className="max-w-lg">
@@ -296,8 +290,8 @@ export default function ClientsClient({
                     style={{ background: form.is_active ? '#06D6A0' : 'rgba(255,255,255,0.15)' }}
                   >
                     <span
-                      className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform"
-                      style={{ transform: form.is_active ? 'translateX(21px)' : 'translateX(2px)' }}
+                      className="absolute left-0 top-0.5 w-4 h-4 rounded-full bg-white transition-transform"
+                      style={{ transform: form.is_active ? 'translateX(22px)' : 'translateX(2px)' }}
                     />
                   </button>
                   <span className="text-xs" style={{ color: form.is_active ? '#06D6A0' : 'var(--bp-text-3)' }}>

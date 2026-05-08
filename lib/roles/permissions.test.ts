@@ -31,8 +31,8 @@ describe('permissions - member management', () => {
       expect(canManageMembers(ROLES.TERMINAL_ADMIN)).toBe(false)
     })
 
-    it('client_admin cannot manage members', () => {
-      expect(canManageMembers(ROLES.CLIENT_ADMIN)).toBe(false)
+    it('client_admin can manage members', () => {
+      expect(canManageMembers(ROLES.CLIENT_ADMIN)).toBe(true)
     })
 
     it('client_manager cannot manage members', () => {
@@ -65,6 +65,15 @@ describe('permissions - member management', () => {
 
     it('store_admin cannot assign roles', () => {
       expect(canAssignRole(ROLES.STORE_ADMIN, ROLES.STORE_MANAGER)).toBe(false)
+    })
+
+    it('client_admin can assign client_manager', () => {
+      expect(canAssignRole(ROLES.CLIENT_ADMIN, ROLES.CLIENT_MANAGER)).toBe(true)
+    })
+
+    it('client_admin cannot assign other roles', () => {
+      expect(canAssignRole(ROLES.CLIENT_ADMIN, ROLES.CLIENT_ADMIN)).toBe(false)
+      expect(canAssignRole(ROLES.CLIENT_ADMIN, ROLES.MERCHANT_ADMIN)).toBe(false)
     })
   })
 })

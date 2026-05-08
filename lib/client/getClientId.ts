@@ -5,6 +5,21 @@ export async function getClientId(supabase: Awaited<ReturnType<typeof createClie
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  // platform_admin은 client_users 등록 없이도 쿠키로 고객사 선택
+  if (user.app_metadata?.role === 'platform_admin') {
+    const cookieStore = await cookies()
+    const selected = cookieStore.get('bp_selected_client')?.value
+    if (selected) {
+      const { data: exists } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', selected)
+        .maybeSingle()
+      if (exists) return selected
+    }
+    return null
+  }
+
   const { data } = await supabase
     .from('client_users')
     .select('client_id, role')
@@ -12,7 +27,7 @@ export async function getClientId(supabase: Awaited<ReturnType<typeof createClie
     .single()
   if (!data) return null
 
-  if (data.role === 'platform_client_admin') {
+  if (data.role === 'platform_admin') {
     const cookieStore = await cookies()
     const selected = cookieStore.get('bp_selected_client')?.value
     if (selected) {

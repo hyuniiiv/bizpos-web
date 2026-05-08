@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-async function getMembership(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+type UserLike = { id: string; app_metadata?: Record<string, unknown> }
+
+async function getMembership(supabase: Awaited<ReturnType<typeof createClient>>, user: UserLike) {
+  if (user.app_metadata?.role === 'platform_admin') {
+    return { role: 'platform_admin' as const, client_id: null as string | null }
+  }
   const { data } = await supabase
     .from('client_users')
     .select('role, client_id')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .single()
   return data
 }
@@ -15,7 +20,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const cu = await getMembership(supabase, user.id)
+  const cu = await getMembership(supabase, user)
   if (!cu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   let q = supabase
@@ -23,7 +28,7 @@ export async function GET() {
     .select('id, client_name, biz_no, is_active, created_at')
     .order('client_name')
 
-  if (cu.role !== 'platform_client_admin') {
+  if (cu.role !== 'platform_admin') {
     q = q.eq('id', cu.client_id)
   }
 
@@ -36,8 +41,8 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const cu = await getMembership(supabase, user.id)
-  if (cu?.role !== 'platform_client_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const cu = await getMembership(supabase, user)
+  if (cu?.role !== 'platform_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
   const { data, error } = await supabase
@@ -59,13 +64,13 @@ export async function PATCH(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const cu = await getMembership(supabase, user.id)
+  const cu = await getMembership(supabase, user)
   if (!cu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
   const { id, ...updates } = body
 
-  if (cu.role !== 'platform_client_admin' && id !== cu.client_id) {
+  if (cu.role !== 'platform_admin' && id !== cu.client_id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -89,8 +94,8 @@ export async function DELETE(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const cu = await getMembership(supabase, user.id)
-  if (cu?.role !== 'platform_client_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const cu = await getMembership(supabase, user)
+  if (cu?.role !== 'platform_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await req.json()
   const { error } = await supabase.from('clients').delete().eq('id', id)

@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { Upload, Download, Search } from 'lucide-react'
 import type { Employee } from '@/types/menu'
+import { DataTable, DataTableRow } from '@/components/ui/DataTable'
 
 export default function ClientEmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -76,7 +78,7 @@ export default function ClientEmployeesPage() {
     const rows = employees.map(e =>
       [e.employee_no, e.name, e.department ?? '', e.card_number ?? '', e.barcode ?? ''].join(',')
     ).join('\n')
-    const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8' })
+    const blob = new Blob(['﻿' + header + rows], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url; a.download = 'employees.csv'; a.click()
@@ -84,85 +86,126 @@ export default function ClientEmployeesPage() {
   }
 
   return (
-    <div className="p-6">
+    <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">사원 관리</h1>
+        <div>
+          <h1 className="text-xl font-bold text-white">사원 관리</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--bp-text-3)' }}>총 {total}명</p>
+        </div>
         <div className="flex gap-2">
-          <button onClick={handleCsvDownload}
-            className="px-4 py-2 text-sm bg-gray-700 rounded hover:bg-gray-600 transition-colors">
-            CSV 다운로드
+          <button
+            onClick={handleCsvDownload}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-white/10"
+            style={{ color: 'var(--bp-text-3)', border: '1px solid var(--bp-border)' }}
+          >
+            <Download className="w-4 h-4" />CSV 다운로드
           </button>
-          <button onClick={() => fileRef.current?.click()}
-            className="px-4 py-2 text-sm bg-blue-600 rounded hover:bg-blue-500 transition-colors">
-            CSV 업로드
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-80"
+            style={{ background: 'var(--bp-primary)', color: 'var(--bp-primary-fg)' }}
+          >
+            <Upload className="w-4 h-4" />CSV 업로드
           </button>
           <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleCsvUpload} />
         </div>
       </div>
-      <form onSubmit={handleSearch} className="mb-4 flex gap-2">
-        <input value={q} onChange={e => setQ(e.target.value)}
-          placeholder="이름, 사원번호, 부서 검색..."
-          className="flex-1 px-3 py-2 bg-gray-800 rounded border border-gray-600 text-white placeholder-gray-500" />
-        <button type="submit"
-          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 transition-colors">
+
+      <form onSubmit={handleSearch} className="flex gap-2 mb-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--bp-text-3)' }} />
+          <input
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="이름, 사원번호, 부서 검색..."
+            className="w-full pl-9 pr-3 py-2 rounded-lg text-sm text-white outline-none"
+            style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}
+          />
+        </div>
+        <button
+          type="submit"
+          className="px-4 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-80"
+          style={{ background: 'var(--bp-primary)', color: 'var(--bp-primary-fg)' }}
+        >
           검색
         </button>
       </form>
-      {loading ? (
-        <div className="text-gray-400 py-8 text-center">로딩 중...</div>
-      ) : employees.length === 0 ? (
-        <div className="text-gray-500 py-8 text-center">등록된 사원이 없습니다.</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-700 text-gray-400 text-left">
-                <th className="py-2 px-3">사원번호</th>
-                <th className="py-2 px-3">이름</th>
-                <th className="py-2 px-3">부서</th>
-                <th className="py-2 px-3">카드번호</th>
-                <th className="py-2 px-3">바코드</th>
-                <th className="py-2 px-3">상태</th>
-                <th className="py-2 px-3">관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map(emp => (
-                <tr key={emp.id} className="border-b border-gray-800 hover:bg-gray-800/50">
-                  <td className="py-2 px-3 font-mono">{emp.employee_no}</td>
-                  <td className="py-2 px-3 font-medium">{emp.name}</td>
-                  <td className="py-2 px-3 text-gray-400">{emp.department ?? '-'}</td>
-                  <td className="py-2 px-3 text-gray-400 font-mono text-xs">{emp.card_number ?? '-'}</td>
-                  <td className="py-2 px-3 text-gray-400 font-mono text-xs">{emp.barcode ?? '-'}</td>
-                  <td className="py-2 px-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      emp.is_active ? 'bg-green-900 text-green-300' : 'bg-gray-700 text-gray-400'
-                    }`}>{emp.is_active ? '활성' : '비활성'}</span>
-                  </td>
-                  <td className="py-2 px-3">
-                    <button onClick={() => handleToggleActive(emp)}
-                      className="text-xs text-blue-400 hover:text-blue-300 hover:underline">
-                      {emp.is_active ? '비활성화' : '활성화'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+      <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bp-surface)', border: '1px solid var(--bp-border)' }}>
+        <DataTable
+          columns={[
+            { label: '사원번호' },
+            { label: '이름' },
+            { label: '부서', className: 'hidden md:table-cell' },
+            { label: '카드번호', className: 'hidden lg:table-cell' },
+            { label: '바코드', className: 'hidden lg:table-cell' },
+            { label: '상태' },
+            { label: '' },
+          ]}
+          isEmpty={!loading && employees.length === 0}
+          empty="등록된 사원이 없습니다."
+        >
+          {loading ? (
+            <tr>
+              <td colSpan={7} className="px-4 py-8 text-center text-white/40">로딩 중...</td>
+            </tr>
+          ) : employees.map(emp => (
+            <DataTableRow key={emp.id}>
+              <td className="px-4 py-3 font-mono text-sm text-white">{emp.employee_no}</td>
+              <td className="px-4 py-3 font-medium text-white">{emp.name}</td>
+              <td className="px-4 py-3 hidden md:table-cell" style={{ color: 'var(--bp-text-3)' }}>{emp.department ?? '-'}</td>
+              <td className="px-4 py-3 hidden lg:table-cell font-mono text-xs" style={{ color: 'var(--bp-text-3)' }}>{emp.card_number ?? '-'}</td>
+              <td className="px-4 py-3 hidden lg:table-cell font-mono text-xs" style={{ color: 'var(--bp-text-3)' }}>{emp.barcode ?? '-'}</td>
+              <td className="px-4 py-3">
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                  style={{
+                    background: emp.is_active ? 'rgba(6,214,160,0.12)' : 'rgba(255,255,255,0.06)',
+                    color: emp.is_active ? '#06D6A0' : 'var(--bp-text-3)',
+                  }}
+                >
+                  {emp.is_active ? '활성' : '비활성'}
+                </span>
+              </td>
+              <td className="px-4 py-3">
+                <button
+                  onClick={() => handleToggleActive(emp)}
+                  className="text-xs px-2 py-1 rounded-lg transition-colors hover:bg-white/10"
+                  style={{ color: 'var(--bp-text-3)', border: '1px solid var(--bp-border)' }}
+                >
+                  {emp.is_active ? '비활성화' : '활성화'}
+                </button>
+              </td>
+            </DataTableRow>
+          ))}
+        </DataTable>
+      </div>
+
+      {(page > 1 || employees.length === 50) && (
+        <div className="mt-4 flex items-center justify-between text-sm" style={{ color: 'var(--bp-text-3)' }}>
+          <span>총 {total}명 · 페이지 {page}</span>
+          <div className="flex gap-2">
+            {page > 1 && (
+              <button
+                onClick={() => setPage(p => p - 1)}
+                className="px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10"
+                style={{ border: '1px solid var(--bp-border)' }}
+              >
+                ← 이전
+              </button>
+            )}
+            {employees.length === 50 && (
+              <button
+                onClick={() => setPage(p => p + 1)}
+                className="px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10"
+                style={{ border: '1px solid var(--bp-border)' }}
+              >
+                다음 →
+              </button>
+            )}
+          </div>
         </div>
       )}
-      <div className="mt-4 flex items-center gap-4 text-sm text-gray-400">
-        <span>총 {total}명</span>
-        <div className="flex gap-2">
-          {page > 1 && (
-            <button onClick={() => setPage(p => p - 1)} className="hover:text-white">← 이전</button>
-          )}
-          <span>페이지 {page}</span>
-          {employees.length === 50 && (
-            <button onClick={() => setPage(p => p + 1)} className="hover:text-white">다음 →</button>
-          )}
-        </div>
-      </div>
     </div>
   )
 }

@@ -34,22 +34,34 @@ export async function POST(req: Request) {
     }
     cookieName = 'bp_selected_merchant'
   } else if (type === 'client') {
-    const { data: cu } = await supabase
-      .from('client_users')
-      .select('role, client_id')
-      .eq('user_id', user.id)
-      .single()
-    if (!cu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const isPlatformAdmin = user.app_metadata?.role === 'platform_admin'
 
-    if (cu.role !== 'platform_client_admin' && cu.client_id !== id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-    if (cu.role === 'platform_client_admin') {
-      const { count } = await supabase
+    if (isPlatformAdmin) {
+      // platform_admin: client 존재 여부만 확인
+      const { data: clientExists } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', id)
+        .maybeSingle()
+      if (!clientExists) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    } else {
+      const { data: cu } = await supabase
         .from('client_users')
-        .select('*', { count: 'exact', head: true })
-        .eq('client_id', id)
-      if (!count) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+        .select('role, client_id')
+        .eq('user_id', user.id)
+        .single()
+      if (!cu) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+      if (cu.role !== 'platform_admin' && cu.client_id !== id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      if (cu.role === 'platform_admin') {
+        const { count } = await supabase
+          .from('client_users')
+          .select('*', { count: 'exact', head: true })
+          .eq('client_id', id)
+        if (!count) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
     }
     cookieName = 'bp_selected_client'
   } else {

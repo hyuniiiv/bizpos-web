@@ -38,7 +38,8 @@ export const canManageMembers = (role: Role | string): boolean => {
     role === ROLES.PLATFORM_MANAGER ||
     role === ROLES.MERCHANT_ADMIN ||
     role === ROLES.MERCHANT_MANAGER ||
-    role === ROLES.STORE_ADMIN
+    role === ROLES.STORE_ADMIN ||
+    role === ROLES.CLIENT_ADMIN
   );
 };
 
@@ -55,6 +56,10 @@ export const canAssignRole = (role: Role | string, targetRole: Role | string): b
       targetRole === ROLES.STORE_ADMIN ||
       targetRole === ROLES.STORE_MANAGER
     );
+  }
+
+  if (role === ROLES.CLIENT_ADMIN) {
+    return targetRole === ROLES.CLIENT_MANAGER;
   }
 
   return false;

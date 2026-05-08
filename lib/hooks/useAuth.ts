@@ -14,6 +14,14 @@ function extractRole(session: Session | null): Role {
   return null
 }
 
+function extractRoleFromUser(user: User | null): Role {
+  const raw = user?.app_metadata?.role
+  if (raw === 'platform_admin' || raw === 'terminal_admin' || raw === 'merchant' || raw === 'client') {
+    return raw
+  }
+  return null
+}
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [role, setRole] = useState<Role>(null)
@@ -24,11 +32,11 @@ export function useAuth() {
     let cancelled = false
 
     ;(async () => {
-      const { data } = await supabase.auth.getSession()
+      const { data } = await supabase.auth.getUser()
       if (cancelled) return
-      const session: Session | null = data.session
-      setUser(session?.user ?? null)
-      setRole(extractRole(session))
+      const freshUser: User | null = data.user ?? null
+      setUser(freshUser)
+      setRole(extractRoleFromUser(freshUser))
       setLoading(false)
     })()
 

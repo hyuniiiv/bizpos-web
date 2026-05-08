@@ -60,6 +60,8 @@ export function getAssignableRoles(userRole: Role | null): Role[] {
     case ROLES.STORE_ADMIN:
     case ROLES.STORE_MANAGER:
       return [ROLES.TERMINAL_ADMIN]
+    case ROLES.CLIENT_ADMIN:
+      return [ROLES.CLIENT_MANAGER]
     default:
       return []
   }

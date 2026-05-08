@@ -20,28 +20,34 @@ export default async function ClientAdminLayout({ children }: { children: React.
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: membership } = await supabase
-    .from('client_users')
-    .select('client_id, role, clients(client_name)')
-    .eq('user_id', user.id)
-    .single()
+  const isSitePlatformAdmin = user.app_metadata?.role === 'platform_admin'
 
-  if (!membership) redirect('/login')
-
-  const isPlatformAdmin = membership.role === 'platform_client_admin'
-
-  let effectiveClientId = membership.client_id
-  if (isPlatformAdmin) {
-    const cookieStore = await cookies()
-    const selected = cookieStore.get('bp_selected_client')?.value
-    if (selected) effectiveClientId = selected
+  // platform_admin은 client_users 등록 없이도 고객사 포털 접근 가능
+  let membership: { client_id: string | null; role: string; clients?: unknown } | null = null
+  if (!isSitePlatformAdmin) {
+    const { data } = await supabase
+      .from('client_users')
+      .select('client_id, role, clients(client_name)')
+      .eq('user_id', user.id)
+      .single()
+    membership = data
+    if (!membership) redirect('/login')
+  } else {
+    membership = { client_id: null, role: 'platform_admin' }
   }
 
+  const isPlatformAdmin = isSitePlatformAdmin || membership.role === 'platform_admin'
+
+  const cookieStore = await cookies()
+  const selected = cookieStore.get('bp_selected_client')?.value
+  let effectiveClientId: string | null = membership.client_id
+  if (isPlatformAdmin && selected) effectiveClientId = selected
+
   let clientName: string | undefined
-  if (effectiveClientId === membership.client_id) {
+  if (effectiveClientId && effectiveClientId === membership.client_id) {
     const clientsData = membership.clients as unknown as { client_name: string } | null
     clientName = clientsData?.client_name
-  } else {
+  } else if (effectiveClientId) {
     const { data: c } = await supabase
       .from('clients').select('client_name').eq('id', effectiveClientId).single()
     clientName = c?.client_name
@@ -68,7 +74,7 @@ export default async function ClientAdminLayout({ children }: { children: React.
             </div>
           </div>
         </div>
-        {isPlatformAdmin && <ClientSwitcher currentClientId={effectiveClientId} />}
+        {isPlatformAdmin && <ClientSwitcher currentClientId={effectiveClientId ?? ''} />}
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           {NAV.filter(item =>
             !(item.href === '/client/admin/members' && membership.role === 'client_operator')

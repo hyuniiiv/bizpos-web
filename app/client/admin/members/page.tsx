@@ -19,16 +19,26 @@ export default async function ClientMembersPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: membership } = await supabase
-    .from('client_users')
-    .select('client_id, role')
-    .eq('user_id', user.id)
-    .single()
+  const isPlatformAdmin = user.app_metadata?.role === 'platform_admin'
 
-  if (!membership) redirect('/login')
-  if (membership.role === 'client_operator') redirect('/client/admin')
+  let membershipRole: string
+  let fallbackClientId: string | null = null
 
-  const clientId = await getClientId(supabase) ?? membership.client_id
+  if (isPlatformAdmin) {
+    membershipRole = 'platform_admin'
+  } else {
+    const { data: membership } = await supabase
+      .from('client_users')
+      .select('client_id, role')
+      .eq('user_id', user.id)
+      .single()
+    if (!membership) redirect('/login')
+    if (membership.role === 'client_operator') redirect('/client/admin')
+    membershipRole = membership.role
+    fallbackClientId = membership.client_id
+  }
+
+  const clientId = await getClientId(supabase) ?? fallbackClientId
 
   const { data: rawMembers } = await supabase
     .from('client_users')
@@ -51,8 +61,8 @@ export default async function ClientMembersPage() {
   return (
     <ClientMembersClient
       members={members}
-      myRole={membership.role}
-      clientId={clientId}
+      myRole={membershipRole}
+      clientId={clientId ?? ''}
       currentUserId={user.id}
     />
   )

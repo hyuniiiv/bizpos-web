@@ -26,6 +26,11 @@ export function filterMembersByRole<T extends Member>(members: T[], userRole: Ro
     return members.filter(m => [ROLES.STORE_ADMIN, ROLES.STORE_MANAGER].includes(m.role as any))
   }
 
+  // Client roles can see only client members
+  if ([ROLES.CLIENT_ADMIN, ROLES.CLIENT_MANAGER].includes(userRole as any)) {
+    return members.filter(m => [ROLES.CLIENT_ADMIN, ROLES.CLIENT_MANAGER].includes(m.role as any))
+  }
+
   // Other roles cannot see members
   return []
 }
