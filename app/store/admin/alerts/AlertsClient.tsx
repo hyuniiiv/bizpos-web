@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Settings2 } from 'lucide-react'
 import type { AnomalyAlert } from '@/types/supabase'
 
 type AlertWithTerminal = AnomalyAlert & {
@@ -40,30 +42,35 @@ export default function AlertsClient({ alerts, showAll, readOnly = false }: Prop
 
   return (
     <div>
-      {/* 탭 */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => router.push('/store/admin/alerts')}
-          className={`px-4 py-2 rounded-full text-base font-medium transition-colors ${
-            !showAll
-              ? 'text-white'
-              : 'text-white/50 hover:text-white/80'
-          }`}
-          style={!showAll ? { background: 'rgba(96,165,250,0.35)', border: '1px solid rgba(96,165,250,0.50)' } : { border: '1px solid rgba(255,255,255,0.15)' }}
-        >
-          미확인
-        </button>
-        <button
-          onClick={() => router.push('/store/admin/alerts?show=all')}
-          className={`px-4 py-2 rounded-full text-base font-medium transition-colors ${
-            showAll
-              ? 'text-white'
-              : 'text-white/50 hover:text-white/80'
-          }`}
-          style={showAll ? { background: 'rgba(96,165,250,0.35)', border: '1px solid rgba(96,165,250,0.50)' } : { border: '1px solid rgba(255,255,255,0.15)' }}
-        >
-          전체
-        </button>
+      {/* 탭 + 설정 버튼 */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          {([
+            [false, '미확인'],
+            [true,  '전체'],
+          ] as [boolean, string][]).map(([isAll, label]) => (
+            <button
+              key={label}
+              onClick={() => router.push(isAll ? '/store/admin/alerts?show=all' : '/store/admin/alerts')}
+              className="px-4 py-1.5 rounded text-sm font-medium transition-all"
+              style={showAll === isAll
+                ? { background: 'rgba(96,165,250,0.30)', color: 'rgb(147,197,253)' }
+                : { color: 'rgba(255,255,255,0.45)' }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {!readOnly && (
+          <Link
+            href="/store/admin/alerts/settings"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
+            style={{ color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.15)' }}
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">규칙 설정</span>
+          </Link>
+        )}
       </div>
 
       {/* 알림 목록 */}

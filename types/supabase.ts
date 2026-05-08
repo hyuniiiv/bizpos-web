@@ -68,6 +68,15 @@ export interface AnomalyAlert {
   created_at: string
 }
 
+export type AnomalyRule = 'duplicate_barcode' | 'high_frequency' | 'high_amount'
+
+export interface AnomalyRuleSetting {
+  merchant_id: string
+  rule: AnomalyRule
+  enabled: boolean
+  params: Record<string, number>
+}
+
 export interface MerchantKey {
   id: string
   merchant_id: string

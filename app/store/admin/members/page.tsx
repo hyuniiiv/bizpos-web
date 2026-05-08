@@ -26,7 +26,7 @@ export default async function MembersPage() {
     .single()
 
   if (!membership) redirect('/login')
-  if (membership.role === 'store_manager') redirect('/store/admin')
+  if (membership.role === 'store_manager' || membership.role === 'client_manager') redirect('/store/admin')
 
   const merchantId = await getMerchantId(supabase) ?? membership.merchant_id
 
