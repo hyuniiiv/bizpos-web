@@ -505,7 +505,19 @@ export default function PosPage() {
     return <RealTimeDashboard refreshTrigger={txRefreshTrigger} />
   }
 
-  if (!mounted || !settingsHydrated) return null
+  if (!mounted || !settingsHydrated) return (
+    <div className="fixed inset-0 flex items-center justify-center"
+         style={{ background: 'var(--pos-bg-gradient)' }}>
+      <div className="text-center">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-6"
+             style={{ background: '#06D6A0' }}>
+          <span className="text-black font-black text-xl leading-none">B</span>
+        </div>
+        <div className="w-8 h-8 mx-auto mb-4 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        <p className="text-sm" style={{ color: 'var(--bp-text-3)' }}>시스템 초기화 중...</p>
+      </div>
+    </div>
+  )
   if (!deviceToken) return (
     <div className="flex-1 flex flex-col">
       <ActivationScreen />
