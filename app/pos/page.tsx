@@ -42,6 +42,7 @@ export default function PosPage() {
 
   const { deviceToken, terminalType, deviceTerminalId } = useSettingsStore()
   const [mounted, setMounted] = useState(false)
+  const [settingsHydrated, setSettingsHydrated] = useState(() => useSettingsStore.persist.hasHydrated())
   const [txRefreshTrigger, setTxRefreshTrigger] = useState(0)
   const [badgeResult, setBadgeResult] = useState<{
     variant: 'success' | 'warn'
@@ -50,6 +51,12 @@ export default function PosPage() {
     mealType: MealType
   } | null>(null)
   useEffect(() => setMounted(true), [])
+
+  useEffect(() => {
+    if (useSettingsStore.persist.hasHydrated()) return
+    const unsub = useSettingsStore.persist.onFinishHydration(() => setSettingsHydrated(true))
+    return unsub
+  }, [])
 
   useEffect(() => {
     if (!deviceToken || deviceToken === 'manual') return
@@ -498,7 +505,7 @@ export default function PosPage() {
     return <RealTimeDashboard refreshTrigger={txRefreshTrigger} />
   }
 
-  if (!mounted) return null
+  if (!mounted || !settingsHydrated) return null
   if (!deviceToken) return (
     <div className="flex-1 flex flex-col">
       <ActivationScreen />
