@@ -49,10 +49,10 @@ export function buildEncryptedPayload(
     return obj
   }
 
-  const cleaned = cleanPayload(payload)
   // Python의 json.dumps와 정확히 일치하도록 공백 포함 직렬화
   // 파이썬: json.dumps(json_data) -> {"key": "value", "key2": "value2"} (콜론 뒤 공백 1개, 쉼표 뒤 공백 1개)
-  const json = JSON.stringify(cleaned).replace(/":/g, '": ').replace(/,/g, ', ');
+  // 객체의 삽입 순서(Insertion Order)가 Python/Java와 동일하게 보존됨
+  const json = JSON.stringify(payload).replace(/":/g, '": ').replace(/,/g, ', ');
 
   console.log(`[bizplay] plain to encrypt: ${json}`)
 
