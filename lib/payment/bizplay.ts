@@ -124,11 +124,22 @@ export class BizplayClient {
         // 타입 호환을 위해 data 래퍼로 정규화
         const merged: Record<string, unknown> = { ...parsed }
         if (!merged.data) {
-          const dataFields = ['tid', 'token', 'merchantOrderID', 'approvedAt', 'userName', 'usedAmount', 'cancelledAmount']
+          // reserve/approve/cancel 응답에서 data 안에 들어갈 수 있는 모든 필드
+          const dataFields = [
+            'tid', 'token',
+            'merchantOrderDt', 'merchantOrderID',
+            'approvedAt', 'userName', 'usedAmount',
+            'productName', 'quantity', 'totalAmount', 'taxFreeAmount', 'vatAmount', 'createdAt',
+            'bankCd', 'accountNo', 'payMeasureTp', 'payZppNote', 'payZppReqList',
+            'merchantCancelDt', 'merchantCancelID', 'totalCancelAmount', 'cancelTaxFreeAmount',
+          ]
           const flat: Record<string, unknown> = {}
           for (const f of dataFields) {
             if (parsed[f] !== undefined) flat[f] = parsed[f]
           }
+          // 스펠링 정규화: BizPlay canceledAt (단일 L) → 우리 코드 cancelledAt (두 L)
+          if (parsed.canceledAt !== undefined) flat.cancelledAt = parsed.canceledAt
+          if (parsed.cancelledAt !== undefined) flat.cancelledAt = parsed.cancelledAt
           if (Object.keys(flat).length > 0) merged.data = flat
         }
         // 외부 envelope의 RC/RM도 함께 노출
