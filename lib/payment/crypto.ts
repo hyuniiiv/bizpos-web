@@ -14,7 +14,7 @@ export function encryptAES256(plaintext: string, key: string): string {
   const encrypted = CryptoJS.AES.encrypt(plaintext, keyBytes, {
     iv: ZERO_IV,
     mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs5,
+    padding: CryptoJS.pad.Pkcs7,
   })
   return encrypted.ciphertext.toString(CryptoJS.enc.Hex).toUpperCase()
 }
@@ -27,7 +27,7 @@ export function decryptAES256(cipherHex: string, key: string): string {
   const decrypted = CryptoJS.AES.decrypt(cipherParams, keyBytes, {
     iv: ZERO_IV,
     mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs5,
+    padding: CryptoJS.pad.Pkcs7,
   })
   return decrypted.toString(CryptoJS.enc.Utf8)
 }
