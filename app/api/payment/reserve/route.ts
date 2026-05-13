@@ -38,9 +38,15 @@ export async function POST(req: NextRequest) {
     const totalMs = Date.now() - t0
     const bizplayMs = Date.now() - tBizplay
     console.log(`[reserve-timing] total=${totalMs}ms bizplay=${bizplayMs}ms termId=${termId ?? 'none'} code=${result.code ?? '?'}`)
+    if (!result.code) {
+      // BizPlay 응답에 code 필드가 없음 — 진단을 위해 키/원문 로깅
+      const resultKeys = result && typeof result === 'object' ? Object.keys(result) : []
+      const snippet = (() => { try { return JSON.stringify(result).slice(0, 400) } catch { return '[unserializable]' } })()
+      console.error(`[reserve] missing code: termId=${termId ?? 'none'} keys=${resultKeys.join(',')} body=${snippet}`)
+    }
     return NextResponse.json(result)
   } catch (err) {
-    console.error('[reserve] Error:', err)
+    console.error(`[reserve] Error: termId=${auth.payload.termId ?? 'none'} error=${err instanceof Error ? err.message : String(err)}`)
     return NextResponse.json({ code: 'C002', msg: '서버 오류' }, { status: 500 })
   }
 }

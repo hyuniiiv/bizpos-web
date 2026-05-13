@@ -418,7 +418,7 @@ export default function PosPage() {
       }
 
       // 2. [Remote API] 결제 처리
-      const reserveRes = await fetch(getServerUrl() + '/api/payment/reserve', {
+      const reserveHttp = await fetch(getServerUrl() + '/api/payment/reserve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deviceToken ?? ''}` },
         body: JSON.stringify({
@@ -438,7 +438,14 @@ export default function PosPage() {
           barcodeInfo: identity.raw,
           termId: config.name || config.termId,
         }),
-      }).then(r => r.json())
+      })
+      const reserveRaw = await reserveHttp.text()
+      let reserveRes: { code?: string; msg?: string; data?: { tid?: string; token?: string } } = {}
+      try {
+        reserveRes = reserveRaw ? JSON.parse(reserveRaw) : {}
+      } catch {
+        // JSON 파싱 실패 — raw 텍스트는 아래 로그에서 처리
+      }
 
       if (reserveRes.code !== '0000') {
         // BizPlay가 reserve 단계에서 거절 → 재시도 불필요한 영구 실패
@@ -446,17 +453,19 @@ export default function PosPage() {
         logger.error('payment', 'reserve_failed', {
           merchantOrderID,
           amount,
-          code: reserveRes.code,
-          msg: reserveRes.msg,
+          httpStatus: reserveHttp.status,
+          code: reserveRes.code ?? null,
+          msg: reserveRes.msg ?? null,
+          rawSnippet: reserveRaw.slice(0, 200),
         })
         await PaymentRepository.markPaymentSynced(merchantOrderID)
         PaymentRepository.getPendingPayments().then(p => setPendingCount(p.length))
-        setLastError(reserveRes.msg)
+        setLastError(reserveRes.msg ?? `결제 예약 실패 (HTTP ${reserveHttp.status})`)
         setScreen('fail')
         return
       }
 
-      const approveRes = await fetch(getServerUrl() + '/api/payment/approve', {
+      const approveHttp = await fetch(getServerUrl() + '/api/payment/approve', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -465,23 +474,32 @@ export default function PosPage() {
         body: JSON.stringify({
           merchantOrderDt,
           merchantOrderID,
-          tid: reserveRes.data.tid,
+          tid: reserveRes.data?.tid,
           totalAmount: amount,
-          token: reserveRes.data.token,
+          token: reserveRes.data?.token,
           menuId: menu.id,
           menuName: effectiveMenuName,
           barcodeInfo: identity.raw,
           termId: config.termId,
           paymentType: identity.type,
         }),
-      }).then(r => r.json())
+      })
+      const approveRaw = await approveHttp.text()
+      let approveRes: { code?: string; msg?: string; transaction?: Parameters<typeof setLastTransaction>[0] } = {}
+      try {
+        approveRes = approveRaw ? JSON.parse(approveRaw) : {}
+      } catch {
+        // JSON 파싱 실패 — raw 텍스트는 아래 로그에서 처리
+      }
 
       if (approveRes.code !== '0000') {
         logger.warn('payment', 'approve_failed', {
           merchantOrderID,
           amount,
-          code: approveRes.code,
-          msg: approveRes.msg,
+          httpStatus: approveHttp.status,
+          code: approveRes.code ?? null,
+          msg: approveRes.msg ?? null,
+          rawSnippet: approveRaw.slice(0, 200),
         })
         // PG 실제 상태 조회 — 타임아웃 후 실제로는 성공했을 수 있음
         const { isActuallySucceeded } = await resolveApproveFailure({
@@ -503,8 +521,8 @@ export default function PosPage() {
           return
         }
 
-        logger.error('payment', 'failed', { merchantOrderID, amount, msg: approveRes.msg })
-        setLastError(approveRes.msg)
+        logger.error('payment', 'failed', { merchantOrderID, amount, msg: approveRes.msg ?? null })
+        setLastError(approveRes.msg ?? `결제 승인 실패 (HTTP ${approveHttp.status})`)
         setScreen('fail')
         return
       }
@@ -522,7 +540,7 @@ export default function PosPage() {
         paymentType: identity.type,
       })
       incrementCount(menu.id)
-      setLastTransaction(approveRes.transaction)
+      setLastTransaction(approveRes.transaction ?? null)
       setLastSoundFile(menu.soundFile || undefined)
       lastMsgRef.current = '정상결제 됨.'
       clearMenu()
