@@ -10,12 +10,13 @@ import CryptoJS from 'crypto-js'
 const ZERO_IV = CryptoJS.enc.Hex.parse('00000000000000000000000000000000')
 
 export function encryptAES256(plaintext: string, key: string): string {
-  // Java .getBytes("UTF-8")과 일치하도록 Utf8.parse 사용 및 명시적 padding PKCS5 지정
+  // Java와 완벽하게 일치하는 바이트 기반 암호화 처리
   const keyBytes = CryptoJS.enc.Utf8.parse(key)
-  const encrypted = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(plaintext), keyBytes, {
+  const plainBytes = CryptoJS.enc.Utf8.parse(plaintext)
+  const encrypted = CryptoJS.AES.encrypt(plainBytes, keyBytes, {
     iv: ZERO_IV,
     mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs7, // CryptoJS는 PKCS7을 사용하지만, 블록암호화에선 PKCS5와 동일하게 동작
+    padding: CryptoJS.pad.Pkcs7,
   })
   return encrypted.ciphertext.toString(CryptoJS.enc.Hex).toUpperCase()
 }
