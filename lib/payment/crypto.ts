@@ -10,11 +10,12 @@ import CryptoJS from 'crypto-js'
 const ZERO_IV = CryptoJS.enc.Hex.parse('00000000000000000000000000000000')
 
 export function encryptAES256(plaintext: string, key: string): string {
+  // Java .getBytes("UTF-8")과 일치하도록 Utf8.parse 사용 및 명시적 padding PKCS5 지정
   const keyBytes = CryptoJS.enc.Utf8.parse(key)
-  const encrypted = CryptoJS.AES.encrypt(plaintext, keyBytes, {
+  const encrypted = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(plaintext), keyBytes, {
     iv: ZERO_IV,
     mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs7,
+    padding: CryptoJS.pad.Pkcs7, // CryptoJS는 PKCS7을 사용하지만, 블록암호화에선 PKCS5와 동일하게 동작
   })
   return encrypted.ciphertext.toString(CryptoJS.enc.Hex).toUpperCase()
 }
@@ -46,9 +47,24 @@ export function buildEncryptedPayload(
   payload: object,
   encKey: string
 ): { EV: string; VV: string } {
+  // null/undefined 제거 및 숫자형 보장
+  const cleanPayload = (obj: any): any => {
+    if (Array.isArray(obj)) return obj.map(cleanPayload)
+    if (obj !== null && typeof obj === 'object') {
+      return Object.keys(obj).reduce((acc, key) => {
+        const val = obj[key]
+        if (val !== undefined && val !== null) acc[key] = cleanPayload(val)
+        return acc
+      }, {} as any)
+    }
+    return obj
+  }
+
+  const cleaned = cleanPayload(payload)
+
   // 필드명을 기준으로 알파벳 순 정렬하여 직렬화 (Deterministic)
-  const sortedPayload = Object.keys(payload).sort().reduce((acc, key) => {
-    acc[key] = (payload as any)[key]
+  const sortedPayload = Object.keys(cleaned).sort().reduce((acc, key) => {
+    acc[key] = cleaned[key]
     return acc
   }, {} as any)
   const json = JSON.stringify(sortedPayload)
