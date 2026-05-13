@@ -51,7 +51,8 @@ export class BizplayClient {
   private async post<T>(path: string, body: object): Promise<T> {
     const { EV, VV } = buildEncryptedPayload(body, this.encKey)
     console.log(`[bizplay] sending EV=${EV} VV=${VV}`)
-    console.log(`[bizplay] Authorization header: OnlineAK ${this.onlineAK}`)
+    // 헤더 값 검증을 위해 전체를 로깅
+    console.log(`[bizplay] Authorization header used: OnlineAK-${this.onlineAK}-`)
     // 공식 명세(20자)를 준수하되, 샘플 로직을 참고하여 유니크하게 생성
     const rqDtime = getRqDtime()
     const tno = (rqDtime + '000001').substring(0, 20)
