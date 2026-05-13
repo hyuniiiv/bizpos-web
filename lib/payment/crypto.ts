@@ -10,20 +10,22 @@ import { createCipheriv, createDecipheriv, createHmac } from 'crypto';
 const ZERO_IV = Buffer.alloc(16, 0);
 
 export function encryptAES256(plaintext: string, key: string): string {
-  const cipher = createCipheriv('aes-256-cbc', Buffer.from(key, 'utf-8'), ZERO_IV);
-  cipher.setAutoPadding(true); // PKCS5/7 패딩 활성화 확인
+  const keyBytes = Buffer.from(key, 'utf-8');
+  const cipher = createCipheriv('aes-256-cbc', keyBytes, ZERO_IV);
   const encrypted = Buffer.concat([cipher.update(plaintext, 'utf-8'), cipher.final()]);
   return encrypted.toString('hex').toUpperCase();
 }
 
 export function decryptAES256(cipherHex: string, key: string): string {
-  const decipher = createDecipheriv('aes-256-cbc', Buffer.from(key, 'utf-8'), ZERO_IV);
+  const keyBytes = Buffer.from(key, 'utf-8');
+  const decipher = createDecipheriv('aes-256-cbc', keyBytes, ZERO_IV);
   const decrypted = Buffer.concat([decipher.update(Buffer.from(cipherHex, 'hex')), decipher.final()]);
   return decrypted.toString('utf-8');
 }
 
 export function hmacSHA256(data: string, key: string): string {
-  return createHmac('sha256', key).update(data, 'utf-8').digest('hex').toUpperCase();
+  const keyBytes = Buffer.from(key, 'utf-8');
+  return createHmac('sha256', keyBytes).update(data, 'utf-8').digest('hex').toUpperCase();
 }
 
 /**
