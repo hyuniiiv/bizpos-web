@@ -52,6 +52,7 @@ export class BizplayClient {
     const { EV, VV } = buildEncryptedPayload(body, this.encKey)
     console.log(`[bizplay] sending EV=${EV} VV=${VV}`)
     // 샘플 명세에 맞게 RC, RM 필드 제거 및 TNO 길이 조정 (20자)
+    // 명세 순서대로 필드 구성 (MID, RQ_DTIME, TNO, EV, VV)
     const rqDtime = getRqDtime()
     const tno = (rqDtime + '000001').substring(0, 20)
     const requestBody = {
