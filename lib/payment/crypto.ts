@@ -50,7 +50,8 @@ export function buildEncryptedPayload(
   }
 
   const cleaned = cleanPayload(payload)
-  const json = JSON.stringify(cleaned)
+  // Java/Python 샘플과 동일하게 필드 구분 시 공백 포함 ({"a": 1, "b": 2})
+  const json = JSON.stringify(cleaned, null, 1).replace(/\n/g, '').replace(/: /g, ':').replace(/, /g, ', ')
   
   console.log(`[bizplay] plain to encrypt: ${json}`)
 
