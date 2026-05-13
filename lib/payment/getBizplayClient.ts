@@ -38,6 +38,16 @@ export async function getBizplayClientForTerminal(termId: string) {
     )
   }
 
+  // 키 3종 셋팅 진단 — 값은 절대 로깅 금지, 길이/존재 여부만
+  console.log(
+    `[bizplay-key] termId=${termId} keyId=${terminal.merchant_key_id} env=${key.env}` +
+    ` midLen=${(key.mid ?? '').length} encKeyLen=${(key.enc_key ?? '').length} onlineAkLen=${(key.online_ak ?? '').length}`
+  )
+  if (!key.mid || !key.enc_key || !key.online_ak) {
+    throw new Error(
+      `Merchant key '${terminal.merchant_key_id}' has missing fields for terminal '${termId}'.`
+    )
+  }
   return new BizplayClient({
     mid: key.mid,
     encKey: key.enc_key,

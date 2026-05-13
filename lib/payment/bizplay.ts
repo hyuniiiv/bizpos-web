@@ -78,13 +78,28 @@ export class BizplayClient {
     } finally {
       clearTimeout(timeoutId)
     }
+    const rawText = await res.text()
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${await res.text()}`)
+      console.error(`[bizplay] http_error path=${path} mid=${this.mid} status=${res.status} body=${rawText.slice(0, 400)}`)
+      throw new Error(`HTTP ${res.status}: ${rawText.slice(0, 400)}`)
     }
-    const json = await res.json()
+    let json: { EV?: string } & Record<string, unknown>
+    try {
+      json = JSON.parse(rawText)
+    } catch {
+      console.error(`[bizplay] parse_failed path=${path} mid=${this.mid} rawSnippet=${rawText.slice(0, 400)}`)
+      throw new Error(`Invalid JSON from BizPlay: ${rawText.slice(0, 200)}`)
+    }
     if (json.EV) {
-      return decryptResponse<T>(json.EV, this.encKey)
+      try {
+        return decryptResponse<T>(json.EV, this.encKey)
+      } catch (err) {
+        console.error(`[bizplay] decrypt_failed path=${path} mid=${this.mid} encKeyLen=${this.encKey.length} evLen=${json.EV.length} error=${err instanceof Error ? err.message : String(err)}`)
+        throw err
+      }
     }
+    // EV 없는 평문 응답 — 인증 실패 또는 잘못된 키 헤더로 BizPlay가 평문 에러를 돌려줬을 가능성
+    console.warn(`[bizplay] plaintext_response path=${path} mid=${this.mid} keys=${Object.keys(json).join(',')} snippet=${rawText.slice(0, 400)}`)
     return json as T
   }
 
