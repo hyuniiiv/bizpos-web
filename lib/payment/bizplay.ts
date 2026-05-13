@@ -75,7 +75,7 @@ export class BizplayClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': `OnlineAK-${this.onlineAK}`,
+          'Authorization': `OnlineAK-${this.onlineAK}-`,
           'Connection': 'keep-alive',
         },
         body: JSON.stringify(requestBody),
