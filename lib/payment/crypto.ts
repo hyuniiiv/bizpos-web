@@ -62,12 +62,8 @@ export function buildEncryptedPayload(
 
   const cleaned = cleanPayload(payload)
 
-  // 필드명을 기준으로 알파벳 순 정렬하여 직렬화 (Deterministic)
-  const sortedPayload = Object.keys(cleaned).sort().reduce((acc, key) => {
-    acc[key] = cleaned[key]
-    return acc
-  }, {} as any)
-  const json = JSON.stringify(sortedPayload)
+  // Java JSONObject.toString() 방식과 최대한 유사하게 정렬 없이 직렬화
+  const json = JSON.stringify(cleaned)
   
   console.log(`[bizplay] plain to encrypt: ${json}`)
 
