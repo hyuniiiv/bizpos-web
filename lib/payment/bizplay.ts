@@ -7,7 +7,7 @@ import type {
   ApprovalRequest, ApprovalResponse,
   CancelRequest, CancelResponse,
 } from '@/types/payment'
-import { buildEncryptedPayload, decryptResponse } from './crypto'
+import { buildEncryptedPayload, decryptResponse, decryptAES256 } from './crypto'
 
 const BASE_URL = {
   production: 'https://pgapi.bizplaypay.co.kr',
@@ -91,10 +91,19 @@ export class BizplayClient {
       throw new Error(`Invalid JSON from BizPlay: ${rawText.slice(0, 200)}`)
     }
     if (json.EV) {
+      let plaintext: string
       try {
-        return decryptResponse<T>(json.EV, this.encKey)
+        plaintext = decryptAES256(json.EV, this.encKey)
       } catch (err) {
         console.error(`[bizplay] decrypt_failed path=${path} mid=${this.mid} encKeyLen=${this.encKey.length} evLen=${json.EV.length} error=${err instanceof Error ? err.message : String(err)}`)
+        throw err
+      }
+      // 복호화된 평문 진단 (echo 응답 여부 확인용 — 민감 정보 가능성 있어 200자 snippet만)
+      console.log(`[bizplay] decrypted path=${path} mid=${this.mid} plainSnippet=${plaintext.slice(0, 200)}`)
+      try {
+        return JSON.parse(plaintext) as T
+      } catch (err) {
+        console.error(`[bizplay] decrypted_parse_failed path=${path} mid=${this.mid} plainSnippet=${plaintext.slice(0, 200)}`)
         throw err
       }
     }
