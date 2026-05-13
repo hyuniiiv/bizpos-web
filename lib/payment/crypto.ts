@@ -50,13 +50,10 @@ export function buildEncryptedPayload(
   }
 
   const cleaned = cleanPayload(payload)
-  // 필드명을 기준으로 알파벳 순 정렬하여 직렬화 (Deterministic)
-  const sortedPayload = Object.keys(cleaned).sort().reduce((acc, key) => {
-    acc[key] = cleaned[key]
-    return acc
-  }, {} as any)
-  const json = JSON.stringify(sortedPayload);
-  
+  // Python의 json.dumps와 정확히 일치하도록 공백 포함 직렬화
+  // 파이썬: json.dumps(json_data) -> {"key": "value", "key2": "value2"} (콜론 뒤 공백 1개, 쉼표 뒤 공백 1개)
+  const json = JSON.stringify(cleaned).replace(/":/g, '": ').replace(/,/g, ', ');
+
   console.log(`[bizplay] plain to encrypt: ${json}`)
 
   const EV = encryptAES256(json, encKey)
