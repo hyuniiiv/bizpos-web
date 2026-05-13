@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     if (!result.code) {
       // BizPlay 응답에 code 필드가 없음 — 진단을 위해 키/원문 로깅
       const resultKeys = result && typeof result === 'object' ? Object.keys(result) : []
-      const snippet = (() => { try { return JSON.stringify(result).slice(0, 400) } catch { return '[unserializable]' } })()
+      const snippet = (() => { try { return JSON.stringify(result) } catch { return '[unserializable]' } })()
       console.error(`[reserve] missing code: termId=${termId ?? 'none'} keys=${resultKeys.join(',')} body=${snippet}`)
     }
     return NextResponse.json(result)

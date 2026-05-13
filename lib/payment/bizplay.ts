@@ -98,12 +98,12 @@ export class BizplayClient {
         console.error(`[bizplay] decrypt_failed path=${path} mid=${this.mid} encKeyLen=${this.encKey.length} evLen=${json.EV.length} error=${err instanceof Error ? err.message : String(err)}`)
         throw err
       }
-      // 복호화된 평문 진단 (echo 응답 여부 확인용 — 민감 정보 가능성 있어 200자 snippet만)
-      console.log(`[bizplay] decrypted path=${path} mid=${this.mid} plainSnippet=${plaintext.slice(0, 200)}`)
+      // 복호화된 평문 진단 (echo 응답 여부 확인용 — 진단 중 전체 출력)
+      console.log(`[bizplay] decrypted path=${path} mid=${this.mid} plain=${plaintext}`)
       try {
         return JSON.parse(plaintext) as T
       } catch (err) {
-        console.error(`[bizplay] decrypted_parse_failed path=${path} mid=${this.mid} plainSnippet=${plaintext.slice(0, 200)}`)
+        console.error(`[bizplay] decrypted_parse_failed path=${path} mid=${this.mid} plain=${plaintext}`)
         throw err
       }
     }
