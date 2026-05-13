@@ -11,6 +11,7 @@ const ZERO_IV = Buffer.alloc(16, 0);
 
 export function encryptAES256(plaintext: string, key: string): string {
   const cipher = createCipheriv('aes-256-cbc', Buffer.from(key, 'utf-8'), ZERO_IV);
+  cipher.setAutoPadding(true); // PKCS5/7 패딩 활성화 확인
   const encrypted = Buffer.concat([cipher.update(plaintext, 'utf-8'), cipher.final()]);
   return encrypted.toString('hex').toUpperCase();
 }
