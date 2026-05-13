@@ -17,12 +17,24 @@ interface StoredTransaction {
 // 인메모리 캐시 (성능 최적화)
 let cache: StoredTransaction[] | null = null
 
+// Vercel 서버리스는 readonly 파일시스템 — file I/O를 skip하고 in-memory만 사용
+// Supabase가 영구 저장 layer이므로 파일 캐시는 보조 수단
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
+
 function ensureDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
+  } catch {
+    // readonly fs (Vercel 등) — 무시
+  }
 }
 
 function loadFromFile(): StoredTransaction[] {
   if (cache !== null) return cache
+  if (IS_SERVERLESS) {
+    cache = []
+    return cache
+  }
   ensureDir()
   try {
     if (fs.existsSync(TX_FILE)) {
@@ -37,11 +49,17 @@ function loadFromFile(): StoredTransaction[] {
 }
 
 function saveToFile(txs: StoredTransaction[]) {
-  ensureDir()
   // 최대 5000건 유지
   const trimmed = txs.slice(0, 5000)
-  fs.writeFileSync(TX_FILE, JSON.stringify(trimmed, null, 2), 'utf-8')
   cache = trimmed
+  if (IS_SERVERLESS) return
+  ensureDir()
+  try {
+    fs.writeFileSync(TX_FILE, JSON.stringify(trimmed, null, 2), 'utf-8')
+  } catch (err) {
+    // 파일 쓰기 실패는 영구 저장(Supabase)에 영향 없음 — 캐시 갱신은 이미 완료
+    console.warn('[transactions] saveToFile failed (in-memory cache still updated):', err instanceof Error ? err.message : String(err))
+  }
 }
 
 export function addTransaction(tx: StoredTransaction) {
