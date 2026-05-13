@@ -1,54 +1,38 @@
-import CryptoJS from 'crypto-js'
+import { createCipheriv, createDecipheriv, createHmac } from 'crypto';
 
 /**
  * 비플페이 API 암호화 규격
- * - AES256-CBC + PKCS7 패딩 → HEXA 변환
+ * - AES256-CBC + PKCS5(PKCS7과 동일) 패딩 → HEXA 변환
  * - HmacSHA256 → HEXA 변환
  */
 
-// IV = 16 zero bytes (0x00 × 16) — 비플페이 API 가이드 규격
-const ZERO_IV = CryptoJS.enc.Hex.parse('00000000000000000000000000000000')
+// IV = 16 zero bytes
+const ZERO_IV = Buffer.alloc(16, 0);
 
 export function encryptAES256(plaintext: string, key: string): string {
-  // Java와 완벽하게 일치하는 바이트 기반 암호화 처리
-  const keyBytes = CryptoJS.enc.Utf8.parse(key)
-  const plainBytes = CryptoJS.enc.Utf8.parse(plaintext)
-  const encrypted = CryptoJS.AES.encrypt(plainBytes, keyBytes, {
-    iv: ZERO_IV,
-    mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs7,
-  })
-  return encrypted.ciphertext.toString(CryptoJS.enc.Hex).toUpperCase()
+  const cipher = createCipheriv('aes-256-cbc', Buffer.from(key, 'utf-8'), ZERO_IV);
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf-8'), cipher.final()]);
+  return encrypted.toString('hex').toUpperCase();
 }
 
 export function decryptAES256(cipherHex: string, key: string): string {
-  const keyBytes = CryptoJS.enc.Utf8.parse(key)
-  const cipherParams = CryptoJS.lib.CipherParams.create({
-    ciphertext: CryptoJS.enc.Hex.parse(cipherHex),
-  })
-  const decrypted = CryptoJS.AES.decrypt(cipherParams, keyBytes, {
-    iv: ZERO_IV,
-    mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs7,
-  })
-  return decrypted.toString(CryptoJS.enc.Utf8)
+  const decipher = createDecipheriv('aes-256-cbc', Buffer.from(key, 'utf-8'), ZERO_IV);
+  const decrypted = Buffer.concat([decipher.update(Buffer.from(cipherHex, 'hex')), decipher.final()]);
+  return decrypted.toString('utf-8');
 }
 
 export function hmacSHA256(data: string, key: string): string {
-  const hash = CryptoJS.HmacSHA256(data, key)
-  return hash.toString(CryptoJS.enc.Hex).toUpperCase()
+  return createHmac('sha256', key).update(data, 'utf-8').digest('hex').toUpperCase();
 }
 
 /**
  * API 요청 body 암호화
- * EV = AES256(JSON.stringify(payload))
- * VV = HmacSHA256(plaintext JSON, encKey)  — EV가 아닌 평문에 대해 HMAC
  */
 export function buildEncryptedPayload(
   payload: object,
   encKey: string
 ): { EV: string; VV: string } {
-  // null/undefined 제거 및 숫자형 보장
+  // null/undefined 제거
   const cleanPayload = (obj: any): any => {
     if (Array.isArray(obj)) return obj.map(cleanPayload)
     if (obj !== null && typeof obj === 'object') {
@@ -62,8 +46,6 @@ export function buildEncryptedPayload(
   }
 
   const cleaned = cleanPayload(payload)
-
-  // Java JSONObject.toString() 방식과 최대한 유사하게 정렬 없이 직렬화
   const json = JSON.stringify(cleaned)
   
   console.log(`[bizplay] plain to encrypt: ${json}`)
