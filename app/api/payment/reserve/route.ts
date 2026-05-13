@@ -55,10 +55,17 @@ export async function POST(req: NextRequest) {
     }
 
     const tBizplay = Date.now()
-    const result = await client.reserve(body)
+    const result = await client.reserve(body) as unknown as Record<string, unknown> & {
+      code?: string; msg?: string; RC?: string; RM?: string
+    }
     const totalMs = Date.now() - t0
     const bizplayMs = Date.now() - tBizplay
-    console.log(`[reserve-timing] total=${totalMs}ms bizplay=${bizplayMs}ms termId=${termId ?? 'none'} code=${result.code ?? '?'}`)
+    console.log(`[reserve-timing] total=${totalMs}ms bizplay=${bizplayMs}ms termId=${termId ?? 'none'} code=${result.code ?? '?'} RC=${result.RC ?? '?'} RM=${result.RM ?? '?'}`)
+    // BizPlay 공통부 RC가 비-0000이면 명시적 에러 응답으로 변환
+    if (result.RC && result.RC !== '0000') {
+      console.error(`[reserve] bizplay_error RC=${result.RC} RM=${result.RM ?? ''} termId=${termId ?? 'none'}`)
+      return NextResponse.json({ code: result.RC, msg: result.RM ?? '결제 서버 오류' })
+    }
     if (!result.code) {
       // BizPlay 응답에 code 필드가 없음 — 진단을 위해 키/원문 로깅
       const resultKeys = result && typeof result === 'object' ? Object.keys(result) : []

@@ -57,7 +57,7 @@ export class BizplayClient {
     // 샘플 코드와 완벽히 일치하도록, RC, RM 필드 추가
     const rqDtime = getRqDtime()
     // 샘플 코드에서는 TNO가 RQ_DTIME과 동일함
-    // 샘플 명세에 맞게 RC, RM 필드를 JSON 구조의 최상단에 배치하고 명세 순서 준수
+    // Python 구현과 동일하게 요청 구성
     const requestBody = {
       MID: this.mid,
       RQ_DTIME: rqDtime,
@@ -119,9 +119,13 @@ export class BizplayClient {
       // 복호화된 평문 진단 (echo 응답 여부 확인용 — 진단 중 전체 출력)
       console.log(`[bizplay] decrypted path=${path} mid=${this.mid} plain=${plaintext}`)
       try {
-        const parsed = JSON.parse(plaintext)
-        console.log(`[bizplay] response data:`, JSON.stringify(parsed))
-        return parsed as T
+        const parsed = JSON.parse(plaintext) as Record<string, unknown>
+        // 외부 envelope의 RC/RM도 함께 노출 (호출자가 BizPlay 공통 결과코드 확인 가능)
+        const merged: Record<string, unknown> = { ...parsed }
+        if (json.RC !== undefined) merged.RC = json.RC
+        if (json.RM !== undefined) merged.RM = json.RM
+        console.log(`[bizplay] response data:`, JSON.stringify(merged))
+        return merged as T
       } catch (err) {
         console.error(`[bizplay] decrypted_parse_failed path=${path} mid=${this.mid} plain=${plaintext}`)
         throw err
