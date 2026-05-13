@@ -102,9 +102,7 @@ export class BizplayClient {
       console.log(`[bizplay] decrypted path=${path} mid=${this.mid} plain=${plaintext}`)
       try {
         const parsed = JSON.parse(plaintext)
-        if (parsed.RC !== undefined || parsed.RM !== undefined) {
-           console.log(`[bizplay] RESULT RC=${parsed.RC} RM=${parsed.RM}`)
-        }
+        console.log(`[bizplay] response data:`, JSON.stringify(parsed))
         return parsed as T
       } catch (err) {
         console.error(`[bizplay] decrypted_parse_failed path=${path} mid=${this.mid} plain=${plaintext}`)
