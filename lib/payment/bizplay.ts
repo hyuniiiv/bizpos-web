@@ -55,11 +55,12 @@ export class BizplayClient {
     // 명세 순서대로 필드 구성 (MID, RQ_DTIME, TNO, EV, VV)
     // 샘플 코드와 정확히 일치하는 필드 순서와 RC, RM 필드 추가
     const rqDtime = getRqDtime()
-    const tno = (rqDtime + '000001').substring(0, 20)
+    // TNO는 샘플 코드와 같이 RQ_DTIME과 동일하게 설정 (14자)
+    const rqDtime = getRqDtime()
     const requestBody = {
       MID: this.mid,
       RQ_DTIME: rqDtime,
-      TNO: tno,
+      TNO: rqDtime,
       EV,
       VV,
       RC: '',
