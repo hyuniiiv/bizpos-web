@@ -11,21 +11,21 @@ const ZERO_IV = Buffer.alloc(16, 0);
 
 export function encryptAES256(plaintext: string, key: string): string {
   // key를 UTF-8 문자열이 아닌 raw 바이트로 처리
-  const keyBytes = Buffer.from(key, 'binary'); 
+  const keyBytes = Buffer.from(key, 'utf-8'); 
   const cipher = createCipheriv('aes-256-cbc', keyBytes, ZERO_IV);
   const encrypted = Buffer.concat([cipher.update(plaintext, 'utf-8'), cipher.final()]);
   return encrypted.toString('hex').toUpperCase();
 }
 
 export function decryptAES256(cipherHex: string, key: string): string {
-  const keyBytes = Buffer.from(key, 'binary');
+  const keyBytes = Buffer.from(key, 'utf-8');
   const decipher = createDecipheriv('aes-256-cbc', keyBytes, ZERO_IV);
   const decrypted = Buffer.concat([decipher.update(Buffer.from(cipherHex, 'hex')), decipher.final()]);
   return decrypted.toString('utf-8');
 }
 
 export function hmacSHA256(data: string, key: string): string {
-  const keyBytes = Buffer.from(key, 'binary');
+  const keyBytes = Buffer.from(key, 'utf-8');
   return createHmac('sha256', keyBytes).update(data, 'utf-8').digest('hex').toUpperCase();
 }
 
@@ -50,8 +50,12 @@ export function buildEncryptedPayload(
   }
 
   const cleaned = cleanPayload(payload)
-  // Java/Python 샘플과 동일하게 필드 구분 시 공백 포함 ({"a": 1, "b": 2})
-  const json = JSON.stringify(cleaned, null, 1).replace(/\n/g, '').replace(/: /g, ':').replace(/, /g, ', ')
+  // 필드명을 기준으로 알파벳 순 정렬하여 직렬화 (Deterministic)
+  const sortedPayload = Object.keys(cleaned).sort().reduce((acc, key) => {
+    acc[key] = cleaned[key]
+    return acc
+  }, {} as any)
+  const json = JSON.stringify(sortedPayload);
   
   console.log(`[bizplay] plain to encrypt: ${json}`)
 
