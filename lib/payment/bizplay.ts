@@ -83,14 +83,21 @@ export class BizplayClient {
       clearTimeout(timeoutId)
     }
     const rawText = await res.text()
-    console.log(`[bizplay] received raw=${rawText.slice(0, 400)}`)
+    let parsedRaw: any = {}
+    try {
+        parsedRaw = JSON.parse(rawText)
+        console.log(`[bizplay] received raw: RC=${parsedRaw.RC}, RM=${parsedRaw.RM}, content=${rawText.slice(0, 400)}`)
+    } catch {
+        console.log(`[bizplay] received raw (non-json): ${rawText.slice(0, 400)}`)
+    }
+    
     if (!res.ok) {
       console.error(`[bizplay] http_error path=${path} mid=${this.mid} status=${res.status} body=${rawText.slice(0, 400)}`)
       throw new Error(`HTTP ${res.status}: ${rawText.slice(0, 400)}`)
     }
-    let json: { EV?: string, VV?: string } & Record<string, unknown>
+    let json: { EV?: string, VV?: string } & Record<string, unknown> = parsedRaw
     try {
-      json = JSON.parse(rawText)
+      // json is already parsed above
     } catch {
       console.error(`[bizplay] parse_failed path=${path} mid=${this.mid} rawSnippet=${rawText.slice(0, 400)}`)
       throw new Error(`Invalid JSON from BizPlay: ${rawText.slice(0, 200)}`)
