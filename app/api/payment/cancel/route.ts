@@ -28,8 +28,12 @@ export async function POST(req: NextRequest) {
         approvedAt: result.data.cancelledAt,
         createdAt: new Date().toISOString(),
       }
-      addTransaction(cancelTx)
-      emitTransaction(cancelTx)
+      try {
+        addTransaction(cancelTx)
+        emitTransaction(cancelTx)
+      } catch (err) {
+        console.error('[cancel] addTransaction/emit failed:', err instanceof Error ? err.message : String(err))
+      }
 
       // Supabase transactions 취소 상태 갱신
       ;(async () => {

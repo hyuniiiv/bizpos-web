@@ -85,9 +85,13 @@ export async function POST(req: NextRequest) {
         synced: true,
         createdAt: new Date().toISOString(),
       }
-      // 거래내역 저장 + SSE 브로드캐스트
-      addTransaction(tx)
-      emitTransaction(tx)
+      // 거래내역 저장 + SSE 브로드캐스트 (실패해도 Supabase 영구 저장은 진행)
+      try {
+        addTransaction(tx)
+        emitTransaction(tx)
+      } catch (err) {
+        console.error('[approve] addTransaction/emit failed:', err instanceof Error ? err.message : String(err))
+      }
 
       // Supabase transactions 테이블에 직접 INSERT (비동기, 실패해도 결제 응답에 영향 없음)
       const approvedData = result.data
