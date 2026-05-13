@@ -58,7 +58,6 @@ export class BizplayClient {
     const rqDtime = getRqDtime()
     // 샘플 코드에서는 TNO가 RQ_DTIME과 동일함
     // 샘플 명세에 맞게 RC, RM 필드를 JSON 구조의 최상단에 배치하고 명세 순서 준수
-    const rqDtime = getRqDtime()
     const requestBody = {
       MID: this.mid,
       RQ_DTIME: rqDtime,
