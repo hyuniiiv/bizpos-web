@@ -14,7 +14,9 @@ export function encryptAES256(plaintext: string, key: string): string {
   const keyBytes = Buffer.from(key, 'utf-8'); 
   const cipher = createCipheriv('aes-256-cbc', keyBytes, ZERO_IV);
   const encrypted = Buffer.concat([cipher.update(plaintext, 'utf-8'), cipher.final()]);
-  return encrypted.toString('hex').toUpperCase();
+  // BizPlay 명세: hex 소문자 (Java Hex.encodeHexString, PHP bin2hex 모두 소문자)
+  // VerifyMac이 case-sensitive String.equals 비교라 대문자 보내면 RC=C002 발생
+  return encrypted.toString('hex');
 }
 
 export function decryptAES256(cipherHex: string, key: string): string {
@@ -26,7 +28,8 @@ export function decryptAES256(cipherHex: string, key: string): string {
 
 export function hmacSHA256(data: string, key: string): string {
   const keyBytes = Buffer.from(key, 'utf-8');
-  return createHmac('sha256', keyBytes).update(data, 'utf-8').digest('hex').toUpperCase();
+  // hex 소문자 (BizPlay VerifyMac case-sensitive)
+  return createHmac('sha256', keyBytes).update(data, 'utf-8').digest('hex');
 }
 
 /**
