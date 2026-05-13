@@ -101,7 +101,11 @@ export class BizplayClient {
       // 복호화된 평문 진단 (echo 응답 여부 확인용 — 진단 중 전체 출력)
       console.log(`[bizplay] decrypted path=${path} mid=${this.mid} plain=${plaintext}`)
       try {
-        return JSON.parse(plaintext) as T
+        const parsed = JSON.parse(plaintext)
+        if (parsed.RC !== undefined || parsed.RM !== undefined) {
+           console.log(`[bizplay] RESULT RC=${parsed.RC} RM=${parsed.RM}`)
+        }
+        return parsed as T
       } catch (err) {
         console.error(`[bizplay] decrypted_parse_failed path=${path} mid=${this.mid} plain=${plaintext}`)
         throw err
