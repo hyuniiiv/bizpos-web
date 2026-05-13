@@ -50,10 +50,11 @@ export class BizplayClient {
    */
   private async post<T>(path: string, body: object): Promise<T> {
     const { EV, VV } = buildEncryptedPayload(body, this.encKey)
+    const rqDtime = getRqDtime()
     const requestBody = {
       MID: this.mid,
-      RQ_DTIME: getRqDtime(),
-      TNO: generateTNO(this.mid),
+      RQ_DTIME: rqDtime,
+      TNO: rqDtime,
       EV,
       VV,
       RC: '',
