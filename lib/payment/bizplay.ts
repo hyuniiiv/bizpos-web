@@ -56,6 +56,8 @@ export class BizplayClient {
       TNO: generateTNO(this.mid),
       EV,
       VV,
+      RC: '',
+      RM: ''
     }
     // Keep-alive + connection 재사용 (Vercel ↔ Bizplay).
     // Node 18+ undici 는 기본 pooling 하지만 명시적으로 유지 신호 전달.
