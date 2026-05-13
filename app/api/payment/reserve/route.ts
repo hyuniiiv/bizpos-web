@@ -66,6 +66,9 @@ export async function POST(req: NextRequest) {
       console.error(`[reserve] bizplay_error RC=${result.RC} RM=${result.RM ?? ''} termId=${termId ?? 'none'}`)
       return NextResponse.json({ code: result.RC, msg: result.RM ?? '결제 서버 오류' })
     }
+    // 진단: 클라이언트로 내려보낼 reserve 응답 구조 (tid/token 존재 여부 확인용)
+    const data = (result as { data?: { tid?: unknown; token?: unknown } }).data
+    console.log(`[reserve] response shape: code=${result.code ?? '?'} hasData=${Boolean(data)} hasTid=${Boolean(data?.tid)} hasToken=${Boolean(data?.token)} topKeys=${Object.keys(result).join(',')}`)
     if (!result.code) {
       // BizPlay 응답에 code 필드가 없음 — 진단을 위해 키/원문 로깅
       const resultKeys = result && typeof result === 'object' ? Object.keys(result) : []

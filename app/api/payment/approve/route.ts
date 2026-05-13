@@ -55,6 +55,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 진단: 클라이언트가 보낸 tid/token 유무 확인 (값 자체는 마스킹)
+    console.log(`[approve] termId=${termId} merchantOrderID=${body.merchantOrderID} hasTid=${Boolean(body.tid)} tidLen=${body.tid ? String(body.tid).length : 0} hasToken=${Boolean(body.token)} tokenLen=${body.token ? String(body.token).length : 0}`)
+
     const client = await getBizplayClientForTerminal(termId)
     const result = await client.approve(body)
 
