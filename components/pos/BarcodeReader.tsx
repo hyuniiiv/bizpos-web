@@ -1,9 +1,5 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import dynamic from 'next/dynamic'
-
-// CameraReader는 브라우저 전용 (SSR 비활성화)
-const CameraReader = dynamic(() => import('./CameraReader'), { ssr: false })
 
 // SerialPort / Serial / Navigator.serial 전역 타입은
 // lib/device/serial.ts 의 declare global 에서 선언됨.
@@ -49,7 +45,6 @@ export default function BarcodeReader({
   const portRef = useRef<SerialPort | null>(null)
   const readerRef = useRef<ReadableStreamDefaultReader<string> | null>(null)
   const [serialConnected, setSerialConnected] = useState(false)
-  const [cameraOpen, setCameraOpen] = useState(false)
 
   // -------------------------------------------------------------------------
   // 실제로 사용할 모드 결정 (serial 요청이지만 미지원이면 keyboard 폴백)
@@ -201,26 +196,9 @@ export default function BarcodeReader({
   // -------------------------------------------------------------------------
   // 렌더
   // -------------------------------------------------------------------------
-  if (enabled && effectiveType === 'camera') {
-    return (
-      <>
-        {!cameraOpen && (
-          <button
-            onClick={() => setCameraOpen(true)}
-            className="fixed bottom-4 right-4 rounded-md bg-[#1B2A6B] px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-[#2a3d8f] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            📷 카메라 스캔
-          </button>
-        )}
-        {cameraOpen && (
-          <CameraReader
-            onScan={(val) => { onScan(val); setCameraOpen(false) }}
-            onClose={() => setCameraOpen(false)}
-          />
-        )}
-      </>
-    )
-  }
+  // 카메라 모드는 ScanWaitScreen 내부의 InlineCameraScanner가 처리
+  // (대기화면 viewfinder 영역에 직접 임베드)
+  if (enabled && effectiveType === 'camera') return null
 
   if (enabled && effectiveType === 'serial' && !serialConnected) {
     return (

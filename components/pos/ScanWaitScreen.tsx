@@ -1,15 +1,20 @@
 'use client'
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { usePosStore } from '@/lib/store/posStore'
 import { useSettingsStore } from '@/lib/store/settingsStore'
 import { useMenuStore } from '@/lib/store/menuStore'
 import TodayStatBar from './TodayStatBar'
 
+const InlineCameraScanner = dynamic(() => import('./InlineCameraScanner'), { ssr: false })
+
 interface Props {
   refreshTrigger?: number
+  /** 카메라 모드일 때 viewfinder 자리에 라이브 카메라 뷰를 임베드 */
+  cameraScanner?: { onScan: (input: string) => void; enabled: boolean }
 }
 
-export default function ScanWaitScreen({ refreshTrigger }: Props) {
+export default function ScanWaitScreen({ refreshTrigger, cameraScanner }: Props) {
   const { selectedMenu, setScreen, clearMenu } = usePosStore()
   const { config } = useSettingsStore()
   const { getCurrentMode, getActiveMenus } = useMenuStore()
@@ -101,9 +106,35 @@ export default function ScanWaitScreen({ refreshTrigger }: Props) {
               <p className="text-lg font-semibold text-white/65 mt-3">{selectedMenu.name}</p>
             </div>
 
-            <p className="text-sm text-white/35 font-mono text-center">
-              하단 리더기에 바코드를 인식해 주세요
-            </p>
+            {cameraScanner ? (
+              <div
+                className="relative flex items-center justify-center"
+                style={{ width: 'min(52vmin, 210px)', height: 'min(52vmin, 210px)' }}
+              >
+                {[
+                  'top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-xl',
+                  'top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-xl',
+                  'bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-xl',
+                  'bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-xl',
+                ].map((cls, i) => (
+                  <div
+                    key={i}
+                    className={`absolute w-9 h-9 ${cls}`}
+                    style={{ borderColor: 'var(--pos-accent)' }}
+                  />
+                ))}
+                <div className="absolute inset-3">
+                  <InlineCameraScanner
+                    onScan={cameraScanner.onScan}
+                    enabled={cameraScanner.enabled}
+                  />
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-white/35 font-mono text-center">
+                하단 리더기에 바코드를 인식해 주세요
+              </p>
+            )}
           </div>
         ) : (
           /* ── Scan viewfinder ── */
@@ -169,45 +200,57 @@ export default function ScanWaitScreen({ refreshTrigger }: Props) {
                 />
               ))}
 
-              {/* Pulse rings */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                {[
-                  { cls: 'pos-ring-1', opacity: 'rgba(6,214,160,0.18)' },
-                  { cls: 'pos-ring-2', opacity: 'rgba(6,214,160,0.12)' },
-                  { cls: 'pos-ring-3', opacity: 'rgba(6,214,160,0.07)' },
-                ].map(({ cls, opacity }, i) => (
-                  <div
-                    key={i}
-                    className={`absolute w-16 h-16 rounded-full ${cls}`}
-                    style={{ background: opacity, border: `1px solid ${opacity}` }}
+              {cameraScanner ? (
+                /* Inline camera view (replaces pulse-rings) */
+                <div className="absolute inset-3">
+                  <InlineCameraScanner
+                    onScan={cameraScanner.onScan}
+                    enabled={cameraScanner.enabled}
                   />
-                ))}
-                {/* Center dot */}
-                <div
-                  className="w-3.5 h-3.5 rounded-full"
-                  style={{ background: 'var(--pos-accent)', boxShadow: '0 0 12px var(--pos-accent-glow)' }}
-                />
-              </div>
+                </div>
+              ) : (
+                <>
+                  {/* Pulse rings */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    {[
+                      { cls: 'pos-ring-1', opacity: 'rgba(6,214,160,0.18)' },
+                      { cls: 'pos-ring-2', opacity: 'rgba(6,214,160,0.12)' },
+                      { cls: 'pos-ring-3', opacity: 'rgba(6,214,160,0.07)' },
+                    ].map(({ cls, opacity }, i) => (
+                      <div
+                        key={i}
+                        className={`absolute w-16 h-16 rounded-full ${cls}`}
+                        style={{ background: opacity, border: `1px solid ${opacity}` }}
+                      />
+                    ))}
+                    {/* Center dot */}
+                    <div
+                      className="w-3.5 h-3.5 rounded-full"
+                      style={{ background: 'var(--pos-accent)', boxShadow: '0 0 12px var(--pos-accent-glow)' }}
+                    />
+                  </div>
 
-              {/* Scan beam */}
-              <div className="absolute inset-x-4 overflow-hidden" style={{ top: 10, bottom: 10 }}>
-                <div
-                  className="absolute left-0 right-0 h-px pos-scan-beam"
-                  style={{
-                    background: `linear-gradient(90deg, transparent, var(--pos-accent) 30%, var(--pos-accent) 70%, transparent)`,
-                    boxShadow: '0 0 10px var(--pos-accent-glow), 0 0 20px rgba(6,214,160,0.15)',
-                  }}
-                />
-              </div>
+                  {/* Scan beam */}
+                  <div className="absolute inset-x-4 overflow-hidden" style={{ top: 10, bottom: 10 }}>
+                    <div
+                      className="absolute left-0 right-0 h-px pos-scan-beam"
+                      style={{
+                        background: `linear-gradient(90deg, transparent, var(--pos-accent) 30%, var(--pos-accent) 70%, transparent)`,
+                        boxShadow: '0 0 10px var(--pos-accent-glow), 0 0 20px rgba(6,214,160,0.15)',
+                      }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Instruction text */}
             <div className="text-center">
               <p className="font-bold text-white leading-snug" style={{ fontSize: 'clamp(1.1rem, 3.8vmin, 1.5rem)' }}>
-                바코드를 스캔하세요
+                {cameraScanner ? '카메라에 바코드를 비춰주세요' : '바코드를 스캔하세요'}
               </p>
               <p className="text-sm text-white/30 mt-1.5 font-mono tracking-wider">
-                Scan the barcode below
+                {cameraScanner ? 'Hold the barcode in front of camera' : 'Scan the barcode below'}
               </p>
             </div>
 

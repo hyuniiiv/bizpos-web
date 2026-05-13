@@ -544,10 +544,14 @@ export default function PosPage() {
     setScreen(mode === 'multi' ? 'menu-select' : 'single')
   }, [getCurrentMode])
 
+  const cameraScannerProps = config.barcodeReaderType === 'camera'
+    ? { onScan: handleScan, enabled: screen !== 'processing' }
+    : undefined
+
   const renderMainScreen = () => {
     if (!isOnline && screen !== 'processing') return <OfflineScreen />
     if (screen === 'menu-select') return <MenuSelectScreen refreshTrigger={txRefreshTrigger} />
-    if (screen === 'scan-wait') return <ScanWaitScreen refreshTrigger={txRefreshTrigger} />
+    if (screen === 'scan-wait') return <ScanWaitScreen refreshTrigger={txRefreshTrigger} cameraScanner={cameraScannerProps} />
     return <RealTimeDashboard refreshTrigger={txRefreshTrigger} />
   }
 
@@ -595,7 +599,7 @@ export default function PosPage() {
       <div className="hidden md:flex flex-1 overflow-hidden">
         <div className="flex flex-col overflow-hidden" style={{ flex: config.showPaymentList ? '0 0 58%' : '1 1 100%' }}>
           <div className="flex-1 overflow-hidden">
-            {!isOnline && screen !== 'processing' ? <OfflineScreen /> : screen === 'menu-select' ? <MenuSelectScreen refreshTrigger={txRefreshTrigger} /> : <ScanWaitScreen refreshTrigger={txRefreshTrigger} />}
+            {!isOnline && screen !== 'processing' ? <OfflineScreen /> : screen === 'menu-select' ? <MenuSelectScreen refreshTrigger={txRefreshTrigger} /> : <ScanWaitScreen refreshTrigger={txRefreshTrigger} cameraScanner={cameraScannerProps} />}
           </div>
           <ScanLogBar value={scanLog?.value ?? null} time={scanLog?.time ?? null} />
           <StatusBar lastMessage={lastMsgRef.current} lastOrderId={lastTransaction?.merchantOrderID} />
