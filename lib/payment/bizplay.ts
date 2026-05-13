@@ -51,15 +51,15 @@ export class BizplayClient {
   private async post<T>(path: string, body: object): Promise<T> {
     const { EV, VV } = buildEncryptedPayload(body, this.encKey)
     console.log(`[bizplay] sending EV=${EV} VV=${VV}`)
+    // 샘플 명세에 맞게 RC, RM 필드 제거 및 TNO 길이 조정 (20자)
     const rqDtime = getRqDtime()
+    const tno = (rqDtime + '000001').substring(0, 20)
     const requestBody = {
       MID: this.mid,
       RQ_DTIME: rqDtime,
-      TNO: rqDtime,
+      TNO: tno,
       EV,
-      VV,
-      RC: '',
-      RM: ''
+      VV
     }
     // Keep-alive + connection 재사용 (Vercel ↔ Bizplay).
     // Node 18+ undici 는 기본 pooling 하지만 명시적으로 유지 신호 전달.
