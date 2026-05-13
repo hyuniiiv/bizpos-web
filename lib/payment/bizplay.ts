@@ -50,6 +50,7 @@ export class BizplayClient {
    */
   private async post<T>(path: string, body: object): Promise<T> {
     const { EV, VV } = buildEncryptedPayload(body, this.encKey)
+    console.log(`[bizplay] sending EV=${EV} VV=${VV}`)
     const rqDtime = getRqDtime()
     const requestBody = {
       MID: this.mid,
@@ -82,11 +83,12 @@ export class BizplayClient {
       clearTimeout(timeoutId)
     }
     const rawText = await res.text()
+    console.log(`[bizplay] received raw=${rawText.slice(0, 400)}`)
     if (!res.ok) {
       console.error(`[bizplay] http_error path=${path} mid=${this.mid} status=${res.status} body=${rawText.slice(0, 400)}`)
       throw new Error(`HTTP ${res.status}: ${rawText.slice(0, 400)}`)
     }
-    let json: { EV?: string } & Record<string, unknown>
+    let json: { EV?: string, VV?: string } & Record<string, unknown>
     try {
       json = JSON.parse(rawText)
     } catch {
