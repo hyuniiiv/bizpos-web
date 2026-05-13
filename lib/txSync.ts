@@ -1,6 +1,7 @@
 import { PaymentRepository } from '@/lib/repository/payment.repository'
 import { getServerUrl } from '@/lib/serverUrl'
 import { useSettingsStore } from '@/lib/store/settingsStore'
+import { logger } from '@/lib/logger'
 
 // 동시 flush 방지 — online 이벤트와 mount effect가 동시에 트리거될 수 있음
 let isFlushing = false
@@ -24,6 +25,7 @@ export async function flushOfflineQueue(): Promise<{ synced: number; failed: num
     return { synced: 0, failed: 0 }
   }
 
+  logger.info('payment', 'offline_flush_start', { queued: queue.length })
   let synced = 0
   let failed = 0
 
@@ -48,15 +50,16 @@ export async function flushOfflineQueue(): Promise<{ synced: number; failed: num
       failed = queue.length - syncedIds.length
     } else {
       failed = queue.length
-      console.error(`[txSync] Failed to sync, status: ${res.status}`)
+      logger.error('payment', 'offline_flush_http_error', { status: res.status })
     }
   } catch (err) {
     failed = queue.length
-    console.error('[txSync] Network or sync error:', err)
+    logger.error('payment', 'offline_flush_exception', { error: String(err) })
   }
 
   const remaining = await PaymentRepository.getPendingPayments()
   useSettingsStore.getState().setPendingCount(remaining.length)
+  logger.info('payment', 'offline_flush_done', { synced, failed, remaining: remaining.length })
 
   isFlushing = false
   return { synced, failed }

@@ -29,6 +29,7 @@ import FailScreen from '@/components/pos/FailScreen'
 import OfflineScreen from '@/components/pos/OfflineScreen'
 import ScanLogBar from '@/components/pos/ScanLogBar'
 import { recordMealUsage } from '@/lib/meal/mealRecord'
+import { logger } from '@/lib/logger'
 import BadgeScreen from '@/components/pos/screens/BadgeScreen'
 import type { MealType } from '@/types/menu'
 
@@ -71,7 +72,7 @@ export default function PosPage() {
           body: JSON.stringify({ status: 'online' }),
         })
       } catch (err) {
-        console.error('[heartbeat] failed:', err)
+        logger.error('device', 'heartbeat_failed', { error: String(err) })
       }
     }
     sendHeartbeat()
@@ -96,6 +97,13 @@ export default function PosPage() {
         if (Array.isArray(menus)) useMenuStore.getState().setMenus(menus)
         if (Array.isArray(periods)) useMenuStore.getState().setPeriods(periods)
         if (Array.isArray(serviceCodes)) useMenuStore.getState().setServiceCodes(serviceCodes)
+        logger.info('config', 'applied', {
+          configKeys: Object.keys(deviceConfig).length,
+          termName: termName ?? null,
+          menus: Array.isArray(menus) ? menus.length : null,
+          periods: Array.isArray(periods) ? periods.length : null,
+          serviceCodes: Array.isArray(serviceCodes) ? serviceCodes.length : null,
+        })
       },
       deviceToken
     )
@@ -275,11 +283,17 @@ export default function PosPage() {
     scanLogTimerRef.current = setTimeout(() => setScanLog(null), 4000)
 
     const identity = identifyInput(input)
+    logger.info('scan', 'received', {
+      type: identity.type,
+      voucherType: identity.voucherType,
+      length: identity.raw.length,
+    })
 
     // 허용 prefix 체크 (barcode/qr만 적용, 설정된 경우에만)
     if (identity.type !== 'rfcard' && config.allowedBarcodePrefix && config.allowedBarcodePrefix.length > 0) {
       const allowed = config.allowedBarcodePrefix.some(p => identity.raw.startsWith(p))
       if (!allowed) {
+        logger.warn('scan', 'prefix_blocked', { type: identity.type })
         setLastError('허용되지 않은 바코드입니다.')
         setScreen('fail')
         return
@@ -290,7 +304,10 @@ export default function PosPage() {
     const inputType = identity.type as 'barcode' | 'qr' | 'rfcard'
     const action = config.inputPolicy?.[inputType] ?? 'bizplay_payment'
 
-    if (action === 'disabled') return
+    if (action === 'disabled') {
+      logger.info('scan', 'input_disabled', { type: inputType })
+      return
+    }
 
     if (action === 'meal_record') {
       setScreen('processing')
@@ -301,10 +318,15 @@ export default function PosPage() {
           DUPLICATE_BLOCKED: '이미 이용하셨습니다.',
           SERVER_ERROR: '처리 중 오류가 발생했습니다.',
         }
+        logger.warn('payment', 'meal_record_error', { code: result.code })
         setLastError(errorMessages[result.code] ?? '오류가 발생했습니다.')
         setScreen('fail')
         return
       }
+      logger.info('payment', 'meal_record_success', {
+        status: result.status,
+        mealType: result.mealType,
+      })
       setBadgeResult({
         variant: result.status === 'warn' ? 'warn' : 'success',
         employeeName: result.employeeName,
@@ -316,6 +338,7 @@ export default function PosPage() {
     }
 
     if (identity.voucherType === 'unknown') {
+      logger.warn('scan', 'unknown_voucher', { type: identity.type })
       setLastError('인식할 수 없는 바코드입니다.')
       setScreen('fail')
       return
@@ -323,6 +346,7 @@ export default function PosPage() {
 
     const menu = selectedMenu ?? getActiveMenus()[0]
     if (!menu) {
+      logger.warn('payment', 'no_active_menu')
       setLastError('현재 운영 중인 메뉴가 없습니다.')
       setScreen('fail')
       return
@@ -343,6 +367,7 @@ export default function PosPage() {
     try {
       const isNew = await checkAndMarkBarcode(identity.raw)
       if (!isNew) {
+        logger.warn('payment', 'barcode_duplicate')
         setLastError('이미 처리된 바코드입니다. (중복 방지)')
         setScreen('fail')
         return
@@ -367,6 +392,7 @@ export default function PosPage() {
       PaymentRepository.getPendingPayments().then(p => setPendingCount(p.length))
 
       if (!isOnline) {
+        logger.info('payment', 'offline_saved', { merchantOrderID, amount, menuId: menu.id })
         incrementCount(menu.id)
         lastMsgRef.current = '오프라인 결제 저장'
         const fakeTx = {
@@ -417,6 +443,12 @@ export default function PosPage() {
       if (reserveRes.code !== '0000') {
         // BizPlay가 reserve 단계에서 거절 → 재시도 불필요한 영구 실패
         // pending 큐에서 제거하지 않으면 온라인 복귀 시 syncOffline으로 무한 재시도됨
+        logger.error('payment', 'reserve_failed', {
+          merchantOrderID,
+          amount,
+          code: reserveRes.code,
+          msg: reserveRes.msg,
+        })
         await PaymentRepository.markPaymentSynced(merchantOrderID)
         PaymentRepository.getPendingPayments().then(p => setPendingCount(p.length))
         setLastError(reserveRes.msg)
@@ -445,6 +477,12 @@ export default function PosPage() {
       }).then(r => r.json())
 
       if (approveRes.code !== '0000') {
+        logger.warn('payment', 'approve_failed', {
+          merchantOrderID,
+          amount,
+          code: approveRes.code,
+          msg: approveRes.msg,
+        })
         // PG 실제 상태 조회 — 타임아웃 후 실제로는 성공했을 수 있음
         const { isActuallySucceeded } = await resolveApproveFailure({
           serverUrl: getServerUrl(),
@@ -456,6 +494,7 @@ export default function PosPage() {
 
         if (isActuallySucceeded) {
           // PG 승인 성공 → 정상 처리
+          logger.info('payment', 'recovered_after_timeout', { merchantOrderID, amount })
           incrementCount(menu.id)
           lastMsgRef.current = '정상결제 됨.'
           clearMenu()
@@ -464,6 +503,7 @@ export default function PosPage() {
           return
         }
 
+        logger.error('payment', 'failed', { merchantOrderID, amount, msg: approveRes.msg })
         setLastError(approveRes.msg)
         setScreen('fail')
         return
@@ -475,6 +515,12 @@ export default function PosPage() {
       // 팬딩 건수 반영
       PaymentRepository.getPendingPayments().then(p => setPendingCount(p.length))
       
+      logger.info('payment', 'success', {
+        merchantOrderID,
+        amount,
+        menuId: menu.id,
+        paymentType: identity.type,
+      })
       incrementCount(menu.id)
       setLastTransaction(approveRes.transaction)
       setLastSoundFile(menu.soundFile || undefined)
@@ -484,7 +530,7 @@ export default function PosPage() {
       setScreen('success')
       // 사운드는 SuccessScreen 마운트 시 playMenuSound(menuSoundFile, 'success')로 재생됨
     } catch (err) {
-      console.error('[payment] Error:', err)
+      logger.error('payment', 'exception', { error: String(err) })
       setLastError('결제 처리 중 오류가 발생했습니다.')
       setScreen('fail')
     }

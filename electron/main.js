@@ -436,6 +436,26 @@ function createWindow() {
     return { action: 'deny' }
   })
 
+  // 렌더러(React) console.log/warn/error → 메인 프로세스 console로 전달
+  // initLogging()이 메인 console만 파일로 라우팅하므로 이 다리가 있어야 단말기 파일 로그에 남음
+  mainWindow.webContents.on('console-message', (...args) => {
+    const first = args[0]
+    let level, message
+    if (first && typeof first === 'object' && typeof first.message === 'string') {
+      level = first.level
+      message = first.message
+    } else {
+      level = args[1]
+      message = args[2]
+    }
+    const lvl = typeof level === 'number'
+      ? (['DEBUG', 'INFO', 'WARN', 'ERROR'][level] || 'INFO')
+      : String(level || 'INFO').toUpperCase()
+    if (lvl === 'ERROR') console.error(`[renderer] ${message}`)
+    else if (lvl === 'WARN' || lvl === 'WARNING') console.warn(`[renderer] ${message}`)
+    else console.log(`[renderer] ${message}`)
+  })
+
   // F12 개발자 도구 토글 (개발 편의, 키오스크 모드에서도 접근 가능)
   mainWindow.webContents.on('before-input-event', (_event, input) => {
     if (input.key === 'F12') {

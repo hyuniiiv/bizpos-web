@@ -1,4 +1,5 @@
 import { getServerUrl } from '@/lib/serverUrl'
+import { logger } from '@/lib/logger'
 
 const CONFIG_VERSION_KEY = 'terminal_config_version'
 
@@ -31,17 +32,23 @@ export async function fetchLatestConfig(token: string): Promise<ConfigSyncResult
       },
     })
 
-    if (!res.ok) return null
+    if (!res.ok) {
+      logger.warn('config', 'fetch_http_error', { status: res.status })
+      return null
+    }
 
     const data = await res.json()
 
     if (data.changed && data.config) {
+      const prevVersion = getConfigVersion()
       setConfigVersion(data.version)
+      logger.info('config', 'changed', { prevVersion, newVersion: data.version })
       return { version: data.version, config: data.config, changed: true, termName: data.termName ?? null }
     }
 
     return { version: data.version, config: {}, changed: false, termName: data.termName ?? null }
-  } catch {
+  } catch (err) {
+    logger.error('config', 'fetch_exception', { error: String(err) })
     return null
   }
 }
