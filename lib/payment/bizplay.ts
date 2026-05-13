@@ -52,18 +52,17 @@ export class BizplayClient {
     const { EV, VV } = buildEncryptedPayload(body, this.encKey)
     console.log(`[bizplay] sending EV=${EV} VV=${VV}`)
     // 헤더 값 검증을 위해 전체를 로깅
-    console.log(`[bizplay] Authorization header used: OnlineAK-${this.onlineAK}-`)
+    console.log(`[bizplay] Authorization header used: ${this.onlineAK}`)
     // 공식 명세(20자)를 준수하되, 샘플 로직을 참고하여 유니크하게 생성
     const rqDtime = getRqDtime()
     const tno = (rqDtime + '000001').substring(0, 20)
+    // 샘플 코드와 완벽히 일치하도록, RC, RM 필드 제거
     const requestBody = {
       MID: this.mid,
       RQ_DTIME: rqDtime,
       TNO: tno,
       EV,
-      VV,
-      RC: '',
-      RM: ''
+      VV
     }
     // Keep-alive + connection 재사용 (Vercel ↔ Bizplay).
     // Node 18+ undici 는 기본 pooling 하지만 명시적으로 유지 신호 전달.
