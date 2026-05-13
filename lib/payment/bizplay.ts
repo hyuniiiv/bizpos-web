@@ -120,8 +120,18 @@ export class BizplayClient {
       console.log(`[bizplay] decrypted path=${path} mid=${this.mid} plain=${plaintext}`)
       try {
         const parsed = JSON.parse(plaintext) as Record<string, unknown>
-        // 외부 envelope의 RC/RM도 함께 노출 (호출자가 BizPlay 공통 결과코드 확인 가능)
+        // BizPlay 실제 응답: tid/token/approvedAt 등이 최상위에 옴 (명세의 data 래퍼 없음)
+        // 타입 호환을 위해 data 래퍼로 정규화
         const merged: Record<string, unknown> = { ...parsed }
+        if (!merged.data) {
+          const dataFields = ['tid', 'token', 'merchantOrderID', 'approvedAt', 'userName', 'usedAmount', 'cancelledAmount']
+          const flat: Record<string, unknown> = {}
+          for (const f of dataFields) {
+            if (parsed[f] !== undefined) flat[f] = parsed[f]
+          }
+          if (Object.keys(flat).length > 0) merged.data = flat
+        }
+        // 외부 envelope의 RC/RM도 함께 노출
         if (json.RC !== undefined) merged.RC = json.RC
         if (json.RM !== undefined) merged.RM = json.RM
         console.log(`[bizplay] response data:`, JSON.stringify(merged))
