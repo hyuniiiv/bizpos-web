@@ -51,11 +51,7 @@ export class BizplayClient {
   private async post<T>(path: string, body: object): Promise<T> {
     const { EV, VV } = buildEncryptedPayload(body, this.encKey)
     console.log(`[bizplay] sending EV=${EV} VV=${VV}`)
-    // 샘플 명세에 맞게 RC, RM 필드 제거 및 TNO 길이 조정 (20자)
-    // 명세 순서대로 필드 구성 (MID, RQ_DTIME, TNO, EV, VV)
-    // 샘플 코드와 정확히 일치하는 필드 순서와 RC, RM 필드 추가
-    const rqDtime = getRqDtime()
-    // TNO는 공식 명세(20자)를 준수하되, 샘플 로직을 참고하여 유니크하게 생성
+    // 공식 명세(20자)를 준수하되, 샘플 로직을 참고하여 유니크하게 생성
     const rqDtime = getRqDtime()
     const tno = (rqDtime + '000001').substring(0, 20)
     const requestBody = {
