@@ -3,6 +3,7 @@ import { BizplayClient, MockBizplayClient } from '@/lib/payment/bizplay'
 import { generateOrderId } from '@/lib/payment/order'
 import type { ReserveRequest } from '@/types/payment'
 import { requireTerminalAuth } from '@/lib/terminal/auth'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: NextRequest) {
   const auth = await requireTerminalAuth(req)
@@ -16,8 +17,28 @@ export async function POST(req: NextRequest) {
       merchantId?: string
     }
 
-    // JWT에서 검증된 termId 사용 (바디 값 신뢰 금지)
+    // JWT에서 검증된 termId/merchantId 사용 (바디 값 신뢰 금지)
     const termId = auth.payload.termId
+    const merchantId = auth.payload.merchantId
+
+    // 사업자번호는 항상 서버 권위 — merchants.biz_no를 조회해 productItems[].biz_no 강제 주입
+    let merchantBizNo: string | null = null
+    if (merchantId) {
+      const supabase = createAdminClient()
+      const { data: merchant } = await supabase
+        .from('merchants')
+        .select('biz_no')
+        .eq('id', merchantId)
+        .single()
+      merchantBizNo = merchant?.biz_no ?? null
+    }
+    if (!merchantBizNo) {
+      console.error(`[reserve] missing_biz_no: merchantId=${merchantId ?? 'none'} termId=${termId ?? 'none'}`)
+      return NextResponse.json({ code: 'C003', msg: '가맹점 사업자번호가 설정되지 않았습니다.' }, { status: 400 })
+    }
+    if (Array.isArray(body.productItems)) {
+      body.productItems = body.productItems.map(item => ({ ...item, biz_no: merchantBizNo as string }))
+    }
     let client
     if (termId) {
       const { getBizplayClientForTerminal } = await import('@/lib/payment/getBizplayClient')
