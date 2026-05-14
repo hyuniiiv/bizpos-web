@@ -4,6 +4,7 @@ import type { ApprovalRequest } from '@/types/payment'
 import { addTransaction } from '@/app/api/transactions/route'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireTerminalAuth } from '@/lib/terminal/auth'
+import { bizplayDateToIso } from '@/lib/payment/dateFormat'
 
 // SSE 브로드캐스트용 이벤트 맵
 export const transactionEmitter = new Map<string, ((data: object) => void)[]>()
@@ -67,18 +68,7 @@ export async function POST(req: NextRequest) {
         console.warn('[approve] amount mismatch', body.totalAmount, result.data.usedAmount)
       }
 
-      // BizPlay 시각 = YYYYMMDDHHMMSS (14자리) 또는 YYYYMMDDHHMMSSmmm (17자리, KST) → ISO 8601 +09:00
-      const toIsoKst = (s: string | undefined): string => {
-        if (!s) return new Date().toISOString()
-        if (/^\d{14}$/.test(s)) {
-          return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(8, 10)}:${s.slice(10, 12)}:${s.slice(12, 14)}+09:00`
-        }
-        if (/^\d{17}$/.test(s)) {
-          return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(8, 10)}:${s.slice(10, 12)}:${s.slice(12, 14)}.${s.slice(14, 17)}+09:00`
-        }
-        return s
-      }
-      const approvedAtIso = toIsoKst(result.data.approvedAt)
+      const approvedAtIso = bizplayDateToIso(result.data.approvedAt)
 
       const tx = {
         id: crypto.randomUUID(),
@@ -112,15 +102,17 @@ export async function POST(req: NextRequest) {
         try {
           const supabase = createAdminClient()
           const { error } = await supabase.from('transactions').insert({
-            terminal_id: termId,
+            merchant_id: auth.payload.merchantId,
+            terminal_id: terminalId,            // UUID (auth.payload.terminalId)
             terminal_name: terminalName,
             merchant_order_id: body.merchantOrderID,
             tid: approvedData.tid ?? '',
             menu_name: body.menuName ?? '',
             amount: approvedData.usedAmount ?? body.totalAmount,
+            barcode_info: body.barcodeInfo ?? '',
             payment_type: body.paymentType ?? 'barcode',
             status: 'success',
-            approved_at: toIsoKst(approvedData.approvedAt),
+            approved_at: bizplayDateToIso(approvedData.approvedAt),
             user_name: approvedData.userName ?? '',
             synced: true,
           })
