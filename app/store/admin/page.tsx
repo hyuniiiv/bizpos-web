@@ -29,13 +29,13 @@ export default async function DashboardPage() {
     .eq('merchant_id', merchantId)
     .order('term_id')
 
-  // 오늘 거래내역 집계
-  const today = new Date().toISOString().slice(0, 10)
+  // 오늘 거래내역 집계 (KST 기준)
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' })
   const { data: todayTxs } = await supabase
     .from('transactions')
     .select('amount, status')
     .eq('merchant_id', merchantId)
-    .gte('approved_at', `${today}T00:00:00Z`)
+    .gte('approved_at', `${today}T00:00:00+09:00`)
     .eq('status', 'success')
 
   const todayAmount = todayTxs?.reduce((s, t) => s + t.amount, 0) ?? 0

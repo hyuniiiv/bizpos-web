@@ -13,7 +13,8 @@ export default function TodayStatBar({ refreshTrigger }: Props) {
   const { deviceToken } = useSettingsStore()
   const [totalCount, setTotalCount] = useState(0)
   const [totalAmount, setTotalAmount] = useState(0)
-  const today = new Date().toISOString().slice(0, 10)
+  // KST 기준 YYYY-MM-DD
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' })
 
   const fetchStats = useCallback(async () => {
     try {

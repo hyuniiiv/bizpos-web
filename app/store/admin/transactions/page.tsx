@@ -10,16 +10,20 @@ export const revalidate = 0
 
 type Preset = 'today' | 'week' | 'month' | 'custom'
 
+function toKstDate(d: Date): string {
+  return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' })
+}
+
 function getDateRange(preset: Preset, from?: string, to?: string): { from: string; to: string } {
   const now = new Date()
-  const todayStr = now.toISOString().slice(0, 10)
+  const todayStr = toKstDate(now)
   if (preset === 'custom' && from && to) return { from, to }
   if (preset === 'week') {
     const day = now.getDay()
     const diff = day === 0 ? 6 : day - 1
     const monday = new Date(now)
     monday.setDate(now.getDate() - diff)
-    return { from: monday.toISOString().slice(0, 10), to: todayStr }
+    return { from: toKstDate(monday), to: todayStr }
   }
   if (preset === 'month') return { from: `${todayStr.slice(0, 7)}-01`, to: todayStr }
   return { from: todayStr, to: todayStr }

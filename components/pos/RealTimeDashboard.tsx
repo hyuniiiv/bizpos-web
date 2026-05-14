@@ -49,7 +49,8 @@ export default function RealTimeDashboard({ refreshTrigger }: Props) {
   const { config, isOnline, deviceToken } = useSettingsStore()
   const [txList, setTxList] = useState<TxRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const today = new Date().toISOString().slice(0, 10)
+  // KST 기준 YYYY-MM-DD (toISOString은 UTC라 KST 새벽 결제가 어제로 조회되는 문제 방지)
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' })
 
   const fetchTx = useCallback(async () => {
     try {
