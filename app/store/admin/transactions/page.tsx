@@ -95,7 +95,7 @@ export default async function TransactionsPage({
   }
 
   const { data: transactions } = await query
-  const successTxs = transactions?.filter(t => (t.status === 'success' || t.status === 'approved')) ?? []
+  const successTxs = transactions?.filter(t => t.status === 'success') ?? []
   const totalAmount = successTxs.reduce((s, t) => s + t.amount, 0)
 
   const selectedStore = (stores ?? []).find(s => s.id === storeId)
@@ -181,13 +181,13 @@ export default async function TransactionsPage({
               </td>
               <td className="px-4 py-2 text-center">
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                  (tx.status === 'success' || tx.status === 'approved') ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                  tx.status === 'success' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
                 }`}>
-                  {(tx.status === 'success' || tx.status === 'approved') ? '승인' : '취소'}
+                  {tx.status === 'success' ? '승인' : '취소'}
                 </span>
               </td>
               <td className="px-4 py-2 text-center">
-                {(tx.status === 'success' || tx.status === 'approved') && tx.merchant_order_id && tx.tid && (
+                {tx.status === 'success' && tx.merchant_order_id && tx.tid && (
                   <CancelButton
                     merchantOrderID={tx.merchant_order_id}
                     tid={tx.tid}

@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
             menu_name: body.menuName ?? '',
             amount: approvedData.usedAmount ?? body.totalAmount,
             payment_type: body.paymentType ?? 'barcode',
-            status: 'approved',
+            status: 'success',
             approved_at: approvedData.approvedAt ?? new Date().toISOString(),
             user_name: approvedData.userName ?? '',
             synced: true,
