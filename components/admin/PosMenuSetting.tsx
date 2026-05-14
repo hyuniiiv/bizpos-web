@@ -198,8 +198,8 @@ export default function PosMenuSetting() {
               </div>
               <div>
                 <label className="block text-xs text-white/50 mb-1.5">가격 (원) *</label>
-                <input type="number" value={itemForm.price || ''} min={0}
-                  onChange={e => setItemForm(f => ({ ...f, price: Number(e.target.value) }))}
+                <input type="text" inputMode="numeric" value={itemForm.price || ''}
+                  onChange={e => { if (!/^\d*$/.test(e.target.value)) return; setItemForm(f => ({ ...f, price: e.target.value === '' ? 0 : Number(e.target.value) })) }}
                   className={inputCls} style={inputStyle} placeholder="8000" />
               </div>
               <div>

@@ -288,24 +288,43 @@ export default function PosAdminPage() {
 
   // PIN gate
   if (!unlocked) {
+    const handleNumpad = (key: string) => {
+      if (key === 'backspace') { setPin(p => p.slice(0, -1)); setPinError(false); return }
+      if (pin.length >= 6) return
+      setPin(p => p + key); setPinError(false)
+    }
     return (
       <div className="h-full flex flex-col items-center justify-center p-6">
         <div className="glass-strong rounded-2xl p-8 w-full max-w-xs text-center">
           <div className="text-4xl mb-4">🔐</div>
           <h2 className="text-lg font-bold text-white mb-1">관리자 설정</h2>
           <p className="text-sm text-white/45 mb-5">관리자 PIN을 입력하세요</p>
-          <input type="password"
-            className="w-full rounded-xl px-4 py-3 text-center text-2xl tracking-widest mb-3 focus:outline-none text-white placeholder-white/25"
-            style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.20)' }}
-            maxLength={6} value={pin} onChange={e => { setPin(e.target.value); setPinError(false) }}
-            onKeyDown={e => e.key === 'Enter' && handlePinSubmit()} autoFocus placeholder="••••" />
+          {/* 입력 표시 */}
+          <div className="flex justify-center gap-3 mb-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className={`w-4 h-4 rounded-full transition-all ${i < pin.length ? 'bg-blue-400' : 'bg-white/20'}`} />
+            ))}
+          </div>
           {pinError && <p className="text-red-400 text-sm mb-3">PIN이 올바르지 않습니다</p>}
-          <button onClick={handlePinSubmit} disabled={pinChecking}
+          {/* 숫자 키패드 */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {['1','2','3','4','5','6','7','8','9','','0','backspace'].map((k, i) => {
+              if (!k) return <div key={i} />
+              return (
+                <button key={k} onPointerDown={e => { e.preventDefault(); handleNumpad(k) }}
+                  className="py-4 rounded-xl text-xl font-bold text-white transition-all active:scale-95"
+                  style={{ background: k === 'backspace' ? 'rgba(239,68,68,0.20)' : 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                  {k === 'backspace' ? '⌫' : k}
+                </button>
+              )
+            })}
+          </div>
+          <button onPointerDown={e => { e.preventDefault(); handlePinSubmit() }} disabled={pinChecking || pin.length === 0}
             className="w-full py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-40"
             style={{ background: 'rgba(96,165,250,0.30)', border: '1px solid rgba(96,165,250,0.50)' }}>
             {pinChecking ? '확인 중...' : '확인'}
           </button>
-          <button onClick={() => router.back()} className="mt-3 w-full py-3 rounded-xl text-base text-white/50 hover:text-white/80 transition-colors" style={{ border: '1px solid rgba(255,255,255,0.15)' }}>취소</button>
+          <button onPointerDown={e => { e.preventDefault(); router.back() }} className="mt-3 w-full py-3 rounded-xl text-base text-white/50 hover:text-white/80 transition-colors" style={{ border: '1px solid rgba(255,255,255,0.15)' }}>취소</button>
         </div>
       </div>
     )

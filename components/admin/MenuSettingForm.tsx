@@ -64,21 +64,23 @@ export function MenuSettingForm({ editing, form, onChange, onSave, onClose }: Me
             <div>
               <label className="text-sm font-semibold text-white/60 mb-1.5 block">화면표시금액</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 className={inputCls}
                 style={inputStyle}
-                value={form.displayAmount ?? ''}
-                onChange={e => onChange({ displayAmount: +e.target.value })}
+                value={form.displayAmount || ''}
+                onChange={e => { if (!/^\d*$/.test(e.target.value)) return; onChange({ displayAmount: e.target.value === '' ? 0 : +e.target.value }) }}
               />
             </div>
             <div>
               <label className="text-sm font-semibold text-white/60 mb-1.5 block">결제금액</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 className={inputCls}
                 style={inputStyle}
-                value={form.paymentAmount ?? ''}
-                onChange={e => onChange({ paymentAmount: +e.target.value })}
+                value={form.paymentAmount || ''}
+                onChange={e => { if (!/^\d*$/.test(e.target.value)) return; onChange({ paymentAmount: e.target.value === '' ? 0 : +e.target.value }) }}
               />
             </div>
           </div>
@@ -147,12 +149,13 @@ export function MenuSettingForm({ editing, form, onChange, onSave, onClose }: Me
                   onChange={e => setNewSvc(n => ({ ...n, description: e.target.value }))}
                 />
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   className={`w-20 shrink-0 ${inputSmCls}`}
                   style={inputStyle}
                   placeholder="금액"
                   value={newSvc.amount}
-                  onChange={e => setNewSvc(n => ({ ...n, amount: e.target.value }))}
+                  onChange={e => { if (!/^\d*$/.test(e.target.value)) return; setNewSvc(n => ({ ...n, amount: e.target.value })) }}
                 />
                 <button
                   onClick={handleAddSvc}

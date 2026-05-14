@@ -389,9 +389,9 @@ export default function PosConfigForm({
             {terminalType === 'table_order' && (
               <div className="col-span-2">
                 <label className={labelCls}>테이블 수</label>
-                <input type="number" className={inputCls} style={inputStyle}
-                  value={device.tableCount ?? 0} min={0} max={99}
-                  onChange={e => setDevice(prev => ({ ...prev, tableCount: parseInt(e.target.value) || 0 }))} />
+                <input type="text" inputMode="numeric" className={inputCls} style={inputStyle}
+                  value={device.tableCount || ''}
+                  onChange={e => { if (!/^\d*$/.test(e.target.value)) return; setDevice(prev => ({ ...prev, tableCount: e.target.value === '' ? 0 : parseInt(e.target.value) })) }} />
               </div>
             )}
 
@@ -476,13 +476,13 @@ export default function PosConfigForm({
                   </div>
                   <div>
                     <label className={labelCls}>표시 금액 (원)</label>
-                    <input type="number" className={inputCls} style={inputStyle} value={menu.displayAmount}
-                      onChange={e => { const u = [...menus]; u[i] = { ...menu, displayAmount: parseInt(e.target.value) || 0 }; setMenus(u) }} />
+                    <input type="text" inputMode="numeric" className={inputCls} style={inputStyle} value={menu.displayAmount || ''}
+                      onChange={e => { if (!/^\d*$/.test(e.target.value)) return; const u = [...menus]; u[i] = { ...menu, displayAmount: e.target.value === '' ? 0 : parseInt(e.target.value) }; setMenus(u) }} />
                   </div>
                   <div>
                     <label className={labelCls}>결제 금액 (원)</label>
-                    <input type="number" className={inputCls} style={inputStyle} value={menu.paymentAmount}
-                      onChange={e => { const u = [...menus]; u[i] = { ...menu, paymentAmount: parseInt(e.target.value) || 0 }; setMenus(u) }} />
+                    <input type="text" inputMode="numeric" className={inputCls} style={inputStyle} value={menu.paymentAmount || ''}
+                      onChange={e => { if (!/^\d*$/.test(e.target.value)) return; const u = [...menus]; u[i] = { ...menu, paymentAmount: e.target.value === '' ? 0 : parseInt(e.target.value) }; setMenus(u) }} />
                   </div>
                   <div>
                     <label className={labelCls}>식사 구분</label>
@@ -535,9 +535,10 @@ export default function PosConfigForm({
                     <input className="flex-1 rounded-lg px-4 py-3 text-base text-white focus:outline-none"
                       style={inputStyle} placeholder="설명 (선택)"
                       id={`tc-desc-${menu.id}`} defaultValue="" />
-                    <input type="number" className="w-32 rounded-lg px-3 py-3 text-base text-white focus:outline-none shrink-0"
+                    <input type="text" inputMode="numeric" className="w-32 rounded-lg px-3 py-3 text-base text-white focus:outline-none shrink-0"
                       style={inputStyle} placeholder="금액 (원)"
-                      id={`tc-amt-${menu.id}`} defaultValue="" />
+                      id={`tc-amt-${menu.id}`} defaultValue=""
+                      onKeyDown={e => { if (!/^\d$/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault() }} />
                     <button type="button"
                       onClick={() => {
                         const codeEl = document.getElementById(`tc-code-${menu.id}`) as HTMLInputElement
@@ -596,8 +597,8 @@ export default function PosConfigForm({
                   </div>
                   <div className="col-span-2">
                     <label className={labelCls}>가격 (원)</label>
-                    <input type="number" className={inputCls} style={inputStyle} value={menu.price}
-                      onChange={e => { const u = [...generalMenus]; u[i] = { ...menu, price: parseInt(e.target.value) || 0 }; setGeneralMenus(u) }} />
+                    <input type="text" inputMode="numeric" className={inputCls} style={inputStyle} value={menu.price || ''}
+                      onChange={e => { if (!/^\d*$/.test(e.target.value)) return; const u = [...generalMenus]; u[i] = { ...menu, price: e.target.value === '' ? 0 : parseInt(e.target.value) }; setGeneralMenus(u) }} />
                   </div>
                   <div className="col-span-2">
                     <label className={labelCls}>판매 요일</label>
@@ -666,10 +667,11 @@ export default function PosConfigForm({
                       className="flex-1 rounded-lg px-4 py-3 text-base text-white focus:outline-none"
                       style={inputStyle} placeholder="설명 (선택)"
                       id={`sc-desc-${menu.id}`} defaultValue="" />
-                    <input type="number"
+                    <input type="text" inputMode="numeric"
                       className="w-32 rounded-lg px-3 py-3 text-base text-white focus:outline-none shrink-0"
                       style={inputStyle} placeholder="금액 (원)"
-                      id={`sc-amt-${menu.id}`} defaultValue="" />
+                      id={`sc-amt-${menu.id}`} defaultValue=""
+                      onKeyDown={e => { if (!/^\d$/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault() }} />
                     <button type="button"
                       onClick={() => {
                         const codeEl = document.getElementById(`sc-code-${menu.id}`) as HTMLInputElement
