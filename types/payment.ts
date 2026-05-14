@@ -68,7 +68,7 @@ export interface ApprovalResponse {
 export interface CancelRequest {
   merchantOrderDt: string
   merchantOrderID: string
-  merchantCancelDt: string      // 취소 요청일시 YYYYMMDDHHMMSS
+  merchantCancelDt: string      // 취소 요청일자 YYYYMMDD (BizPlay 명세 String(8))
   merchantCancelID: string      // 취소 주문번호 (가맹점 고유)
   tid: string
   totalAmount: number

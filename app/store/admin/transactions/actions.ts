@@ -17,15 +17,18 @@ export async function cancelTransaction(params: {
 
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
-  const dt = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+  // 명세: merchantCancelDt = YYYYMMDD 8자리 (String(8))
+  const cancelDt = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`
+  // 고유성을 위해 cancelID는 시간초까지 포함
+  const cancelDtFull = `${cancelDt}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
 
   try {
     const client = await getBizplayClientForTerminal(params.termId)
     const result = await client.cancel({
       merchantOrderDt: params.merchantOrderID.substring(0, 8),
       merchantOrderID: params.merchantOrderID,
-      merchantCancelDt: dt,
-      merchantCancelID: `C${dt}`,
+      merchantCancelDt: cancelDt,
+      merchantCancelID: `C${cancelDtFull}`,
       tid: params.tid,
       totalAmount: params.amount,
       totalCancelAmount: params.amount,
