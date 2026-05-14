@@ -55,6 +55,17 @@ export async function POST(req: NextRequest) {
         console.error('[cancel] addTransaction/emit failed:', err instanceof Error ? err.message : String(err))
       }
 
+      // BizPlay cancelledAt = "YYYYMMDDHHMMSS" 또는 "YYYYMMDDHHMMSSmmm" (KST) → ISO 8601
+      const toIsoKst = (s: string | undefined): string => {
+        if (!s) return new Date().toISOString()
+        if (/^\d{14}$/.test(s)) {
+          return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(8, 10)}:${s.slice(10, 12)}:${s.slice(12, 14)}+09:00`
+        }
+        if (/^\d{17}$/.test(s)) {
+          return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(8, 10)}:${s.slice(10, 12)}:${s.slice(12, 14)}.${s.slice(14, 17)}+09:00`
+        }
+        return s
+      }
       // Supabase transactions 취소 상태 갱신
       ;(async () => {
         try {
@@ -63,7 +74,7 @@ export async function POST(req: NextRequest) {
             .from('transactions')
             .update({
               status: 'cancelled',
-              cancelled_at: result.data!.cancelledAt ?? new Date().toISOString(),
+              cancelled_at: toIsoKst(result.data!.cancelledAt),
             })
             .eq('merchant_order_id', body.merchantOrderID)
           if (error) {

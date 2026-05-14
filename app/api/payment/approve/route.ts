@@ -67,6 +67,19 @@ export async function POST(req: NextRequest) {
         console.warn('[approve] amount mismatch', body.totalAmount, result.data.usedAmount)
       }
 
+      // BizPlay 시각 = YYYYMMDDHHMMSS (14자리) 또는 YYYYMMDDHHMMSSmmm (17자리, KST) → ISO 8601 +09:00
+      const toIsoKst = (s: string | undefined): string => {
+        if (!s) return new Date().toISOString()
+        if (/^\d{14}$/.test(s)) {
+          return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(8, 10)}:${s.slice(10, 12)}:${s.slice(12, 14)}+09:00`
+        }
+        if (/^\d{17}$/.test(s)) {
+          return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(8, 10)}:${s.slice(10, 12)}:${s.slice(12, 14)}.${s.slice(14, 17)}+09:00`
+        }
+        return s
+      }
+      const approvedAtIso = toIsoKst(result.data.approvedAt)
+
       const tx = {
         id: crypto.randomUUID(),
         merchantOrderID: body.merchantOrderID,
@@ -78,7 +91,7 @@ export async function POST(req: NextRequest) {
         paymentType: body.paymentType ?? 'barcode',
         voucherType: 'voucher1',
         status: 'success',
-        approvedAt: result.data.approvedAt,
+        approvedAt: approvedAtIso,
         barcodeInfo: body.barcodeInfo,
         termId,
         terminalName,
@@ -107,7 +120,7 @@ export async function POST(req: NextRequest) {
             amount: approvedData.usedAmount ?? body.totalAmount,
             payment_type: body.paymentType ?? 'barcode',
             status: 'success',
-            approved_at: approvedData.approvedAt ?? new Date().toISOString(),
+            approved_at: toIsoKst(approvedData.approvedAt),
             user_name: approvedData.userName ?? '',
             synced: true,
           })
