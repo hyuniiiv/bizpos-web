@@ -150,14 +150,16 @@ export async function GET(req: NextRequest) {
       .eq('terminal_id', terminalId)
       .order('approved_at', { ascending: false })
 
+    // 날짜 필터는 KST(Asia/Seoul, +09:00) 기준 — Vercel UTC 환경에서 .Z 사용 시
+    // KST 새벽 결제가 다음날로 밀려 누락되는 문제 방지
     if (dateStart && dateEnd) {
       query = query
-        .gte('approved_at', `${dateStart}T00:00:00.000Z`)
-        .lte('approved_at', `${dateEnd}T23:59:59.999Z`)
+        .gte('approved_at', `${dateStart}T00:00:00+09:00`)
+        .lte('approved_at', `${dateEnd}T23:59:59.999+09:00`)
     } else if (date) {
       query = query
-        .gte('approved_at', `${date}T00:00:00.000Z`)
-        .lte('approved_at', `${date}T23:59:59.999Z`)
+        .gte('approved_at', `${date}T00:00:00+09:00`)
+        .lte('approved_at', `${date}T23:59:59.999+09:00`)
     }
 
     const { data, error, count } = await query.range(offset, offset + limit - 1)

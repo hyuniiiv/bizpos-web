@@ -79,8 +79,9 @@ export default async function TransactionsPage({
       terminals(name, term_id)
     `)
     .eq('merchant_id', selectedMerchantId)
-    .gte('approved_at', `${from}T00:00:00Z`)
-    .lte('approved_at', `${to}T23:59:59Z`)
+    // KST(Asia/Seoul) 기준 — Vercel UTC 환경에서 .Z 사용 시 KST 새벽/심야 거래 누락 방지
+    .gte('approved_at', `${from}T00:00:00+09:00`)
+    .lte('approved_at', `${to}T23:59:59.999+09:00`)
     .order('approved_at', { ascending: false })
     .limit(500)
 
