@@ -10,6 +10,7 @@ export interface ConfigSyncResult {
   config: Record<string, unknown>
   changed: boolean
   termName?: string | null
+  terminalType?: string | null
 }
 
 export function getConfigVersion(): number {
@@ -43,10 +44,10 @@ export async function fetchLatestConfig(token: string): Promise<ConfigSyncResult
       const prevVersion = getConfigVersion()
       setConfigVersion(data.version)
       logger.info('config', 'changed', { prevVersion, newVersion: data.version })
-      return { version: data.version, config: data.config, changed: true, termName: data.termName ?? null }
+      return { version: data.version, config: data.config, changed: true, termName: data.termName ?? null, terminalType: data.terminalType ?? null }
     }
 
-    return { version: data.version, config: {}, changed: false, termName: data.termName ?? null }
+    return { version: data.version, config: {}, changed: false, termName: data.termName ?? null, terminalType: data.terminalType ?? null }
   } catch (err) {
     logger.error('config', 'fetch_exception', { error: String(err) })
     return null
@@ -54,7 +55,7 @@ export async function fetchLatestConfig(token: string): Promise<ConfigSyncResult
 }
 
 export function startConfigPolling(
-  onConfigChanged: (config: Record<string, unknown>, termName?: string | null) => void,
+  onConfigChanged: (config: Record<string, unknown>, termName?: string | null, terminalType?: string | null) => void,
   token: string,
   intervalMs = 30_000
 ) {
@@ -64,9 +65,9 @@ export function startConfigPolling(
     const result = await fetchLatestConfig(token)
     if (result) {
       if (result.changed && result.config) {
-        onConfigChanged(result.config, result.termName)
-      } else if (result.termName !== undefined) {
-        onConfigChanged({}, result.termName)
+        onConfigChanged(result.config, result.termName, result.terminalType)
+      } else if (result.termName !== undefined || result.terminalType !== undefined) {
+        onConfigChanged({}, result.termName, result.terminalType)
       }
     }
   }

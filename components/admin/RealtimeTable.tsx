@@ -9,11 +9,12 @@ interface RealtimeTableProps {
   page?: number
   pageSize?: number
   onPageChange?: (page: number) => void
+  onCancel?: (tx: Transaction) => void
 }
 
 export function RealtimeTable({
   transactions, newIds, totalCount, totalAmount,
-  page = 1, pageSize = 20, onPageChange,
+  page = 1, pageSize = 20, onPageChange, onCancel,
 }: RealtimeTableProps) {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
@@ -38,12 +39,13 @@ export function RealtimeTable({
               <th className="px-4 py-4 text-left text-sm font-semibold text-white/50">과정명(메뉴)</th>
               <th className="px-4 py-4 text-right text-sm font-semibold text-white/50">금액</th>
               <th className="px-4 py-4 text-center text-sm font-semibold text-white/50">상태</th>
+              {onCancel && <th className="px-4 py-4 text-center text-sm font-semibold text-white/50">관리</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {transactions.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-white/40">
+                <td colSpan={onCancel ? 6 : 5} className="px-4 py-12 text-center text-white/40">
                   거래 내역이 없습니다
                 </td>
               </tr>
@@ -68,6 +70,18 @@ export function RealtimeTable({
                   <td className="px-4 py-4 text-center">
                     <StatusBadge status={tx.status} />
                   </td>
+                  {onCancel && (
+                    <td className="px-4 py-4 text-center" onClick={e => e.stopPropagation()}>
+                      {tx.status === 'success' && (
+                        <button
+                          onClick={() => onCancel(tx)}
+                          className="text-red-400 text-sm hover:text-red-300 transition-colors"
+                        >
+                          취소
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))
             )}

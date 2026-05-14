@@ -23,10 +23,11 @@ export async function GET(request: NextRequest) {
     .from('terminals')
     .update({ status: 'online', last_seen_at: new Date().toISOString() })
     .eq('id', terminalId)
-    .select('name, store_id')
+    .select('name, store_id, terminal_type')
     .single()
 
   const termName = terminal?.name ?? null
+  const terminalType = terminal?.terminal_type ?? null
 
   // 매장 로고 URL (store 속성 → 소속 단말기 전체 공통 적용)
   let logoUrl: string | null = null
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!configRow || configRow.version <= currentVersion) {
-    return NextResponse.json({ version: currentVersion, changed: false, termName })
+    return NextResponse.json({ version: currentVersion, changed: false, termName, terminalType })
   }
 
   const config = configRow.config as Record<string, unknown>
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest) {
     config: logoUrl ? { ...config, logoUrl } : config,
     changed: true,
     termName,
+    terminalType,
   })
 }
 

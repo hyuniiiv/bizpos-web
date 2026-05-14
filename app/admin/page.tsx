@@ -4,6 +4,7 @@ import type { Transaction } from '@/types/payment'
 import { SummaryBar } from '@/components/admin/SummaryBar'
 import { RealtimeTable } from '@/components/admin/RealtimeTable'
 import { useSettingsStore } from '@/lib/store/settingsStore'
+import { getServerUrl } from '@/lib/serverUrl'
 
 type ConnectionStatus = '연결됨' | '연결 끊김' | '재연결 중'
 
@@ -117,6 +118,29 @@ export default function AdminRealtimePage() {
     loadTransactions(selectedDate, page)
   }
 
+  const handleCancel = async (tx: Transaction) => {
+    if (!confirm(`거래번호 ${tx.merchantOrderID} 를 취소하시겠습니까?`)) return
+    const token = deviceToken ?? ''
+    const res = await fetch(getServerUrl() + '/api/payment/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        merchantOrderDt: tx.merchantOrderID.substring(0, 8),
+        merchantOrderID: tx.merchantOrderID,
+        tid: tx.tid,
+        totalAmount: tx.amount,
+        menuName: tx.menuName,
+        termId: tx.termId,
+      }),
+    }).then(r => r.json())
+    if (res.code === '0000') {
+      alert('취소 완료')
+      loadTransactions(selectedDate, currentPage)
+    } else {
+      alert(`취소 실패: ${res.msg}`)
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -163,6 +187,7 @@ export default function AdminRealtimePage() {
         page={currentPage}
         pageSize={PAGE_SIZE}
         onPageChange={handlePageChange}
+        onCancel={handleCancel}
       />
     </div>
   )

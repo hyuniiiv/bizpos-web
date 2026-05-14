@@ -32,7 +32,7 @@ export async function cancelTransaction(params: {
       tid: params.tid,
       totalAmount: params.amount,
       totalCancelAmount: params.amount,
-      cancelTaxFreeAmount: 0,
+      cancelTaxFreeAmount: params.amount,
       partYn: 'N',
     })
 

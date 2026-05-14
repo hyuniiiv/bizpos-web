@@ -35,7 +35,7 @@ import type { MealType } from '@/types/menu'
 
 export default function PosPage() {
   const { menus, getActiveMenus, getCurrentMode, incrementCount, loadDefaults } = useMenuStore()
-  const { config, isOnline, setOnline, setPendingCount, updateConfig } = useSettingsStore()
+  const { config, isOnline, setOnline, setPendingCount, updateConfig, setTerminalType } = useSettingsStore()
   const {
     screen, selectedMenu, lastTransaction, lastError,
     setScreen, clearMenu, setLastTransaction, setLastError
@@ -54,7 +54,10 @@ export default function PosPage() {
   useEffect(() => setMounted(true), [])
 
   useEffect(() => {
-    if (useSettingsStore.persist.hasHydrated()) return
+    if (useSettingsStore.persist.hasHydrated()) {
+      setSettingsHydrated(true)
+      return
+    }
     const unsub = useSettingsStore.persist.onFinishHydration(() => setSettingsHydrated(true))
     return unsub
   }, [])
@@ -83,7 +86,7 @@ export default function PosPage() {
   useEffect(() => {
     if (!deviceToken || deviceToken === 'manual') return
     startConfigPolling(
-      (serverConfig, termName) => {
+      (serverConfig, termName, terminalType) => {
         const {
           menus, periods, serviceCodes,
           // 단말기 정체성 필드는 활성화 시 값을 유지 — config 블롭으로 덮어쓰기 금지
@@ -97,9 +100,12 @@ export default function PosPage() {
         if (Array.isArray(menus)) useMenuStore.getState().setMenus(menus)
         if (Array.isArray(periods)) useMenuStore.getState().setPeriods(periods)
         if (Array.isArray(serviceCodes)) useMenuStore.getState().setServiceCodes(serviceCodes)
+        // terminal_type 변경 시 즉시 반영 (재활성화 없이 모드 전환)
+        if (terminalType) setTerminalType(terminalType as import('@/lib/store/settingsStore').TerminalType)
         logger.info('config', 'applied', {
           configKeys: Object.keys(deviceConfig).length,
           termName: termName ?? null,
+          terminalType: terminalType ?? null,
           menus: Array.isArray(menus) ? menus.length : null,
           periods: Array.isArray(periods) ? periods.length : null,
           serviceCodes: Array.isArray(serviceCodes) ? serviceCodes.length : null,
@@ -146,6 +152,7 @@ export default function PosPage() {
 
   // ── 외부 디스플레이 ──────────────────────────────────────
   useEffect(() => {
+    if (!settingsHydrated) return
     const api = (window as any).electronAPI
     if (!api?.openDisplay) return
     if (config.externalDisplay) {
@@ -153,10 +160,11 @@ export default function PosPage() {
     } else {
       api.closeDisplay?.()
     }
-  }, [config.externalDisplay])
+  }, [settingsHydrated, config.externalDisplay])
 
   // 식권체크기: badgeResult 변화 → 경광봉 트리거 + 카운트 전송
   useEffect(() => {
+    if (!settingsHydrated) return
     if (terminalType !== 'ticket_checker') return
     const api = (window as any).electronAPI
     if (!api?.sendToDisplay) return
@@ -176,10 +184,11 @@ export default function PosPage() {
         storeName: config.name,
       })
     }
-  }, [badgeResult, terminalType, menus, config.name, getActiveMenus])
+  }, [settingsHydrated, badgeResult, terminalType, menus, config.name, getActiveMenus])
 
   // POS: success/fail 화면 전환 시 결과 전송
   useEffect(() => {
+    if (!settingsHydrated) return
     if (terminalType !== 'pos') return
     const api = (window as any).electronAPI
     if (!api?.sendToDisplay) return
@@ -197,7 +206,7 @@ export default function PosPage() {
         storeName: config.name,
       })
     }
-  }, [screen, terminalType, lastTransaction, config.name])
+  }, [settingsHydrated, screen, terminalType, lastTransaction, config.name])
 
   // POS: 카트 변화 시 품목/합계 전송
   const handlePosCartUpdate = useCallback(
