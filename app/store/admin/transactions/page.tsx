@@ -167,7 +167,7 @@ export default async function TransactionsPage({
           {transactions?.map(tx => (
             <DataTableRow key={tx.id}>
               <td className="px-4 py-2 text-white/60 whitespace-nowrap">
-                {new Date(tx.approved_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                {new Date(tx.approved_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
               </td>
               <td className="px-4 py-2 text-xs text-white/50">
                 {(tx.terminals as unknown as { name: string; term_id: string } | null)?.name || (tx.terminals as unknown as { name: string; term_id: string } | null)?.term_id}
