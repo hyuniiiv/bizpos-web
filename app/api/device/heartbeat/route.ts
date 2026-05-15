@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   if ('error' in auth) return auth.error
 
   const { terminalId } = auth.payload
-  const { status } = await request.json().catch(() => ({ status: 'online' }))
+  const { status, version } = await request.json().catch(() => ({ status: 'online' }))
 
   const supabase = createAdminClient()
 
@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     .update({
       status: finalStatus,
       last_seen_at: new Date().toISOString(),
-      // online 복귀 시 offline 전환 기록 초기화 (다운타임 종료 시점은 last_seen_at으로 추적)
       ...(finalStatus === 'online' ? { went_offline_at: null } : {}),
+      ...(version && typeof version === 'string' ? { current_app_version: version } : {}),
     })
     .eq('id', terminalId)
 

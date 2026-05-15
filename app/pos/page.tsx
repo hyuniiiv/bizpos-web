@@ -72,7 +72,11 @@ export default function PosPage() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${deviceToken}`,
           },
-          body: JSON.stringify({ status: 'online' }),
+          body: JSON.stringify({
+            status: 'online',
+            version: await (window as Window & { electronAPI?: { getVersion?: () => Promise<string> } })
+              .electronAPI?.getVersion?.().catch(() => undefined),
+          }),
         })
       } catch (err) {
         logger.error('device', 'heartbeat_failed', { error: String(err) })

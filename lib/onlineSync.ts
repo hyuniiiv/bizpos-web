@@ -104,7 +104,11 @@ function startHeartbeat() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: 'online' }),
+        body: JSON.stringify({
+          status: 'online',
+          version: await (window as Window & { electronAPI?: { getVersion?: () => Promise<string> } })
+            .electronAPI?.getVersion?.().catch(() => undefined),
+        }),
       })
 
       if (res.ok) {
