@@ -1,15 +1,17 @@
 /**
  * 원격 명령 리스너
- * admin 대시보드에서 terminal_commands 테이블에 INSERT → 단말기가 Realtime 수신 → 실행 → 결과 UPDATE
+ * admin 대시보드에서 terminal_commands 테이블에 INSERT → 단말기가 폴링으로 수신 → 실행 → 결과 PATCH
+ *
+ * Realtime 대신 폴링 사용: anon Supabase 클라이언트는 terminal_commands SELECT RLS를 통과하지 못함
  */
 'use client'
 
-import { getBrowserClient } from '@/lib/supabase/browser'
 import { flushOfflineQueue } from '@/lib/txSync'
 import { getServerUrl } from '@/lib/serverUrl'
 import { useSettingsStore } from '@/lib/store/settingsStore'
 import { PaymentRepository } from '@/lib/repository/payment.repository'
-import type { RealtimeChannel } from '@supabase/supabase-js'
+
+const POLL_INTERVAL_MS = 4000
 
 async function uploadToServer(
   kind: 'log' | 'screenshot',
@@ -36,13 +38,9 @@ export type RemoteCommand = 'restart' | 'flush_queue' | 'upload_log' | 'screensh
 
 interface CommandRow {
   id: string
-  terminal_id: string
   command: RemoteCommand
   args: Record<string, unknown> | null
-  executed_at: string | null
 }
-
-let channel: RealtimeChannel | null = null
 
 async function executeCommand(cmd: CommandRow): Promise<{ result?: unknown; error?: string }> {
   const electron = (globalThis as unknown as {
@@ -60,7 +58,6 @@ async function executeCommand(cmd: CommandRow): Promise<{ result?: unknown; erro
     case 'flush_queue': {
       try {
         const r = await flushOfflineQueue()
-        // UI 갱신: 동기화 후 잔여 건수 업데이트
         try {
           const remaining = await PaymentRepository.getPendingPayments()
           useSettingsStore.getState().setPendingCount(remaining.length)
@@ -90,24 +87,29 @@ async function executeCommand(cmd: CommandRow): Promise<{ result?: unknown; erro
   }
 }
 
-async function handleCommand(cmd: CommandRow): Promise<void> {
-  const supabase = getBrowserClient()
+async function handleCommand(cmd: CommandRow, token: string): Promise<void> {
+  const base = getServerUrl() + '/api/device/commands'
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
-  await supabase
-    .from('terminal_commands')
-    .update({ received_at: new Date().toISOString() })
-    .eq('id', cmd.id)
+  // 수신 확인
+  await fetch(base, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ id: cmd.id, received_at: new Date().toISOString() }),
+  }).catch(() => {})
 
   const { result, error } = await executeCommand(cmd)
 
-  await supabase
-    .from('terminal_commands')
-    .update({
+  await fetch(base, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({
+      id: cmd.id,
       executed_at: new Date().toISOString(),
       result: result ?? null,
       error: error ?? null,
-    })
-    .eq('id', cmd.id)
+    }),
+  }).catch(() => {})
 
   // 결과 기록 후 실제 재시작 (돌아올 수 없는 명령은 맨 마지막)
   if (cmd.command === 'restart' && !error) {
@@ -116,41 +118,50 @@ async function handleCommand(cmd: CommandRow): Promise<void> {
   }
 }
 
+let pollTimer: ReturnType<typeof setTimeout> | null = null
+let polling = false
+
 export function startRemoteCommandListener(terminalId: string): () => void {
-  try {
-    if (channel) return () => {}
-    if (!terminalId) return () => {}
+  if (!terminalId) return () => {}
+  if (polling) return () => {}
 
-    const supabase = getBrowserClient()
+  polling = true
 
-    channel = supabase
-      .channel(`terminal-commands-${terminalId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'terminal_commands',
-          filter: `terminal_id=eq.${terminalId}`,
-        },
-        (payload) => {
-          const row = payload.new as CommandRow
-          if (row.executed_at) return
-          void handleCommand(row)
-        },
-      )
-      .subscribe()
+  const tick = async () => {
+    if (!polling) return
 
-    return () => {
-      try {
-        if (channel) {
-          void getBrowserClient().removeChannel(channel)
-          channel = null
-        }
-      } catch { /* ignore cleanup errors */ }
+    const token = useSettingsStore.getState().deviceToken
+    if (!token || token === 'manual') {
+      pollTimer = setTimeout(tick, POLL_INTERVAL_MS)
+      return
     }
-  } catch (err) {
-    console.warn('[remoteCommand] listener init failed:', err)
-    return () => {}
+
+    try {
+      const res = await fetch(getServerUrl() + '/api/device/commands', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.command) {
+          await handleCommand(data.command as CommandRow, token)
+        }
+      }
+    } catch {
+      // 네트워크 오류는 무시하고 다음 폴링 대기
+    }
+
+    if (polling) {
+      pollTimer = setTimeout(tick, POLL_INTERVAL_MS)
+    }
+  }
+
+  void tick()
+
+  return () => {
+    polling = false
+    if (pollTimer) {
+      clearTimeout(pollTimer)
+      pollTimer = null
+    }
   }
 }
